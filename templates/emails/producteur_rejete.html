@@ -1,0 +1,30 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Bonjour {{ prenom }},</p>
+
+<p class="message">
+  Après examen de votre dossier, nous ne sommes malheureusement pas
+  en mesure de valider votre inscription sur <strong>Makèt Peyizan</strong>
+  pour le moment.
+</p>
+
+{% if motif %}
+<div class="alert-box">
+  <strong>Motif :</strong> {{ motif }}
+</div>
+{% endif %}
+
+<p class="message">
+  Si vous pensez qu'il s'agit d'une erreur ou si vous souhaitez
+  soumettre des informations complémentaires, contactez notre équipe.
+</p>
+
+<p style="text-align:center">
+  <a href="mailto:info@maketpeyizan.ht" class="btn"
+     style="background:#e74c3c">
+    📧 Contacter le support
+  </a>
+</p>
+
+{% endblock %}

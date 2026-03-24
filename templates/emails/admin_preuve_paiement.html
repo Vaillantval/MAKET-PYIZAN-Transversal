@@ -1,0 +1,60 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Nouvelle preuve de paiement à vérifier 💳</p>
+
+<div class="info-box">
+  Un acheteur a soumis une preuve de paiement.
+  Veuillez la vérifier dans l'interface d'administration.
+</div>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">Référence paiement</span>
+    <span class="card-value">{{ paiement.reference }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">N° commande</span>
+    <span class="card-value">{{ commande.numero_commande }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Acheteur</span>
+    <span class="card-value">{{ acheteur.user.get_full_name }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Téléphone</span>
+    <span class="card-value">
+      {{ acheteur.user.telephone|default:"—" }}
+    </span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Type paiement</span>
+    <span class="card-value">{{ paiement.get_type_paiement_display }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Montant déclaré</span>
+    <span class="card-value" style="font-size:16px">
+      {{ paiement.montant }} HTG
+    </span>
+  </div>
+  {% if paiement.numero_expediteur %}
+  <div class="card-row">
+    <span class="card-label">N° expéditeur</span>
+    <span class="card-value">{{ paiement.numero_expediteur }}</span>
+  </div>
+  {% endif %}
+  {% if paiement.id_transaction %}
+  <div class="card-row">
+    <span class="card-label">ID transaction</span>
+    <span class="card-value">{{ paiement.id_transaction }}</span>
+  </div>
+  {% endif %}
+</div>
+
+<p style="text-align:center">
+  <a href="{{ site_url }}/admin/payments/paiement/" class="btn">
+    🔍 Vérifier dans l'admin
+  </a>
+</p>
+
+{% endblock %}

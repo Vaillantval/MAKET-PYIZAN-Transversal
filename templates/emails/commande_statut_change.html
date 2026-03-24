@@ -1,0 +1,56 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Bonjour {{ prenom }},</p>
+
+<p class="message">
+  Le statut de votre commande
+  <strong>{{ commande.numero_commande }}</strong>
+  vient d'être mis à jour.
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">Ancien statut</span>
+    <span class="badge badge-orange">{{ statut_avant }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Nouveau statut</span>
+    <span class="badge badge-vert">{{ statut_apres }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">N° commande</span>
+    <span class="card-value">{{ commande.numero_commande }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Total</span>
+    <span class="card-value">{{ commande.total }} HTG</span>
+  </div>
+</div>
+
+{% if commande.statut == 'livree' %}
+<div class="success-box">
+  🎉 Votre commande a été livrée avec succès !
+  Merci de faire confiance à Makèt Peyizan.
+</div>
+{% elif commande.statut == 'annulee' %}
+<div class="alert-box">
+  ❌ Votre commande a été annulée.
+  Contactez-nous si vous avez des questions.
+</div>
+{% elif commande.statut == 'en_collecte' %}
+<div class="info-box">
+  🚛 Votre commande est en cours de collecte.
+  Vous serez notifié(e) à la livraison.
+</div>
+{% elif commande.statut == 'confirmee' %}
+<div class="success-box">
+  ✅ Votre commande a été confirmée par le producteur.
+</div>
+{% elif commande.statut == 'prete' %}
+<div class="info-box">
+  📦 Votre commande est prête et attend la collecte.
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Bonjour {{ prenom }} 👋</p>
+
+<p class="message">
+  Vous êtes invité(e) à participer à une collecte organisée par
+  <strong>Makèt Peyizan</strong> dans votre zone.
+</p>
+
+<div class="info-box">
+  🚛 Une collecte est planifiée.
+  Confirmez votre participation dès que possible.
+</div>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">Collecte</span>
+    <span class="card-value">{{ collecte.reference }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Date prévue</span>
+    <span class="card-value" style="color:#27ae60; font-size:16px">
+      📅 {{ collecte.date_planifiee|date:"l d F Y" }}
+    </span>
+  </div>
+  {% if collecte.heure_debut %}
+  <div class="card-row">
+    <span class="card-label">Horaire</span>
+    <span class="card-value">
+      {{ collecte.heure_debut|time:"H:i" }}
+      {% if collecte.heure_fin %}→ {{ collecte.heure_fin|time:"H:i" }}{% endif %}
+    </span>
+  </div>
+  {% endif %}
+  <div class="card-row">
+    <span class="card-label">Zone</span>
+    <span class="card-value">{{ collecte.zone.nom }}</span>
+  </div>
+  {% if collecte.point_collecte %}
+  <div class="card-row">
+    <span class="card-label">Point de collecte</span>
+    <span class="card-value">{{ collecte.point_collecte.nom }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Adresse</span>
+    <span class="card-value">{{ collecte.point_collecte.adresse }}</span>
+  </div>
+  {% endif %}
+  {% if participation.quantite_prevue %}
+  <div class="card-row">
+    <span class="card-label">Quantité prévue de votre part</span>
+    <span class="card-value">
+      {{ participation.quantite_prevue }} unités
+    </span>
+  </div>
+  {% endif %}
+</div>
+
+{% if collecte.notes %}
+<div class="info-box">
+  📋 <strong>Instructions :</strong> {{ collecte.notes }}
+</div>
+{% endif %}
+
+<p style="font-size:13px; color:#aaa; text-align:center; margin-top:16px">
+  Pour toute question, contactez votre agent de collecte
+  {% if collecte.collecteur %}
+    : <strong>{{ collecte.collecteur.get_full_name }}</strong>
+  {% endif %}
+</p>
+
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Bonjour {{ prenom }} 👋</p>
+
+<p class="message">
+  Votre commande a bien été reçue et est en cours de traitement.
+  Voici le récapitulatif :
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">N° commande</span>
+    <span class="card-value">{{ commande.numero_commande }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Producteur</span>
+    <span class="card-value">{{ commande.producteur.user.get_full_name }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Date</span>
+    <span class="card-value">{{ commande.created_at|date:"d/m/Y à H:i" }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Statut</span>
+    <span class="badge badge-orange">En attente de confirmation</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Mode de livraison</span>
+    <span class="card-value">{{ commande.get_mode_livraison_display }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Méthode de paiement</span>
+    <span class="card-value">{{ commande.get_methode_paiement_display }}</span>
+  </div>
+</div>
+
+<table class="table-produits">
+  <thead>
+    <tr>
+      <th>Produit</th>
+      <th>Quantité</th>
+      <th>Prix unit.</th>
+      <th>Sous-total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for detail in details %}
+    <tr>
+      <td>{{ detail.produit.nom }}</td>
+      <td>{{ detail.quantite }} {{ detail.unite_vente }}</td>
+      <td>{{ detail.prix_unitaire }} HTG</td>
+      <td><strong>{{ detail.sous_total }} HTG</strong></td>
+    </tr>
+    {% endfor %}
+    {% if commande.frais_livraison > 0 %}
+    <tr>
+      <td colspan="3" style="text-align:right; color:#888">Frais de livraison</td>
+      <td>{{ commande.frais_livraison }} HTG</td>
+    </tr>
+    {% endif %}
+    {% if commande.remise > 0 %}
+    <tr>
+      <td colspan="3" style="text-align:right; color:#27ae60">Remise</td>
+      <td style="color:#27ae60">− {{ commande.remise }} HTG</td>
+    </tr>
+    {% endif %}
+    <tr class="total-row">
+      <td colspan="3" style="text-align:right">Total</td>
+      <td>{{ commande.total }} HTG</td>
+    </tr>
+  </tbody>
+</table>
+
+{% if commande.notes_acheteur %}
+<div class="info-box">
+  📝 <strong>Vos notes :</strong> {{ commande.notes_acheteur }}
+</div>
+{% endif %}
+
+{% endblock %}

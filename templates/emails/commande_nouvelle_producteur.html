@@ -1,0 +1,71 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Bonjour {{ prenom }} 👋</p>
+
+<div class="success-box">
+  🛒 Vous avez reçu une nouvelle commande !
+  Veuillez la confirmer dès que possible.
+</div>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">N° commande</span>
+    <span class="card-value">{{ commande.numero_commande }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Acheteur</span>
+    <span class="card-value">{{ commande.acheteur.user.get_full_name }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Téléphone</span>
+    <span class="card-value">
+      {{ commande.acheteur.user.telephone|default:"—" }}
+    </span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Type acheteur</span>
+    <span class="card-value">{{ commande.acheteur.get_type_acheteur_display }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Mode de livraison</span>
+    <span class="card-value">{{ commande.get_mode_livraison_display }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Adresse de livraison</span>
+    <span class="card-value">
+      {{ commande.adresse_livraison|default:"—" }}
+    </span>
+  </div>
+</div>
+
+<table class="table-produits">
+  <thead>
+    <tr>
+      <th>Produit</th>
+      <th>Quantité</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for detail in details %}
+    <tr>
+      <td>{{ detail.produit.nom }}</td>
+      <td>{{ detail.quantite }} {{ detail.unite_vente }}</td>
+      <td><strong>{{ detail.sous_total }} HTG</strong></td>
+    </tr>
+    {% endfor %}
+    <tr class="total-row">
+      <td colspan="2" style="text-align:right">Total commande</td>
+      <td>{{ commande.total }} HTG</td>
+    </tr>
+  </tbody>
+</table>
+
+{% if commande.notes_acheteur %}
+<div class="info-box">
+  📝 <strong>Note de l'acheteur :</strong> {{ commande.notes_acheteur }}
+</div>
+{% endif %}
+
+{% endblock %}

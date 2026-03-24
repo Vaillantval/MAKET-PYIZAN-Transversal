@@ -1,0 +1,57 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Bonjour {{ prenom }},</p>
+
+<div class="alert-box">
+  ⚠️ <strong>Alerte stock :</strong>
+  Le stock de votre produit <strong>{{ produit.nom }}</strong> est
+  {% if alerte.niveau == 'epuise' %}
+    <strong>complètement épuisé</strong>.
+  {% elif alerte.niveau == 'critique' %}
+    à un niveau <strong>critique</strong>.
+  {% else %}
+    <strong>faible</strong>.
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">Produit</span>
+    <span class="card-value">{{ produit.nom }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Catégorie</span>
+    <span class="card-value">{{ produit.categorie.nom }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Stock actuel</span>
+    <span class="card-value" style="color:#e74c3c; font-size:20px; font-weight:700">
+      {{ alerte.stock_actuel }} {{ produit.get_unite_vente_display }}
+    </span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Seuil d'alerte</span>
+    <span class="card-value">
+      {{ alerte.seuil }} {{ produit.get_unite_vente_display }}
+    </span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Niveau</span>
+    <span class="badge
+      {% if alerte.niveau == 'epuise' or alerte.niveau == 'critique' %}
+        badge-rouge
+      {% else %}
+        badge-orange
+      {% endif %}">
+      {{ alerte.get_niveau_display }}
+    </span>
+  </div>
+</div>
+
+<p class="message">
+  Pensez à réapprovisionner votre stock pour continuer à recevoir
+  des commandes sur <strong>Makèt Peyizan</strong>.
+</p>
+
+{% endblock %}

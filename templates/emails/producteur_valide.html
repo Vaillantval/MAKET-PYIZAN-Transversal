@@ -1,0 +1,35 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Félicitations {{ prenom }} ! 🎉</p>
+
+<p class="message">
+  Votre compte producteur sur <strong>Makèt Peyizan</strong> a été
+  <strong>validé et activé</strong>. Vous pouvez maintenant commencer
+  à vendre vos produits agricoles.
+</p>
+
+<div class="success-box">
+  ✅ Votre compte est désormais actif. Connectez-vous dès maintenant !
+</div>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">Code producteur</span>
+    <span class="card-value">{{ producteur.code_producteur }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Nom complet</span>
+    <span class="card-value">{{ producteur.user.get_full_name }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Statut</span>
+    <span class="badge badge-vert">✅ Actif</span>
+  </div>
+</div>
+
+<p style="text-align:center">
+  <a href="{{ site_url }}" class="btn">🌾 Accéder à mon espace producteur</a>
+</p>
+
+{% endblock %}
