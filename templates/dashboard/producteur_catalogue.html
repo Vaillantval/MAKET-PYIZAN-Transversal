@@ -1,0 +1,633 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Mon catalogue — Producteur{% endblock %}
+
+{% block sidebar_nav %}
+  <div class="nav-section-label">Navigation</div>
+  <a href="/dashboard/producteur/" class="nav-item">
+    <i class="fas fa-th-large"></i> Vue d'ensemble
+  </a>
+  <a href="/dashboard/producteur/commandes/" class="nav-item">
+    <i class="fas fa-inbox"></i> Commandes reçues
+    <span class="nav-badge" id="sb-badge-commandes" style="display:none"></span>
+  </a>
+  <a href="/dashboard/producteur/catalogue/" class="nav-item active">
+    <i class="fas fa-seedling"></i> Mon catalogue
+  </a>
+  <a href="/" class="nav-item">
+    <i class="fas fa-store"></i> Catalogue public
+  </a>
+
+  <div class="nav-section-label">Compte</div>
+  <a href="/dashboard/producteur/profil/" class="nav-item">
+    <i class="fas fa-user-edit"></i> Mon profil
+  </a>
+{% endblock %}
+
+{% block page_title %}Mon catalogue{% endblock %}
+{% block page_subtitle %}Gérez vos produits, prix et stocks{% endblock %}
+
+{% block extra_css %}
+<style>
+  .catalogue-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .toolbar-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .search-input {
+    padding: 8px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--card);
+    color: var(--text);
+    width: 220px;
+    transition: border-color .2s;
+  }
+  .search-input:focus { outline: none; border-color: var(--green-mid); }
+
+  .filter-btn {
+    padding: 7px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    border: 1.5px solid var(--border);
+    background: var(--card); color: var(--text-muted);
+    cursor: pointer; font-family: inherit; transition: all .18s;
+  }
+  .filter-btn:hover  { border-color: var(--green-mid); color: var(--green-mid); }
+  .filter-btn.active { background: var(--green-mid); color: #fff; border-color: var(--green-mid); }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 18px; background: var(--green-mid); color: #fff;
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer; font-family: inherit; transition: background .2s;
+  }
+  .btn-primary:hover    { background: var(--green); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+  /* Grille produits */
+  .produits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .produit-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow .2s;
+  }
+  .produit-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.10); }
+
+  .produit-card-img {
+    height: 140px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .produit-card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .produit-card-img .no-img {
+    font-size: 40px; opacity: .2; color: var(--text-muted);
+  }
+
+  .statut-pill {
+    position: absolute; top: 8px; left: 8px;
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 10px; font-weight: 700;
+  }
+  .alerte-stock {
+    position: absolute; top: 8px; right: 8px;
+    background: #e74c3c; color: #fff;
+    padding: 2px 8px; border-radius: 20px;
+    font-size: 10px; font-weight: 700;
+  }
+
+  .produit-card-body { padding: 14px; flex: 1; }
+  .produit-nom   { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .produit-cat   { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+  .produit-prix  { font-size: 15px; font-weight: 700; color: var(--green-mid); }
+  .produit-unite { font-size: 11px; color: var(--text-muted); }
+  .produit-stock { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .stock-value   { font-weight: 700; color: var(--text); }
+  .stock-low     { color: #e74c3c !important; }
+
+  .produit-card-footer {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+  }
+  .btn-edit {
+    flex: 1; padding: 6px 10px; border-radius: 6px;
+    background: var(--bg); color: var(--text-muted);
+    border: 1px solid var(--border); cursor: pointer;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    transition: all .18s; text-align: center;
+  }
+  .btn-edit:hover { background: var(--green-mid); color: #fff; border-color: var(--green-mid); }
+  .btn-delete {
+    padding: 6px 10px; border-radius: 6px;
+    background: var(--bg); color: #e74c3c;
+    border: 1px solid var(--border); cursor: pointer;
+    font-size: 12px; font-family: inherit; transition: all .18s;
+  }
+  .btn-delete:hover { background: #fde8e8; border-color: #e74c3c; }
+
+  .empty-state {
+    text-align: center; padding: 60px 24px;
+    color: var(--text-muted);
+  }
+  .empty-state i { font-size: 40px; opacity: .18; display: block; margin-bottom: 14px; }
+  .empty-state p { font-size: 14px; margin-bottom: 16px; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 600;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: var(--card);
+    border-radius: var(--radius);
+    width: 100%; max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    transform: scale(.95);
+    transition: transform .22s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+
+  .modal-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: var(--card); z-index: 1;
+  }
+  .modal-header h3 { font-size: 15px; font-weight: 700; color: var(--text); }
+  .modal-close {
+    width: 30px; height: 30px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--text-muted); transition: background .18s;
+  }
+  .modal-close:hover { background: var(--border); }
+
+  .modal-body { padding: 22px; }
+
+  .form-row      { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--text-muted);
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px; color: var(--text);
+    font-family: inherit; background: var(--bg);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none; border-color: var(--green-mid);
+    box-shadow: 0 0 0 3px rgba(39,174,96,.12); background: #fff;
+  }
+
+  .modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 10px;
+    position: sticky; bottom: 0; background: var(--card);
+  }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 16px; background: transparent; color: var(--text-muted);
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    border: 1px solid var(--border); cursor: pointer; font-family: inherit;
+    transition: background .2s;
+  }
+  .btn-ghost:hover { background: var(--bg); }
+
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    animation: slideUp .25s ease; max-width: 320px;
+  }
+  .toast.success { background: #27ae60; }
+  .toast.error   { background: #e74c3c; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Modal ajout/édition -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Nouveau produit</h3>
+      <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="m-slug">
+
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Nom du produit *</label>
+          <input type="text" id="m-nom" placeholder="Ex: Maïs blanc">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Catégorie *</label>
+          <select id="m-categorie"></select>
+        </div>
+        <div class="form-group">
+          <label>Variété</label>
+          <input type="text" id="m-variete" placeholder="Ex: Variété locale">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prix unitaire (HTG) *</label>
+          <input type="number" id="m-prix" placeholder="0" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Prix de gros (HTG)</label>
+          <input type="number" id="m-prix-gros" placeholder="Optionnel" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Unité de vente *</label>
+          <select id="m-unite">
+            <option value="kg">Kilogramme (kg)</option>
+            <option value="tonne">Tonne</option>
+            <option value="sac_50">Sac 50 kg</option>
+            <option value="sac_25">Sac 25 kg</option>
+            <option value="botte">Botte</option>
+            <option value="piece">Pièce</option>
+            <option value="litre">Litre</option>
+            <option value="carton">Carton</option>
+            <option value="douz">Douzaine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Qté min. commande</label>
+          <input type="number" id="m-qte-min" placeholder="1" min="1" value="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Stock disponible *</label>
+          <input type="number" id="m-stock" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>Seuil d'alerte stock</label>
+          <input type="number" id="m-seuil" placeholder="10" min="0" value="10">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Origine</label>
+          <input type="text" id="m-origine" placeholder="Ex: Cayes, Sud">
+        </div>
+        <div class="form-group">
+          <label>Saison</label>
+          <input type="text" id="m-saison" placeholder="Ex: Novembre — Janvier">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Certifications</label>
+          <input type="text" id="m-certifications" placeholder="Ex: Bio, Sans pesticide">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="m-description" placeholder="Décrivez votre produit..."></textarea>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Photo principale</label>
+          <input type="file" id="m-image" accept="image/*">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" id="btn-save-produit" onclick="saveProduit()">
+        <i class="fas fa-save"></i> Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="catalogue-toolbar">
+  <div class="toolbar-left">
+    <input type="text" class="search-input" placeholder="Rechercher un produit..." oninput="filterLocal(this.value)">
+    <button class="filter-btn active" data-filter="all" onclick="setFilterLocal(this)">Tous</button>
+    <button class="filter-btn" data-filter="active" onclick="setFilterLocal(this)">Actifs</button>
+    <button class="filter-btn" data-filter="alerte" onclick="setFilterLocal(this)">Stock faible</button>
+    <button class="filter-btn" data-filter="inactif" onclick="setFilterLocal(this)">Inactifs</button>
+  </div>
+  <button class="btn-primary" onclick="openModal()">
+    <i class="fas fa-plus"></i> Nouveau produit
+  </button>
+</div>
+
+<!-- Grille -->
+<div id="catalogue-loading" style="text-align:center;padding:60px;color:var(--text-muted)">
+  <i class="fas fa-spinner fa-spin" style="font-size:28px"></i>
+  <p style="margin-top:12px">Chargement du catalogue...</p>
+</div>
+
+<div class="produits-grid" id="produits-grid" style="display:none"></div>
+
+<div class="empty-state" id="catalogue-empty" style="display:none">
+  <i class="fas fa-seedling"></i>
+  <p>Aucun produit dans votre catalogue.</p>
+  <button class="btn-primary" onclick="openModal()">
+    <i class="fas fa-plus"></i> Ajouter un produit
+  </button>
+</div>
+
+{% endblock %}
+
+{% block page_script %}
+  let _allProduits = [];
+  let _categories  = [];
+  let _filterLocal = 'all';
+  let _searchQuery = '';
+
+  const STATUT_COLORS = {
+    actif:      { bg: '#e8f8ee', color: '#27ae60' },
+    en_attente: { bg: '#fef9e7', color: '#c9a007' },
+    epuise:     { bg: '#fde8e8', color: '#e74c3c' },
+    brouillon:  { bg: '#f0f0f0', color: '#888' },
+    inactif:    { bg: '#f0f0f0', color: '#888' },
+  };
+
+  function showToast(msg, type = 'success') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── Chargement ────────────────────────────────────────────────────────────────
+  async function loadCatalogue() {
+    const headers = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
+    try {
+      // Catégories
+      const rc = await fetch('/api/products/categories/', { headers });
+      if (rc.ok) {
+        _categories = await rc.json();
+        const sel = document.getElementById('m-categorie');
+        sel.innerHTML = '<option value="">— Catégorie —</option>';
+        _categories.forEach(cat => {
+          sel.innerHTML += `<option value="${cat.id}">${cat.nom}</option>`;
+        });
+      }
+
+      // Produits
+      const rp = await fetch('/api/products/mes-produits/', { headers });
+      document.getElementById('catalogue-loading').style.display = 'none';
+      if (rp.ok) {
+        _allProduits = await rp.json();
+        renderGrid();
+      } else {
+        document.getElementById('catalogue-empty').style.display = 'block';
+      }
+    } catch (_) {
+      document.getElementById('catalogue-loading').style.display = 'none';
+      document.getElementById('catalogue-empty').style.display = 'block';
+    }
+  }
+
+  function renderGrid() {
+    let produits = _allProduits;
+
+    if (_searchQuery) {
+      const q = _searchQuery.toLowerCase();
+      produits = produits.filter(p => p.nom.toLowerCase().includes(q) || p.categorie_nom.toLowerCase().includes(q));
+    }
+    if (_filterLocal === 'active') {
+      produits = produits.filter(p => p.is_active);
+    } else if (_filterLocal === 'alerte') {
+      produits = produits.filter(p => p.est_en_alerte);
+    } else if (_filterLocal === 'inactif') {
+      produits = produits.filter(p => !p.is_active);
+    }
+
+    const grid = document.getElementById('produits-grid');
+    const empty = document.getElementById('catalogue-empty');
+
+    if (!produits.length) {
+      grid.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.style.display  = 'grid';
+    grid.innerHTML = '';
+
+    produits.forEach(p => {
+      const sc = STATUT_COLORS[p.statut] || STATUT_COLORS.inactif;
+      const imgHtml = p.image_principale
+        ? `<img src="${p.image_principale}" alt="${p.nom}" loading="lazy">`
+        : `<div class="no-img"><i class="fas fa-seedling"></i></div>`;
+
+      grid.innerHTML += `
+        <div class="produit-card">
+          <div class="produit-card-img">
+            ${imgHtml}
+            <span class="statut-pill" style="background:${sc.bg};color:${sc.color}">${p.statut_label}</span>
+            ${p.est_en_alerte ? '<span class="alerte-stock"><i class="fas fa-exclamation"></i> Stock faible</span>' : ''}
+          </div>
+          <div class="produit-card-body">
+            <div class="produit-nom">${p.nom}</div>
+            <div class="produit-cat">${p.categorie_nom}${p.variete ? ' · ' + p.variete : ''}</div>
+            <div class="produit-prix">${Number(p.prix_unitaire).toLocaleString('fr-FR')} HTG
+              <span class="produit-unite">/ ${p.unite_vente_label}</span>
+            </div>
+            <div class="produit-stock">
+              Stock : <span class="stock-value ${p.est_en_alerte ? 'stock-low' : ''}">${p.stock_disponible}</span>
+              <span style="color:var(--text-muted)">· Seuil : ${p.seuil_alerte}</span>
+            </div>
+          </div>
+          <div class="produit-card-footer">
+            <button class="btn-edit" onclick='openModal(${JSON.stringify(p)})'>
+              <i class="fas fa-edit"></i> Modifier
+            </button>
+            <button class="btn-delete" onclick="deleteProduit('${p.slug}','${p.nom.replace(/'/g,'\\\'')}')" title="Supprimer">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>`;
+    });
+  }
+
+  function filterLocal(q) { _searchQuery = q; renderGrid(); }
+  function setFilterLocal(btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _filterLocal = btn.dataset.filter;
+    renderGrid();
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────────
+  function openModal(produit = null) {
+    const overlay = document.getElementById('modal-overlay');
+    document.getElementById('modal-title').textContent = produit ? 'Modifier le produit' : 'Nouveau produit';
+
+    // Vider/remplir le formulaire
+    const fields = {
+      'm-slug':          produit?.slug          ?? '',
+      'm-nom':           produit?.nom           ?? '',
+      'm-variete':       produit?.variete        ?? '',
+      'm-prix':          produit?.prix_unitaire  ?? '',
+      'm-prix-gros':     produit?.prix_gros      ?? '',
+      'm-unite':         produit?.unite_vente    ?? 'kg',
+      'm-qte-min':       produit?.quantite_min_commande ?? 1,
+      'm-stock':         produit?.stock_disponible ?? '',
+      'm-seuil':         produit?.seuil_alerte   ?? 10,
+      'm-origine':       produit?.origine        ?? '',
+      'm-saison':        produit?.saison         ?? '',
+      'm-certifications': produit?.certifications ?? '',
+      'm-description':   produit?.description    ?? '',
+    };
+    for (const [id, val] of Object.entries(fields)) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+    if (produit?.categorie_id) {
+      document.getElementById('m-categorie').value = produit.categorie_id;
+    }
+    document.getElementById('m-image').value = '';
+
+    overlay.classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+
+  // ── Sauvegarde ────────────────────────────────────────────────────────────────
+  async function saveProduit() {
+    const slug = document.getElementById('m-slug').value;
+    const nom  = document.getElementById('m-nom').value.trim();
+    const cat  = document.getElementById('m-categorie').value;
+    const prix = document.getElementById('m-prix').value;
+    const stock = document.getElementById('m-stock').value;
+
+    if (!nom)   { showToast('Le nom est requis.', 'error'); return; }
+    if (!cat)   { showToast('Choisissez une catégorie.', 'error'); return; }
+    if (!prix)  { showToast('Le prix est requis.', 'error'); return; }
+    if (stock === '') { showToast('Le stock est requis.', 'error'); return; }
+
+    const btn = document.getElementById('btn-save-produit');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement…';
+
+    const formData = new FormData();
+    formData.append('nom',                   nom);
+    formData.append('categorie_id',          cat);
+    formData.append('variete',               document.getElementById('m-variete').value.trim());
+    formData.append('prix_unitaire',         prix);
+    formData.append('prix_gros',             document.getElementById('m-prix-gros').value || '');
+    formData.append('unite_vente',           document.getElementById('m-unite').value);
+    formData.append('quantite_min_commande', document.getElementById('m-qte-min').value || 1);
+    formData.append('stock_disponible',      stock);
+    formData.append('seuil_alerte',          document.getElementById('m-seuil').value || 10);
+    formData.append('origine',               document.getElementById('m-origine').value.trim());
+    formData.append('saison',                document.getElementById('m-saison').value.trim());
+    formData.append('certifications',        document.getElementById('m-certifications').value.trim());
+    formData.append('description',           document.getElementById('m-description').value.trim());
+
+    const imageFile = document.getElementById('m-image').files[0];
+    if (imageFile) formData.append('image_principale', imageFile);
+
+    const headers = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
+    const isEdit  = !!slug;
+    const url     = isEdit ? `/api/products/mes-produits/${slug}/` : '/api/products/mes-produits/';
+    const method  = isEdit ? 'PATCH' : 'POST';
+
+    try {
+      const r = await fetch(url, { method, headers, body: formData });
+      const data = await r.json();
+      if (r.ok) {
+        showToast(isEdit ? 'Produit mis à jour.' : 'Produit ajouté — en attente de validation.');
+        closeModal();
+        await loadCatalogue();
+      } else {
+        const msg = typeof data === 'object' ? Object.values(data).flat().join(' ') : 'Erreur.';
+        showToast(msg, 'error');
+      }
+    } catch { showToast('Erreur réseau.', 'error'); }
+
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+  }
+
+  // ── Suppression ───────────────────────────────────────────────────────────────
+  async function deleteProduit(slug, nom) {
+    if (!confirm(`Supprimer le produit "${nom}" ? Cette action est irréversible.`)) return;
+    const headers = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
+    try {
+      const r = await fetch(`/api/products/mes-produits/${slug}/`, { method: 'DELETE', headers });
+      if (r.status === 204) {
+        showToast('Produit supprimé.');
+        _allProduits = _allProduits.filter(p => p.slug !== slug);
+        renderGrid();
+      } else {
+        showToast('Impossible de supprimer ce produit.', 'error');
+      }
+    } catch { showToast('Erreur réseau.', 'error'); }
+  }
+
+  mpAuthCheck('producteur').then(user => {
+    if (user && mpProducteurGuard(user)) loadCatalogue();
+  });
+{% endblock %}

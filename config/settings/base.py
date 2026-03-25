@@ -36,6 +36,9 @@ LOCAL_APPS = [
     'apps.collectes',
     'apps.analytics',
     'apps.emails',
+    'apps.home',
+    'apps.core',
+    'apps.geo',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -66,6 +69,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.core.context_processors.site_settings',
             ],
         },
     },
@@ -119,6 +123,11 @@ SIMPLE_JWT = {
 # ── CORS ────────────────────────────────────────────────────────
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL', default=True, cast=bool)
 
+# ── MonCash ──────────────────────────────────────────────────────
+MONCASH_CLIENT_ID   = config('MONCASH_CLIENT_ID',   default='')
+MONCASH_SECRET_KEY  = config('MONCASH_SECRET_KEY',  default='')
+MONCASH_ENVIRONMENT = config('MONCASH_ENVIRONMENT', default='sandbox')
+
 # ── SPECTACULAR (API Docs) ───────────────────────────────────────
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Makèt Peyizan API',
@@ -140,6 +149,7 @@ JAZZMIN_SETTINGS = {
         "accounts.CustomUser":      "fas fa-users",
         "accounts.Producteur":      "fas fa-tractor",
         "accounts.Acheteur":        "fas fa-shopping-basket",
+        "accounts.Adresse":         "fas fa-map-marker-alt",
         "catalog.Produit":          "fas fa-box",
         "catalog.Categorie":        "fas fa-tags",
         "orders.Commande":          "fas fa-file-invoice",

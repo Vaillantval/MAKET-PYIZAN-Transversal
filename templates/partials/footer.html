@@ -1,0 +1,128 @@
+{% load static %}
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+
+      <div class="footer-brand">
+        {% if site_settings.logo %}
+          <img src="{{ site_settings.logo.url }}"
+               alt="{{ site_settings.nom_site }}"
+               style="height:36px; margin-bottom:12px; filter:brightness(0) invert(1);">
+        {% else %}
+          <h3>🌾 {{ site_settings.nom_site|default:"Makèt Peyizan" }}</h3>
+        {% endif %}
+        <p>{{ site_settings.slogan|default:"Marketplace agricole haïtienne." }}</p>
+        {% if site_settings.hero_sous_titre %}
+          <p class="slogan">« Sòti nan jaden rive lakay,<br>manje m se medikaman m »</p>
+        {% endif %}
+
+        {% if site_settings.facebook_url or site_settings.instagram_url or site_settings.twitter_url %}
+        <div style="display:flex; gap:10px; margin-top:16px">
+          {% if site_settings.facebook_url %}
+            <a href="{{ site_settings.facebook_url }}" target="_blank"
+               style="width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.1);
+                      display:flex; align-items:center; justify-content:center; color:white; font-size:14px;
+                      transition:background .2s"
+               onmouseover="this.style.background='#1877f2'"
+               onmouseout="this.style.background='rgba(255,255,255,.1)'">
+              <i class="fab fa-facebook-f"></i>
+            </a>
+          {% endif %}
+          {% if site_settings.instagram_url %}
+            <a href="{{ site_settings.instagram_url }}" target="_blank"
+               style="width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.1);
+                      display:flex; align-items:center; justify-content:center; color:white; font-size:14px;
+                      transition:background .2s"
+               onmouseover="this.style.background='#e1306c'"
+               onmouseout="this.style.background='rgba(255,255,255,.1)'">
+              <i class="fab fa-instagram"></i>
+            </a>
+          {% endif %}
+          {% if site_settings.twitter_url %}
+            <a href="{{ site_settings.twitter_url }}" target="_blank"
+               style="width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.1);
+                      display:flex; align-items:center; justify-content:center; color:white; font-size:14px;
+                      transition:background .2s"
+               onmouseover="this.style.background='#1da1f2'"
+               onmouseout="this.style.background='rgba(255,255,255,.1)'">
+              <i class="fab fa-twitter"></i>
+            </a>
+          {% endif %}
+          {% if site_settings.youtube_url %}
+            <a href="{{ site_settings.youtube_url }}" target="_blank"
+               style="width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.1);
+                      display:flex; align-items:center; justify-content:center; color:white; font-size:14px;
+                      transition:background .2s"
+               onmouseover="this.style.background='#ff0000'"
+               onmouseout="this.style.background='rgba(255,255,255,.1)'">
+              <i class="fab fa-youtube"></i>
+            </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="footer-col">
+        <h4>Navigation</h4>
+        <ul>
+          <li><a href="/">Accueil</a></li>
+          <li><a href="/#catalogue">Catalogue</a></li>
+          <li><a href="{% url 'core:apropos' %}">À propos</a></li>
+          <li><a href="{% url 'core:faq' %}">FAQ</a></li>
+          <li><a href="{% url 'core:contact' %}">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Plateforme</h4>
+        <ul>
+          <li><a href="/admin/">Administration</a></li>
+          <li><a href="/analytics/dashboard/">Dashboard BI</a></li>
+          <li><a href="/api/schema/swagger-ui/">API Docs</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          {% if site_settings.email_contact %}
+          <li>
+            <a href="mailto:{{ site_settings.email_contact }}">
+              <i class="fas fa-envelope"></i>
+              {{ site_settings.email_contact }}
+            </a>
+          </li>
+          {% endif %}
+          {% if site_settings.telephone %}
+          <li>
+            <a href="tel:{{ site_settings.telephone }}">
+              <i class="fas fa-phone"></i>
+              {{ site_settings.telephone }}
+            </a>
+          </li>
+          {% endif %}
+          {% if site_settings.whatsapp %}
+          <li>
+            <a href="https://wa.me/{{ site_settings.whatsapp|cut:' '|cut:'+' }}" target="_blank">
+              <i class="fab fa-whatsapp" style="color:#25d366"></i>
+              WhatsApp
+            </a>
+          </li>
+          {% endif %}
+          {% if site_settings.adresse %}
+          <li style="color:rgba(255,255,255,.4); font-size:12px; margin-top:8px">
+            <i class="fas fa-map-marker-alt"></i>
+            {{ site_settings.adresse }}
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <span>© {% now "Y" %} {{ site_settings.copyright_texte|default:"Makèt Peyizan Haiti. Tous droits réservés." }}</span>
+      <span>Transversal| Haiti</span>
+    </div>
+  </div>
+</footer>

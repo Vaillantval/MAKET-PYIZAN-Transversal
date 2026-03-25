@@ -1,0 +1,52 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Dashboard — Administrateur{% endblock %}
+
+{% block sidebar_nav %}
+  <div class="nav-section-label">Principal</div>
+  <a href="/dashboard/admin/" class="nav-item active">
+    <i class="fas fa-th-large"></i> Tableau de bord
+  </a>
+  <a href="#" class="nav-item">
+    <i class="fas fa-users"></i> Utilisateurs
+  </a>
+  <a href="#" class="nav-item">
+    <i class="fas fa-tractor"></i> Producteurs
+  </a>
+  <a href="#" class="nav-item">
+    <i class="fas fa-clipboard-list"></i> Commandes
+  </a>
+  <a href="#" class="nav-item">
+    <i class="fas fa-box-open"></i> Catalogue
+  </a>
+  <a href="#" class="nav-item">
+    <i class="fas fa-chart-bar"></i> Analytiques
+  </a>
+
+  <div class="nav-section-label">Gestion</div>
+  <a href="#" class="nav-item">
+    <i class="fas fa-check-circle"></i> Validations
+    <span class="nav-badge" id="badge-validations">0</span>
+  </a>
+  <a href="#" class="nav-item">
+    <i class="fas fa-credit-card"></i> Paiements
+  </a>
+  <a href="/admin/" class="nav-item">
+    <i class="fas fa-shield-alt"></i> Interface admin
+  </a>
+{% endblock %}
+
+{% block page_title %}Tableau de bord{% endblock %}
+{% block page_subtitle %}Espace administrateur{% endblock %}
+
+{% block content %}
+  <div class="page-placeholder">
+    <i class="fas fa-user-shield"></i>
+    <h3>Espace Administrateur</h3>
+    <p>Le contenu de ce dashboard sera ajouté prochainement.</p>
+  </div>
+{% endblock %}
+
+{% block page_script %}
+  mpAuthCheck('admin');
+{% endblock %}

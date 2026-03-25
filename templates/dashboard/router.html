@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard — Makèt Peyizan</title>
+  <style>
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #1a6b2f;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; margin: 0; flex-direction: column; gap: 20px;
+    }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(255,255,255,.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { color: rgba(255,255,255,.7); font-size: 14px; }
+    .logo { font-size: 36px; }
+  </style>
+</head>
+<body>
+  <div class="logo">🌾</div>
+  <div class="spinner"></div>
+  <p>Redirection vers votre espace...</p>
+
+  <script>
+    (function () {
+      const raw = localStorage.getItem('mp_user');
+      if (!raw) { window.location.href = '/connexion/'; return; }
+
+      let user;
+      try { user = JSON.parse(raw); } catch { window.location.href = '/connexion/'; return; }
+
+      const role = user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
+
+      const urls = {
+        superadmin: '/dashboard/superadmin/',
+        admin:      '/dashboard/admin/',
+        producteur: '/dashboard/producteur/',
+        acheteur:   '/dashboard/acheteur/',
+        collecteur: '/dashboard/acheteur/',
+      };
+
+      window.location.replace(urls[role] || '/dashboard/acheteur/');
+    })();
+  </script>
+</body>
+</html>

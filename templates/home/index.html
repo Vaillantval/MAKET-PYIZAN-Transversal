@@ -1,0 +1,2048 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ site_settings.nom_site|default:"Makèt Peyizan" }} — {{ site_settings.hero_titre_ligne1|default:"Sòti nan jaden" }} {{ site_settings.hero_titre_ligne2|default:"rive lakay" }}</title>
+  <meta name="description" content="{{ site_settings.meta_description|default:"Marketplace agricole haïtienne. Achetez directement auprès des producteurs locaux." }}">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    /* ── Variables ─────────────────────────────────────────── */
+    :root {
+      --vert-fonce:  #1a6b2f;
+      --vert-vif:    #27ae60;
+      --vert-menthe: #e8f8ee;
+      --vert-moyen:  #2ecc71;
+      --jaune:       #e8d800;
+      --jaune-clair: #fdfbe8;
+      --blanc:       #ffffff;
+      --noir:        #1a1a1a;
+      --gris-clair:  #f4f6f9;
+      --gris-texte:  #555;
+      --shadow:      0 4px 24px rgba(0,0,0,.08);
+      --shadow-lg:   0 8px 40px rgba(0,0,0,.14);
+      --radius:      12px;
+      --radius-lg:   20px;
+    }
+
+    /* ── Reset & Base ──────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--blanc);
+      color: var(--noir);
+      overflow-x: hidden;
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    img { max-width: 100%; display: block; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Navbar ────────────────────────────────────────────── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--vert-fonce);
+      box-shadow: 0 2px 16px rgba(0,0,0,.15);
+    }
+
+    .navbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+    }
+
+    .navbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .navbar-logo-icon {
+      width: 42px;
+      height: 42px;
+      background: var(--jaune);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .navbar-logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--blanc);
+      line-height: 1.1;
+    }
+
+    .navbar-logo-text span {
+      display: block;
+      font-size: 11px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      color: rgba(255,255,255,.7);
+      letter-spacing: .5px;
+    }
+
+    .navbar-search {
+      flex: 1;
+      max-width: 400px;
+      margin: 0 32px;
+    }
+
+    .navbar-search form {
+      display: flex;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 50px;
+      overflow: hidden;
+    }
+
+    .navbar-search input {
+      flex: 1;
+      padding: 10px 18px;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--blanc);
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .navbar-search input::placeholder { color: rgba(255,255,255,.6); }
+
+    .navbar-search button {
+      padding: 10px 18px;
+      background: var(--jaune);
+      border: none;
+      cursor: pointer;
+      color: var(--noir);
+      font-size: 14px;
+      transition: background .2s;
+    }
+
+    .navbar-search button:hover { background: #d4c800; }
+
+    .navbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-nav {
+      padding: 9px 20px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .btn-nav-outline {
+      background: transparent;
+      border: 1.5px solid rgba(255,255,255,.5);
+      color: var(--blanc);
+    }
+
+    .btn-nav-outline:hover {
+      background: rgba(255,255,255,.1);
+      border-color: var(--blanc);
+    }
+
+    .btn-nav-primary {
+      background: var(--jaune);
+      color: var(--noir);
+    }
+
+    .btn-nav-primary:hover { background: #d4c800; transform: translateY(-1px); }
+
+    /* ── Cart dropdown ──────────────────────────────────────── */
+    .cart-dd-wrap { position: relative; }
+    .btn-panier {
+      position: relative; display: flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 50px; font-size: 13px; font-weight: 600;
+      background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.4);
+      color: var(--blanc); cursor: pointer; transition: all .2s;
+      font-family: 'DM Sans', sans-serif; text-decoration: none;
+    }
+    .btn-panier:hover { background: rgba(255,255,255,.25); }
+    .panier-badge {
+      position: absolute; top: -6px; right: -6px;
+      background: var(--jaune); color: var(--noir);
+      font-size: 10px; font-weight: 800; min-width: 18px; height: 18px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      padding: 0 4px;
+    }
+    .panier-badge.hidden { display: none; }
+    .cart-dd {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      width: 300px; background: #fff; border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18); z-index: 9999;
+      display: none; flex-direction: column; overflow: hidden;
+    }
+    .cart-dd.open { display: flex; }
+    .cart-dd-header {
+      padding: 12px 16px; border-bottom: 1px solid #eee;
+      font-weight: 700; font-size: 13px; color: #333;
+    }
+    .cart-dd-body { max-height: 260px; overflow-y: auto; }
+    .cart-dd-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid #f0f0f0;
+    }
+    .cart-dd-item:last-child { border-bottom: none; }
+    .cart-dd-item img {
+      width: 40px; height: 40px; object-fit: cover; border-radius: 6px;
+      background: #f0f0f0; flex-shrink: 0;
+    }
+    .cart-dd-item-info { flex: 1; min-width: 0; }
+    .cart-dd-item-name {
+      font-size: 12px; font-weight: 600; color: #222;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cart-dd-item-price { font-size: 11px; color: #666; margin-top: 2px; }
+    .cart-dd-total {
+      padding: 10px 16px; border-top: 2px solid #eee;
+      font-weight: 700; font-size: 13px; color: #222;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .cart-dd-total span { color: var(--vert-vif); }
+    .cart-dd-footer {
+      padding: 10px 16px; display: flex; gap: 8px; background: #f9f9f9;
+    }
+    .cart-dd-empty { padding: 24px 16px; text-align: center; color: #999; font-size: 13px; }
+    .cart-dd-loading { padding: 18px 16px; text-align: center; color: #999; font-size: 13px; }
+    .btn-dd-voir {
+      flex: 1; text-align: center; padding: 8px 12px; border-radius: 50px;
+      font-size: 12px; font-weight: 600; border: 1.5px solid var(--vert-vif);
+      color: var(--vert-vif); background: transparent; cursor: pointer;
+      text-decoration: none; transition: all .15s;
+    }
+    .btn-dd-voir:hover { background: var(--vert-vif); color: #fff; }
+    .btn-dd-cmd {
+      flex: 1; text-align: center; padding: 8px 12px; border-radius: 50px;
+      font-size: 12px; font-weight: 600; border: none;
+      color: var(--noir); background: var(--jaune); cursor: pointer;
+      text-decoration: none; transition: all .15s;
+    }
+    .btn-dd-cmd:hover { background: #d4c800; }
+
+    /* ── User menu (connecté) ───────────────────────────────── */
+    .user-menu {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      background: var(--jaune);
+      color: var(--noir);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,.3);
+      flex-shrink: 0;
+    }
+    .user-name {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      max-width: 120px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user-role-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .btn-logout {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      color: rgba(255,255,255,.85);
+      padding: 7px 14px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background .2s, color .2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-logout:hover { background: rgba(255,0,0,.2); color: #fff; border-color: rgba(255,100,100,.4); }
+
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(
+        150deg,
+        var(--vert-fonce) 0%,
+        #1e8449 40%,
+        #1a6b2f 100%
+      );
+      padding: 80px 0 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      right: -100px;
+      top: -100px;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: rgba(232, 216, 0, .06);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(232,216,0,.15);
+      border: 1px solid rgba(232,216,0,.3);
+      color: var(--jaune);
+      padding: 6px 14px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 52px;
+      font-weight: 900;
+      color: var(--blanc);
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .hero-title em {
+      font-style: normal;
+      color: var(--jaune);
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,.75);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      font-style: italic;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-hero-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: var(--jaune);
+      color: var(--noir);
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 15px;
+      transition: all .2s;
+      box-shadow: 0 4px 20px rgba(232,216,0,.3);
+    }
+
+    .btn-hero-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(232,216,0,.4);
+    }
+
+    .btn-hero-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: transparent;
+      color: var(--blanc);
+      border: 2px solid rgba(255,255,255,.4);
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 15px;
+      transition: all .2s;
+    }
+
+    .btn-hero-outline:hover {
+      border-color: var(--blanc);
+      background: rgba(255,255,255,.08);
+    }
+
+    .hero-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .hero-cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .hero-mini-card {
+      background: rgba(255,255,255,.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: var(--radius);
+      padding: 18px;
+      text-align: center;
+      transition: transform .2s;
+    }
+
+    .hero-mini-card:hover { transform: translateY(-4px); }
+
+    .hero-mini-card .icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .hero-mini-card .val {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--jaune);
+      line-height: 1;
+    }
+
+    .hero-mini-card .lbl {
+      font-size: 12px;
+      color: rgba(255,255,255,.7);
+      margin-top: 4px;
+    }
+
+    /* ── Sections ──────────────────────────────────────────── */
+    .section { padding: 72px 0; }
+
+    .section-alt { background: var(--vert-menthe); }
+
+    .section-yellow { background: var(--jaune-clair); }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-tag {
+      display: inline-block;
+      background: var(--vert-menthe);
+      color: var(--vert-fonce);
+      padding: 5px 14px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      border: 1px solid rgba(26,107,47,.15);
+    }
+
+    .section-alt .section-tag,
+    .section-yellow .section-tag {
+      background: var(--blanc);
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 38px;
+      font-weight: 900;
+      color: var(--vert-fonce);
+      margin-bottom: 10px;
+      line-height: 1.15;
+    }
+
+    .section-desc {
+      font-size: 15px;
+      color: var(--gris-texte);
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── Grille catégories ─────────────────────────────────── */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .categorie-card {
+      background: var(--blanc);
+      border-radius: var(--radius-lg);
+      padding: 28px 20px;
+      text-align: center;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all .25s;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .categorie-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--vert-vif), var(--jaune));
+      transform: scaleX(0);
+      transition: transform .25s;
+    }
+
+    .categorie-card:hover::before,
+    .categorie-card.active::before {
+      transform: scaleX(1);
+    }
+
+    .categorie-card:hover,
+    .categorie-card.active {
+      border-color: var(--vert-vif);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .categorie-card.active {
+      background: var(--vert-menthe);
+    }
+
+    .categorie-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--vert-menthe);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 14px;
+      transition: background .25s;
+    }
+
+    .categorie-card:hover .categorie-icon,
+    .categorie-card.active .categorie-icon {
+      background: var(--vert-vif);
+      color: white;
+    }
+
+    .categorie-nom {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--vert-fonce);
+      margin-bottom: 4px;
+    }
+
+    .categorie-count {
+      font-size: 12px;
+      color: var(--gris-texte);
+    }
+
+    /* ── Grille produits ───────────────────────────────────── */
+    .catalogue-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .catalogue-count {
+      font-size: 14px;
+      color: var(--gris-texte);
+    }
+
+    .catalogue-count strong {
+      color: var(--vert-fonce);
+      font-weight: 700;
+    }
+
+    .produits-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+    }
+
+    .produit-card {
+      background: var(--blanc);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,.06);
+      transition: all .25s;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .produit-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .produit-img-wrap {
+      position: relative;
+      height: 180px;
+      background: var(--vert-menthe);
+      overflow: hidden;
+    }
+
+    .produit-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .3s;
+    }
+
+    .produit-card:hover .produit-img { transform: scale(1.06); }
+
+    .produit-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      background: linear-gradient(135deg, var(--vert-menthe), #d5f5e3);
+    }
+
+    .produit-badge-new {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: var(--jaune);
+      color: var(--noir);
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .produit-badge-featured {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: var(--vert-fonce);
+      color: var(--blanc);
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .produit-stock-low {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(231, 76, 60, .9);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .produit-body {
+      padding: 16px;
+    }
+
+    .produit-categorie {
+      font-size: 11px;
+      color: var(--vert-vif);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+
+    .produit-nom {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--vert-fonce);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .produit-producteur {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--gris-texte);
+      margin-bottom: 12px;
+    }
+
+    .produit-producteur i { color: var(--vert-vif); font-size: 10px; }
+
+    .produit-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .produit-prix {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--vert-fonce);
+    }
+
+    .produit-prix span {
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--gris-texte);
+      font-weight: 400;
+    }
+
+    .btn-commander {
+      padding: 8px 16px;
+      background: var(--vert-vif);
+      color: var(--blanc);
+      border: none;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .btn-commander:hover {
+      background: var(--vert-fonce);
+      transform: scale(1.05);
+    }
+
+    /* ── Producteurs ───────────────────────────────────────── */
+    .producteurs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .producteur-card {
+      background: var(--blanc);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,.06);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all .25s;
+    }
+
+    .producteur-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--vert-vif);
+    }
+
+    .producteur-avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--vert-vif), var(--vert-fonce));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--blanc);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .producteur-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .producteur-info { flex: 1; min-width: 0; }
+
+    .producteur-nom {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--vert-fonce);
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .producteur-lieu {
+      font-size: 12px;
+      color: var(--gris-texte);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .producteur-lieu i { color: var(--vert-vif); font-size: 10px; }
+
+    .producteur-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--vert-menthe);
+      color: var(--vert-fonce);
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* ── Comment ça marche ─────────────────────────────────── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      position: relative;
+    }
+
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 36px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--vert-vif), var(--jaune));
+      z-index: 0;
+    }
+
+    .step-card {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-num {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--blanc);
+      border: 3px solid var(--vert-vif);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--vert-fonce);
+      margin: 0 auto 18px;
+      box-shadow: 0 4px 16px rgba(39,174,96,.2);
+    }
+
+    .step-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--vert-fonce);
+      margin-bottom: 8px;
+    }
+
+    .step-desc {
+      font-size: 13px;
+      color: var(--gris-texte);
+      line-height: 1.6;
+    }
+
+    /* ── CTA Banner ────────────────────────────────────────── */
+    .cta-banner {
+      background: linear-gradient(
+        135deg,
+        var(--vert-fonce) 0%,
+        #1e8449 50%,
+        var(--vert-fonce) 100%
+      );
+      padding: 72px 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-banner::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(232,216,0,.08);
+    }
+
+    .cta-banner::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 250px; height: 250px;
+      border-radius: 50%;
+      background: rgba(232,216,0,.06);
+    }
+
+    .cta-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      font-weight: 900;
+      color: var(--blanc);
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-title em {
+      font-style: normal;
+      color: var(--jaune);
+    }
+
+    .cta-desc {
+      font-size: 16px;
+      color: rgba(255,255,255,.75);
+      margin-bottom: 36px;
+      font-style: italic;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    .footer {
+      background: var(--noir);
+      color: rgba(255,255,255,.7);
+      padding: 56px 0 28px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-brand h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--blanc);
+      margin-bottom: 10px;
+    }
+
+    .footer-brand p {
+      font-size: 13px;
+      line-height: 1.8;
+      color: rgba(255,255,255,.55);
+      margin-bottom: 6px;
+    }
+
+    .footer-brand .slogan {
+      font-style: italic;
+      color: var(--jaune);
+      font-size: 13px;
+    }
+
+    .footer-col h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blanc);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 16px;
+    }
+
+    .footer-col ul { list-style: none; }
+
+    .footer-col li {
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .footer-col a {
+      color: rgba(255,255,255,.55);
+      transition: color .2s;
+    }
+
+    .footer-col a:hover { color: var(--jaune); }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: rgba(255,255,255,.35);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* ── Modal produit ─────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+      animation: fadeIn .2s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+    .modal-box {
+      background: var(--blanc);
+      border-radius: var(--radius-lg);
+      max-width: 600px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,.25);
+      animation: slideUp .25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0 }
+      to   { transform: translateY(0);    opacity: 1 }
+    }
+
+    .modal-header {
+      background: var(--vert-fonce);
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-family: 'Playfair Display', serif;
+      color: var(--blanc);
+      font-size: 20px;
+    }
+
+    .modal-close {
+      background: rgba(255,255,255,.15);
+      border: none;
+      color: var(--blanc);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s;
+    }
+
+    .modal-close:hover { background: rgba(255,255,255,.3); }
+
+    .modal-body { padding: 28px 24px; }
+
+    .modal-produit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .modal-img {
+      border-radius: var(--radius);
+      overflow: hidden;
+      height: 200px;
+      background: var(--vert-menthe);
+    }
+
+    .modal-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .modal-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+    }
+
+    .modal-info { display: flex; flex-direction: column; gap: 10px; }
+
+    .modal-info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--gris-clair);
+    }
+
+    .modal-info-row .lbl { color: var(--gris-texte); }
+    .modal-info-row .val { font-weight: 600; color: var(--vert-fonce); }
+
+    .modal-prix {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--vert-fonce);
+      margin: 8px 0;
+    }
+
+    .modal-prix span {
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      color: var(--gris-texte);
+    }
+
+    .modal-desc {
+      font-size: 14px;
+      color: var(--gris-texte);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .modal-contact-box {
+      background: var(--vert-menthe);
+      border-radius: var(--radius);
+      padding: 16px;
+      border: 1px solid rgba(39,174,96,.2);
+    }
+
+    .modal-contact-box p {
+      font-size: 13px;
+      color: var(--vert-fonce);
+      margin-bottom: 4px;
+    }
+
+    .modal-contact-box strong {
+      font-size: 16px;
+      color: var(--vert-fonce);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .qr-section {
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .qr-section img {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto;
+      border-radius: 8px;
+      border: 1px solid var(--gris-clair);
+    }
+
+    .qr-section p {
+      font-size: 11px;
+      color: var(--gris-texte);
+      margin-top: 6px;
+    }
+
+    /* ── Empty state ───────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-state .icon { font-size: 56px; margin-bottom: 16px; }
+
+    .empty-state h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--vert-fonce);
+      margin-bottom: 8px;
+    }
+
+    .empty-state p { font-size: 14px; color: var(--gris-texte); }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .produits-grid    { grid-template-columns: repeat(3, 1fr); }
+      .categories-grid  { grid-template-columns: repeat(4, 1fr); }
+      .footer-grid      { grid-template-columns: 1fr 1fr; }
+      .hero-title       { font-size: 40px; }
+    }
+
+    @media (max-width: 768px) {
+      .hero-inner         { grid-template-columns: 1fr; }
+      .hero-visual        { display: none; }
+      .produits-grid      { grid-template-columns: repeat(2, 1fr); }
+      .categories-grid    { grid-template-columns: repeat(2, 1fr); }
+      .producteurs-grid   { grid-template-columns: 1fr; }
+      .steps-grid         { grid-template-columns: repeat(2, 1fr); }
+      .steps-grid::before { display: none; }
+      .navbar-search      { display: none; }
+      .footer-grid        { grid-template-columns: 1fr; }
+      .modal-produit-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .produits-grid    { grid-template-columns: 1fr; }
+      .categories-grid  { grid-template-columns: repeat(2, 1fr); }
+      .hero-title       { font-size: 32px; }
+      .section-title    { font-size: 28px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════ -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-inner">
+
+        <a href="/" class="navbar-logo">
+          <div class="navbar-logo-icon">
+            {% if site_settings.logo %}
+              <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.nom_site }}" style="width:30px; height:30px; object-fit:contain; border-radius:50%;">
+            {% else %}
+              🌾
+            {% endif %}
+          </div>
+          <div class="navbar-logo-text">
+            {{ site_settings.nom_site|default:"Makèt Peyizan" }}
+            <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
+          </div>
+        </a>
+
+        <div class="navbar-search">
+          <form method="GET" action="/#catalogue">
+            <input
+              type="text"
+              name="q"
+              placeholder="Chercher haricot, maïs, légumes..."
+              value="{{ recherche }}"
+            >
+            <button type="submit">
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+        </div>
+
+        <div class="navbar-actions">
+          <a href="{% url 'core:apropos' %}" class="btn-nav btn-nav-outline">
+            <i class="fas fa-info-circle"></i> À propos
+          </a>
+          <a href="{% url 'core:faq' %}" class="btn-nav btn-nav-outline">
+            <i class="fas fa-question-circle"></i> FAQ
+          </a>
+          <a href="{% url 'core:contact' %}" class="btn-nav btn-nav-outline">
+            <i class="fas fa-envelope"></i> Contact
+          </a>
+
+          <!-- Panier + dropdown -->
+          <div class="cart-dd-wrap" id="cart-dd-wrap">
+            <a href="{% url 'home:panier' %}" class="btn-panier" id="btn-panier-nav">
+              <i class="fas fa-shopping-basket"></i> Panier
+              <span class="panier-badge {% if nb_panier == 0 %}hidden{% endif %}" id="nav-panier-badge">{{ nb_panier }}</span>
+            </a>
+            <div class="cart-dd" id="cart-dd">
+              <div class="cart-dd-loading" id="cart-dd-loading">
+                <i class="fas fa-spinner fa-spin"></i> Chargement…
+              </div>
+            </div>
+          </div>
+
+          <!-- État : non connecté -->
+          <div id="nav-guest" style="display:flex;align-items:center;gap:10px">
+            <a href="{% url 'home:login' %}" class="btn-nav btn-nav-outline">
+              <i class="fas fa-sign-in-alt"></i> Connexion
+            </a>
+            <a href="{% url 'home:register' %}" class="btn-nav btn-nav-primary">
+              <i class="fas fa-user-plus"></i> S'inscrire
+            </a>
+          </div>
+
+          <!-- État : connecté -->
+          <div id="nav-user" style="display:none;align-items:center;gap:10px">
+            <a id="nav-dashboard-link" href="/dashboard/" class="btn-nav btn-nav-outline">
+              <i class="fas fa-th-large"></i> <span id="nav-dashboard-label">Dashboard</span>
+            </a>
+            <div class="user-menu">
+              <div class="user-avatar" id="nav-avatar">?</div>
+              <div>
+                <div class="user-name" id="nav-fullname"></div>
+                <span class="user-role-badge" id="nav-role-badge"></span>
+              </div>
+            </div>
+            <button class="btn-logout" onclick="mpLogout()">
+              <i class="fas fa-sign-out-alt"></i> Sortir
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ══ HERO ════════════════════════════════════════════════ -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-inner">
+
+        <div>
+          <div class="hero-badge">
+            <i class="fas fa-leaf"></i>
+            {{ site_settings.hero_badge_texte|default:"Marketplace Agricole Haïtienne" }}
+          </div>
+
+          <h1 class="hero-title">
+            <em>{{ site_settings.hero_titre_ligne1|default:"Sòti nan jaden" }}</em><br>
+            {{ site_settings.hero_titre_ligne2|default:"rive lakay ou" }}
+          </h1>
+
+          <p class="hero-subtitle">
+            {{ site_settings.hero_sous_titre|default:"Manje m se medikaman m — Achetez directement auprès des producteurs locaux. Produits frais, traçables, livrés depuis les champs d'Haïti." }}
+          </p>
+
+          <div class="hero-actions">
+            <a href="#catalogue" class="btn-hero-primary">
+              <i class="fas fa-store"></i>
+              Voir le catalogue
+            </a>
+            <a href="/inscription/?role=producteur" class="btn-hero-outline">
+              <i class="fas fa-tractor"></i>
+              Je suis producteur
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-cards-grid">
+            <div class="hero-mini-card">
+              <div class="icon">🌾</div>
+              <div class="val">{{ stats.nb_producteurs }}</div>
+              <div class="lbl">Producteurs actifs</div>
+            </div>
+            <div class="hero-mini-card">
+              <div class="icon">🥬</div>
+              <div class="val">{{ stats.nb_produits }}</div>
+              <div class="lbl">Produits disponibles</div>
+            </div>
+            <div class="hero-mini-card">
+              <div class="icon">🏷️</div>
+              <div class="val">{{ stats.nb_categories }}</div>
+              <div class="lbl">Catégories</div>
+            </div>
+            <div class="hero-mini-card">
+              <div class="icon">📍</div>
+              <div class="val">{{ stats.nb_communes }}</div>
+              <div class="lbl">Communes couvertes</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══ CATÉGORIES ══════════════════════════════════════════ -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Parcourir</span>
+        <h2 class="section-title">Nos catégories</h2>
+        <p class="section-desc">
+          Explorez notre sélection de produits frais
+          organisés par catégorie agricole.
+        </p>
+      </div>
+
+      {% if categories %}
+      <div class="categories-grid">
+        <a href="/#catalogue" class="categorie-card {% if not categorie_active %}active{% endif %}">
+          <div class="categorie-icon">🛒</div>
+          <div class="categorie-nom">Tout voir</div>
+          <div class="categorie-count">{{ stats.nb_produits }} produits</div>
+        </a>
+
+        {% for cat in categories %}
+        <a href="/?categorie={{ cat.slug }}#catalogue"
+           class="categorie-card {% if categorie_active == cat.slug %}active{% endif %}">
+          <div class="categorie-icon">
+            {% if cat.icone %}
+              <i class="{{ cat.icone }}"></i>
+            {% else %}
+              🌿
+            {% endif %}
+          </div>
+          <div class="categorie-nom">{{ cat.nom }}</div>
+          <div class="categorie-count">{{ cat.nb }} produit{{ cat.nb|pluralize }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="icon">🏷️</div>
+        <h3>Aucune catégorie</h3>
+        <p>Les catégories apparaîtront ici une fois ajoutées.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+
+  <!-- ══ PRODUITS EN VEDETTE ══════════════════════════════════ -->
+  {% if produits_featured %}
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">⭐ Sélection</span>
+        <h2 class="section-title">Produits en vedette</h2>
+        <p class="section-desc">
+          Une sélection de nos meilleurs produits du moment,
+          choisis par notre équipe.
+        </p>
+      </div>
+
+      <div class="produits-grid">
+        {% for produit in produits_featured %}
+        <div class="produit-card" onclick="ouvrirProduit('{{ produit.slug }}')">
+          <div class="produit-img-wrap">
+            {% if produit.image_principale %}
+              <img
+                src="{{ produit.image_principale.url }}"
+                alt="{{ produit.nom }}"
+                class="produit-img"
+                loading="lazy"
+              >
+            {% else %}
+              <div class="produit-img-placeholder">🥬</div>
+            {% endif %}
+            <span class="produit-badge-featured">⭐ Vedette</span>
+            {% if produit.stock_disponible <= produit.seuil_alerte %}
+              <span class="produit-stock-low">
+                ⚡ {{ produit.stock_disponible }} restants
+              </span>
+            {% endif %}
+          </div>
+          <div class="produit-body">
+            <div class="produit-categorie">{{ produit.categorie.nom }}</div>
+            <div class="produit-nom">{{ produit.nom }}</div>
+            {% if produit.variete %}
+              <div style="font-size:12px; color:var(--gris-texte); margin-bottom:4px">
+                {{ produit.variete }}
+              </div>
+            {% endif %}
+            <div class="produit-producteur">
+              <i class="fas fa-map-marker-alt"></i>
+              {{ produit.producteur.commune }},
+              {{ produit.producteur.get_departement_display }}
+            </div>
+            <div class="produit-footer">
+              <div class="produit-prix">
+                {{ produit.prix_unitaire }} HTG
+                <span>/ {{ produit.get_unite_vente_display }}</span>
+              </div>
+              <button class="btn-commander">Détails</button>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+
+  <!-- ══ CATALOGUE COMPLET ════════════════════════════════════ -->
+  <section class="section section-yellow" id="catalogue">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">🛒 Catalogue</span>
+        <h2 class="section-title">
+          {% if recherche %}
+            Résultats pour "{{ recherche }}"
+          {% elif categorie_active %}
+            Produits filtrés
+          {% else %}
+            Tous les produits
+          {% endif %}
+        </h2>
+      </div>
+
+      <div class="catalogue-toolbar">
+        <div class="catalogue-count">
+          <strong>{{ produits_catalogue|length }}</strong>
+          produit{{ produits_catalogue|length|pluralize }} disponible{{ produits_catalogue|length|pluralize }}
+          {% if categorie_active or recherche %}
+            —
+            <a href="/#catalogue" style="color:var(--vert-vif)">
+              Tout afficher
+            </a>
+          {% endif %}
+        </div>
+
+        <form method="GET" action="/#catalogue"
+              style="display:flex; gap:8px;">
+          {% if categorie_active %}
+            <input type="hidden" name="categorie" value="{{ categorie_active }}">
+          {% endif %}
+          <input
+            type="text"
+            name="q"
+            placeholder="Rechercher..."
+            value="{{ recherche }}"
+            style="padding:8px 16px; border:1.5px solid #ddd;
+                   border-radius:50px; font-family:'DM Sans',sans-serif;
+                   font-size:13px; outline:none; width:200px;"
+          >
+          <button type="submit"
+                  style="padding:8px 18px; background:var(--vert-vif);
+                         color:white; border:none; border-radius:50px;
+                         cursor:pointer; font-size:13px;">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
+
+      {% if produits_catalogue %}
+      <div class="produits-grid">
+        {% for produit in produits_catalogue %}
+        <div class="produit-card" onclick="ouvrirProduit('{{ produit.slug }}')">
+          <div class="produit-img-wrap">
+            {% if produit.image_principale %}
+              <img
+                src="{{ produit.image_principale.url }}"
+                alt="{{ produit.nom }}"
+                class="produit-img"
+                loading="lazy"
+              >
+            {% else %}
+              <div class="produit-img-placeholder">
+                {% if produit.categorie.icone %}
+                  <i class="{{ produit.categorie.icone }}" style="font-size:48px; color:var(--vert-vif)"></i>
+                {% else %}
+                  🌿
+                {% endif %}
+              </div>
+            {% endif %}
+
+            {% if produit.is_featured %}
+              <span class="produit-badge-featured">⭐</span>
+            {% endif %}
+
+            {% if produit.stock_disponible <= produit.seuil_alerte and produit.stock_disponible > 0 %}
+              <span class="produit-stock-low">⚡ Limité</span>
+            {% endif %}
+          </div>
+
+          <div class="produit-body">
+            <div class="produit-categorie">{{ produit.categorie.nom }}</div>
+            <div class="produit-nom">{{ produit.nom }}</div>
+            {% if produit.variete %}
+              <div style="font-size:11px; color:var(--gris-texte); margin-bottom:4px">
+                {{ produit.variete }}
+              </div>
+            {% endif %}
+            <div class="produit-producteur">
+              <i class="fas fa-map-marker-alt"></i>
+              {{ produit.producteur.commune }}
+              · {{ produit.producteur.get_departement_display }}
+            </div>
+            <div class="produit-footer">
+              <div class="produit-prix">
+                {{ produit.prix_unitaire }} HTG
+                <span>/ {{ produit.get_unite_vente_display }}</span>
+              </div>
+              <button class="btn-commander">Détails</button>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <h3>Aucun produit trouvé</h3>
+        <p>
+          {% if recherche %}
+            Aucun résultat pour "{{ recherche }}".
+            <a href="/#catalogue" style="color:var(--vert-vif)">
+              Voir tous les produits
+            </a>
+          {% else %}
+            Les produits apparaîtront ici une fois ajoutés.
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+
+    </div>
+  </section>
+
+
+  <!-- ══ PRODUCTEURS ══════════════════════════════════════════ -->
+  {% if producteurs %}
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">🌾 Nos agriculteurs</span>
+        <h2 class="section-title">Les producteurs</h2>
+        <p class="section-desc">
+          Des agriculteurs haïtiens passionnés qui cultivent
+          pour votre santé et votre famille.
+        </p>
+      </div>
+
+      <div class="producteurs-grid">
+        {% for prod in producteurs %}
+        <div class="producteur-card">
+          <div class="producteur-avatar">
+            {% if prod.user.photo %}
+              <img src="{{ prod.user.photo.url }}" alt="{{ prod.user.get_full_name }}">
+            {% else %}
+              {{ prod.user.first_name|first|upper }}
+            {% endif %}
+          </div>
+          <div class="producteur-info">
+            <div class="producteur-nom">{{ prod.user.get_full_name }}</div>
+            <div class="producteur-lieu">
+              <i class="fas fa-map-marker-alt"></i>
+              {{ prod.commune }}, {{ prod.get_departement_display }}
+            </div>
+            <div class="producteur-badge">
+              <i class="fas fa-box"></i>
+              {{ prod.nb_produits_actifs }} produit{{ prod.nb_produits_actifs|pluralize }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+
+  <!-- ══ COMMENT ÇA MARCHE ════════════════════════════════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Guide</span>
+        <h2 class="section-title">Comment ça marche ?</h2>
+        <p class="section-desc">
+          Commander sur Makèt Peyizan est simple et rapide.
+          Du champ à votre table en 4 étapes.
+        </p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-title">Parcourez le catalogue</div>
+          <div class="step-desc">
+            Explorez les produits frais disponibles
+            par catégorie ou recherche.
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-title">Choisissez un producteur</div>
+          <div class="step-desc">
+            Contactez directement le producteur
+            ou passez votre commande en ligne.
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-title">Payez facilement</div>
+          <div class="step-desc">
+            MonCash, NatCash, virement ou
+            espèces — choisissez votre méthode.
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-title">Recevez vos produits</div>
+          <div class="step-desc">
+            Livraison à domicile, retrait chez le
+            producteur ou point de collecte.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══ CTA ══════════════════════════════════════════════════ -->
+  <section class="cta-banner">
+    <div class="container">
+      <h2 class="cta-title">
+        Vous êtes <em>producteur</em> ?
+      </h2>
+      <p class="cta-desc">
+        Rejoignez {{ site_settings.nom_site|default:"Makèt Peyizan" }} et vendez vos récoltes
+        directement aux consommateurs haïtiens.
+      </p>
+      <div class="cta-actions">
+        <a href="/inscription/?role=producteur" class="btn-hero-primary">
+          <i class="fas fa-tractor"></i>
+          Rejoindre comme producteur
+        </a>
+        <a href="mailto:{{ site_settings.email_contact|default:'info@maketpeyizan.ht' }}" class="btn-hero-outline">
+          <i class="fas fa-envelope"></i>
+          Nous contacter
+        </a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══ FOOTER ═══════════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+
+        <div class="footer-brand">
+          {% if site_settings.logo %}
+            <img src="{{ site_settings.logo.url }}"
+                 alt="{{ site_settings.nom_site }}"
+                 style="height:36px; margin-bottom:12px; filter:brightness(0) invert(1);">
+          {% else %}
+            <h3>🌾 {{ site_settings.nom_site|default:"Makèt Peyizan" }}</h3>
+          {% endif %}
+          <p>{{ site_settings.slogan|default:"Marketplace agricole haïtienne." }}</p>
+          <p class="slogan">
+            « Sòti nan jaden rive lakay,<br>
+            manje m se medikaman m »
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Catalogue</h4>
+          <ul>
+            {% for cat in categories %}
+            <li>
+              <a href="/?categorie={{ cat.slug }}#catalogue">
+                {{ cat.nom }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="/">Accueil</a></li>
+            <li><a href="/#catalogue">Catalogue</a></li>
+            <li><a href="{% url 'core:apropos' %}">À propos</a></li>
+            <li><a href="{% url 'core:faq' %}">FAQ</a></li>
+            <li><a href="{% url 'core:contact' %}">Contact</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <ul>
+            <li>
+              <a href="mailto:{{ site_settings.email_contact|default:'info@maketpeyizan.ht' }}">
+                <i class="fas fa-envelope"></i>
+                {{ site_settings.email_contact|default:"info@maketpeyizan.ht" }}
+              </a>
+            </li>
+            {% if site_settings.telephone %}
+            <li>
+              <a href="tel:{{ site_settings.telephone }}">
+                <i class="fas fa-phone"></i>
+                {{ site_settings.telephone }}
+              </a>
+            </li>
+            {% endif %}
+            {% if site_settings.whatsapp %}
+            <li>
+              <a href="https://wa.me/{{ site_settings.whatsapp|cut:' '|cut:'+' }}" target="_blank">
+                <i class="fab fa-whatsapp" style="color:#25d366"></i>
+                WhatsApp
+              </a>
+            </li>
+            {% endif %}
+            <li style="color:rgba(255,255,255,.4); font-size:12px; margin-top:8px">
+              Haïti — 10 départements
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <span>© {% now "Y" %} {{ site_settings.copyright_texte|default:"Makèt Peyizan Haiti. Tous droits réservés." }}</span>
+        <span>Développé avec ❤️ pour les peyizan haïtiens</span>
+      </div>
+    </div>
+  </footer>
+
+
+
+
+  <!-- ══ SCRIPTS ══════════════════════════════════════════════ -->
+  <script>
+    // ── Smooth scroll ─────────────────────────────────────────
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const id = a.getAttribute('href').replace(/.*#/, '');
+        const el = document.getElementById(id);
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // ── Modal produit ─────────────────────────────────────────
+    function ouvrirProduit(slug) {
+      window.location.href = '/produits/' + slug + '/';
+    }
+
+    // ── Animation entrée des cards ────────────────────────────
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            entry.target.style.opacity   = '1';
+            entry.target.style.transform = 'translateY(0)';
+          }, i * 60);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll(
+      '.produit-card, .categorie-card, .producteur-card, .step-card'
+    ).forEach(el => {
+      el.style.opacity    = '0';
+      el.style.transform  = 'translateY(24px)';
+      el.style.transition = 'opacity .4s ease, transform .4s ease';
+      observer.observe(el);
+    });
+  </script>
+
+  <!-- ══ Auth state ══════════════════════════════════════════ -->
+  <script>
+    // ── Helpers ──────────────────────────────────────────────
+    const ROLE_LABELS = {
+      superadmin: 'Super Admin',
+      admin:      'Admin',
+      producteur: 'Producteur',
+      acheteur:   'Acheteur',
+      collecteur: 'Collecteur',
+    };
+    const ROLE_COLORS = {
+      superadmin: '#e74c3c',
+      admin:      '#e67e22',
+      producteur: '#27ae60',
+      acheteur:   '#2980b9',
+      collecteur: '#8e44ad',
+    };
+
+    function getDashboardUrl(user) {
+      if (user.is_superuser || user.role === 'superadmin') return '/dashboard/superadmin/';
+      if (user.role === 'admin')      return '/dashboard/admin/';
+      if (user.role === 'producteur') return '/dashboard/producteur/';
+      return '/dashboard/acheteur/';
+    }
+
+    function getDashboardLabel(user) {
+      if (user.is_superuser || user.role === 'superadmin') return 'Super Admin';
+      if (user.role === 'admin')      return 'Admin';
+      if (user.role === 'producteur') return 'Mon espace';
+      return 'Mon espace';
+    }
+
+    // ── Affichage selon l'état ────────────────────────────────
+    (function initNavbar() {
+      const raw = localStorage.getItem('mp_user');
+      if (!raw) return; // non connecté : on laisse les boutons guest
+
+      let user;
+      try { user = JSON.parse(raw); } catch { return; }
+
+      // Basculer les blocs
+      document.getElementById('nav-guest').style.display = 'none';
+      const navUser = document.getElementById('nav-user');
+      navUser.style.display = 'flex';
+
+      // Avatar (initiale)
+      const name = user.full_name || user.username || '?';
+      document.getElementById('nav-avatar').textContent = name.charAt(0).toUpperCase();
+
+      // Nom
+      document.getElementById('nav-fullname').textContent = name;
+
+      // Badge rôle
+      const badge = document.getElementById('nav-role-badge');
+      const role  = user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
+      badge.textContent         = ROLE_LABELS[role] || role;
+      badge.style.background    = (ROLE_COLORS[role] || '#555') + '22';
+      badge.style.color         = ROLE_COLORS[role] || '#555';
+      badge.style.border        = '1px solid ' + (ROLE_COLORS[role] || '#555') + '44';
+
+      // Dashboard link
+      const dashLink  = document.getElementById('nav-dashboard-link');
+      const dashLabel = document.getElementById('nav-dashboard-label');
+      dashLink.href        = getDashboardUrl(user);
+      dashLabel.textContent = getDashboardLabel(user);
+    })();
+
+    // ── Cart dropdown hover ───────────────────────────────────
+    (function() {
+      const wrap = document.getElementById('cart-dd-wrap');
+      const dd   = document.getElementById('cart-dd');
+      if (!wrap || !dd) return;
+      let fetched = false, hideTimer = null;
+
+      function _esc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      function renderDD(data) {
+        const items = data.items || [];
+        const total = data.total || '0.00';
+        const raw = localStorage.getItem('mp_user');
+        let canOrder = false;
+        if (raw) { try { const u = JSON.parse(raw); canOrder = ['acheteur','collecteur'].includes(u.role); } catch {} }
+
+        if (!items.length) {
+          dd.innerHTML = `
+            <div class="cart-dd-header"><i class="fas fa-shopping-basket" style="color:var(--vert-vif);margin-right:6px"></i>Mon panier</div>
+            <div class="cart-dd-empty"><i class="fas fa-shopping-basket" style="font-size:26px;opacity:.15;display:block;margin-bottom:8px"></i>Votre panier est vide</div>
+            <div class="cart-dd-footer"><a href="/panier/" class="btn-dd-voir">Voir le panier</a></div>`;
+          return;
+        }
+        const rows = items.map(it => `
+          <div class="cart-dd-item">
+            <img src="${it.image ? _esc(it.image) : ''}" alt="${_esc(it.nom)}" onerror="this.style.display='none'">
+            <div class="cart-dd-item-info">
+              <div class="cart-dd-item-name">${_esc(it.nom)}</div>
+              <div class="cart-dd-item-price">${it.quantite} × ${it.prix_unitaire} HTG</div>
+            </div>
+          </div>`).join('');
+        dd.innerHTML = `
+          <div class="cart-dd-header"><i class="fas fa-shopping-basket" style="color:var(--vert-vif);margin-right:6px"></i>Mon panier (${items.length})</div>
+          <div class="cart-dd-body">${rows}</div>
+          <div class="cart-dd-total">Total <span>${total} HTG</span></div>
+          <div class="cart-dd-footer">
+            <a href="/panier/" class="btn-dd-voir">Voir le panier</a>
+            ${canOrder ? '<a href="/panier/" class="btn-dd-cmd">Commander</a>' : ''}
+          </div>`;
+      }
+
+      wrap.addEventListener('mouseenter', async () => {
+        clearTimeout(hideTimer);
+        dd.classList.add('open');
+        if (!fetched) {
+          fetched = true;
+          try {
+            const r = await fetch('/api/orders/panier/');
+            renderDD(await r.json());
+          } catch {
+            dd.innerHTML = '<div class="cart-dd-empty">Erreur de chargement.</div>';
+          }
+        }
+      });
+      wrap.addEventListener('mouseleave', () => {
+        hideTimer = setTimeout(() => dd.classList.remove('open'), 200);
+      });
+    })();
+
+    // ── Logout ───────────────────────────────────────────────
+    async function mpLogout() {
+      const refresh = localStorage.getItem('mp_refresh');
+      const access  = localStorage.getItem('mp_access');
+      if (refresh && access) {
+        try {
+          await fetch('/api/auth/logout/', {
+            method: 'POST',
+            headers: {
+              'Content-Type':  'application/json',
+              'Authorization': 'Bearer ' + access,
+            },
+            body: JSON.stringify({ refresh }),
+          });
+        } catch (_) {}
+      }
+      localStorage.removeItem('mp_access');
+      localStorage.removeItem('mp_refresh');
+      localStorage.removeItem('mp_user');
+      window.location.reload();
+    }
+  </script>
+
+</body>
+</html>

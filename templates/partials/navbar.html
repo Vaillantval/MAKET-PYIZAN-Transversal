@@ -1,0 +1,51 @@
+{% load static %}
+<nav class="navbar">
+  <div class="container">
+    <div class="navbar-inner">
+
+      <a href="/" class="navbar-logo">
+        {% if site_settings.logo %}
+          <img src="{{ site_settings.logo.url }}"
+               alt="{{ site_settings.nom_site }}"
+               style="height:38px; object-fit:contain;">
+        {% else %}
+          <div class="navbar-logo-icon">🌾</div>
+        {% endif %}
+        <div class="navbar-logo-text">
+          {{ site_settings.nom_site|default:"Makèt Peyizan" }}
+          <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
+        </div>
+      </a>
+
+      <div class="navbar-search">
+        <form method="GET" action="/#catalogue">
+          <input
+            type="text"
+            name="q"
+            placeholder="Chercher haricot, maïs, légumes..."
+            value="{{ recherche|default:'' }}"
+          >
+          <button type="submit">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
+
+      <div class="navbar-actions">
+        <a href="/" class="btn-nav btn-nav-outline">
+          <i class="fas fa-store"></i> Catalogue
+        </a>
+        <a href="{% url 'core:contact' %}" class="btn-nav btn-nav-outline">
+          <i class="fas fa-envelope"></i> Contact
+        </a>
+        <a href="{% url 'home:login' %}" class="btn-nav btn-nav-outline">
+          <i class="fas fa-sign-in-alt"></i> Connexion
+        </a>
+        <a href="{% url 'home:register' %}" class="btn-nav btn-nav-primary">
+          <i class="fas fa-user-plus"></i> S'inscrire
+        </a>
+      </div>
+
+    </div>
+  </div>
+</nav>

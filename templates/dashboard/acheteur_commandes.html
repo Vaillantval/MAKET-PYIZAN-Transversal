@@ -1,0 +1,355 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Mes commandes{% endblock %}
+
+{% block sidebar_nav %}
+  <div class="nav-section-label">Navigation</div>
+  <a href="/dashboard/acheteur/" class="nav-item">
+    <i class="fas fa-th-large"></i> Vue d'ensemble
+  </a>
+  <a href="/dashboard/acheteur/commandes/" class="nav-item active">
+    <i class="fas fa-clipboard-list"></i> Mes commandes
+  </a>
+  <a href="/dashboard/acheteur/adresses/" class="nav-item">
+    <i class="fas fa-map-marker-alt"></i> Mes adresses
+  </a>
+  <a href="/" class="nav-item">
+    <i class="fas fa-store"></i> Catalogue
+  </a>
+  <div class="nav-section-label">Compte</div>
+  <a href="/dashboard/acheteur/profil/" class="nav-item">
+    <i class="fas fa-user-edit"></i> Mon profil
+  </a>
+{% endblock %}
+
+{% block page_title %}Mes commandes{% endblock %}
+{% block page_subtitle %}Historique de vos achats{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 7px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .2s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    border-color: var(--green-mid);
+    color: var(--green);
+    background: var(--green-light);
+  }
+
+  .table-wrap { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--bg); padding: 12px 16px; text-align: left;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text-muted); border-bottom: 1px solid var(--border);
+  }
+  tbody td { padding: 14px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafafa; }
+
+  .statut-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  }
+  .paiement-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+  }
+
+  /* Drawer détail */
+  .drawer-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 200;
+    backdrop-filter: blur(2px);
+  }
+  .drawer-overlay.open { display: block; }
+  .drawer {
+    position: fixed; top: 0; right: -520px; width: 520px; max-width: 96vw;
+    height: 100vh; background: var(--card);
+    box-shadow: -8px 0 40px rgba(0,0,0,.15);
+    z-index: 201; transition: right .3s ease;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .drawer.open { right: 0; }
+  .drawer-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--green);
+    color: #fff;
+  }
+  .drawer-header h3 { font-size: 16px; font-weight: 700; }
+  .drawer-close {
+    background: rgba(255,255,255,.15); border: none; color: #fff;
+    width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .drawer-close:hover { background: rgba(255,255,255,.3); }
+  .drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+  .detail-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row .lbl { color: var(--text-muted); font-size: 12px; }
+  .detail-row .val { font-weight: 600; text-align: right; max-width: 60%; }
+  .detail-section { font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--green-mid); margin: 20px 0 8px; }
+  .items-table { width: 100%; border-collapse: collapse; }
+  .items-table th { font-size: 11px; font-weight: 700; color: var(--text-muted);
+    padding: 6px 0; border-bottom: 1px solid var(--border); text-align: left; }
+  .items-table td { padding: 8px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+  .items-table tr:last-child td { border-bottom: none; }
+  .total-row { display: flex; justify-content: space-between; padding: 12px 0;
+    font-weight: 700; font-size: 15px; border-top: 2px solid var(--border); margin-top: 8px; }
+
+  .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
+  .empty-state i { font-size: 40px; opacity: .2; display: block; margin-bottom: 14px; }
+  .empty-state a { color: var(--green-mid); font-weight: 600; }
+  .spinner-cell { text-align: center; padding: 48px; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+  <!-- Filtres -->
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="all">Toutes</button>
+    <button class="filter-btn" data-filter="en_attente">En attente</button>
+    <button class="filter-btn" data-filter="en_cours">En cours</button>
+    <button class="filter-btn" data-filter="livree">Livrées</button>
+    <button class="filter-btn" data-filter="annulee">Annulées</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>N° Commande</th>
+          <th>Producteur</th>
+          <th>Articles</th>
+          <th>Total</th>
+          <th>Paiement</th>
+          <th>Statut</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="cmd-tbody">
+        <tr>
+          <td colspan="8" class="spinner-cell">
+            <i class="fas fa-spinner fa-spin"></i> Chargement...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="empty-state" id="cmd-empty" style="display:none">
+    <i class="fas fa-clipboard-list"></i>
+    <p>Vous n'avez pas encore passé de commande.<br>
+      <a href="/">Découvrir le catalogue</a>
+    </p>
+  </div>
+
+  <!-- Drawer détail commande -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <h3 id="drawer-title">Détail commande</h3>
+      <button class="drawer-close" onclick="closeDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" id="drawer-body">
+      <div style="text-align:center;padding:40px;color:var(--text-muted)">
+        <i class="fas fa-spinner fa-spin" style="font-size:24px"></i>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block page_script %}
+  let allCommandes = [];
+  let currentFilter = 'all';
+
+  const STATUT_STYLES = {
+    en_attente:     { bg: '#fef9e7', color: '#c9a007',  icon: 'fa-clock' },
+    confirmee:      { bg: '#e8f2ff', color: '#2980b9',  icon: 'fa-check' },
+    en_preparation: { bg: '#e8f2ff', color: '#2980b9',  icon: 'fa-cog' },
+    prete:          { bg: '#e8f8ee', color: '#27ae60',  icon: 'fa-box' },
+    en_collecte:    { bg: '#fff4e6', color: '#e67e22',  icon: 'fa-truck' },
+    livree:         { bg: '#e8f8ee', color: '#1a6b2f',  icon: 'fa-check-circle' },
+    annulee:        { bg: '#fde8e8', color: '#e74c3c',  icon: 'fa-times-circle' },
+    litige:         { bg: '#f5e6ff', color: '#8e44ad',  icon: 'fa-exclamation-triangle' },
+  };
+  const PAIEMENT_STYLES = {
+    non_paye:       { bg: '#fde8e8', color: '#e74c3c' },
+    en_attente:     { bg: '#fef9e7', color: '#c9a007' },
+    preuve_soumise: { bg: '#e8f2ff', color: '#2980b9' },
+    verifie:        { bg: '#e8f2ff', color: '#27ae60' },
+    paye:           { bg: '#e8f8ee', color: '#1a6b2f' },
+    rembourse:      { bg: '#f5e6ff', color: '#8e44ad' },
+  };
+
+  const EN_COURS = ['confirmee','en_preparation','prete','en_collecte'];
+
+  function statutBadge(statut, label) {
+    const s = STATUT_STYLES[statut] || { bg: '#eee', color: '#888', icon: 'fa-circle' };
+    return `<span class="statut-badge" style="background:${s.bg};color:${s.color}">
+      <i class="fas ${s.icon}" style="font-size:9px"></i> ${label}
+    </span>`;
+  }
+  function paiementBadge(statut, label) {
+    const s = PAIEMENT_STYLES[statut] || { bg: '#eee', color: '#888' };
+    return `<span class="paiement-badge" style="background:${s.bg};color:${s.color}">${label}</span>`;
+  }
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
+  function filterCommandes(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+    renderTable(
+      filter === 'all'         ? allCommandes :
+      filter === 'en_cours'    ? allCommandes.filter(c => EN_COURS.includes(c.statut)) :
+      filter === 'en_attente'  ? allCommandes.filter(c => c.statut === 'en_attente') :
+      filter === 'livree'      ? allCommandes.filter(c => c.statut === 'livree') :
+      filter === 'annulee'     ? allCommandes.filter(c => c.statut === 'annulee') :
+      allCommandes
+    );
+  }
+
+  function renderTable(list) {
+    const tbody = document.getElementById('cmd-tbody');
+    tbody.innerHTML = '';
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Aucune commande dans cette catégorie.</td></tr>`;
+      return;
+    }
+    list.forEach(c => {
+      tbody.innerHTML += `
+        <tr>
+          <td><strong style="color:var(--green-mid)">${c.numero}</strong></td>
+          <td>${c.producteur_nom}<br><small style="color:var(--text-muted)">${c.producteur_commune}</small></td>
+          <td style="text-align:center">${c.nb_articles}</td>
+          <td style="font-weight:700">${Number(c.total).toLocaleString('fr-FR')} HTG</td>
+          <td>${paiementBadge(c.statut_paiement, c.statut_paiement_label)}</td>
+          <td>${statutBadge(c.statut, c.statut_label)}</td>
+          <td style="color:var(--text-muted);white-space:nowrap">${formatDate(c.created_at)}</td>
+          <td>
+            <button onclick="openDrawer('${c.numero}')"
+              style="background:none;border:1.5px solid var(--border);border-radius:6px;
+                     padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text-muted);
+                     transition:all .2s;font-family:inherit"
+              onmouseover="this.style.borderColor='var(--green-mid)';this.style.color='var(--green-mid)'"
+              onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </tr>`;
+    });
+  }
+
+  async function openDrawer(numero) {
+    document.getElementById('drawer-overlay').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawer-title').textContent = `Commande ${numero}`;
+    document.getElementById('drawer-body').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--text-muted)"><i class="fas fa-spinner fa-spin" style="font-size:24px"></i></div>';
+
+    const token = localStorage.getItem('mp_access');
+    try {
+      const r = await fetch(`/api/auth/commandes/${numero}/`, {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (!r.ok) throw new Error();
+      const c = await r.json();
+      document.getElementById('drawer-body').innerHTML = `
+        <div class="detail-section">Résumé</div>
+        <div class="detail-row"><span class="lbl">Statut</span><span class="val">${statutBadge(c.statut, c.statut_label)}</span></div>
+        <div class="detail-row"><span class="lbl">Paiement</span><span class="val">${paiementBadge(c.statut_paiement, c.statut_paiement_label)}</span></div>
+        <div class="detail-row"><span class="lbl">Méthode</span><span class="val">${c.methode_paiement_label}</span></div>
+        <div class="detail-row"><span class="lbl">Mode de livraison</span><span class="val">${c.mode_livraison}</span></div>
+        <div class="detail-row"><span class="lbl">Date</span><span class="val">${formatDate(c.created_at)}</span></div>
+        ${c.date_livraison_prevue ? `<div class="detail-row"><span class="lbl">Livraison prévue</span><span class="val">${new Date(c.date_livraison_prevue).toLocaleDateString('fr-FR')}</span></div>` : ''}
+        ${c.adresse_livraison ? `
+        <div class="detail-section">Adresse de livraison</div>
+        <div class="detail-row"><span class="lbl">Adresse</span><span class="val">${c.adresse_livraison}</span></div>
+        <div class="detail-row"><span class="lbl">Ville / Commune</span><span class="val">${c.ville_livraison || c.departement_livraison || '—'}</span></div>
+        ` : ''}
+        <div class="detail-section">Producteur</div>
+        <div class="detail-row"><span class="lbl">Nom</span><span class="val">${c.producteur_nom}</span></div>
+        <div class="detail-row"><span class="lbl">Commune</span><span class="val">${c.producteur_commune}</span></div>
+        <div class="detail-section">Articles</div>
+        <table class="items-table">
+          <thead><tr><th>Produit</th><th>Qté</th><th style="text-align:right">Prix unit.</th><th style="text-align:right">Sous-total</th></tr></thead>
+          <tbody>
+            ${c.details.map(d => `
+              <tr>
+                <td>${d.produit_nom}</td>
+                <td>${d.quantite} ${d.unite_vente}</td>
+                <td style="text-align:right">${Number(d.prix_unitaire).toLocaleString('fr-FR')}</td>
+                <td style="text-align:right;font-weight:600">${Number(d.sous_total).toLocaleString('fr-FR')}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--text-muted)"><span>Sous-total</span><span>${Number(c.sous_total).toLocaleString('fr-FR')} HTG</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--text-muted)"><span>Frais de livraison</span><span>${Number(c.frais_livraison).toLocaleString('fr-FR')} HTG</span></div>
+          ${Number(c.remise) > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#27ae60"><span>Remise</span><span>−${Number(c.remise).toLocaleString('fr-FR')} HTG</span></div>` : ''}
+        </div>
+        <div class="total-row"><span>Total</span><span style="color:var(--green)">${Number(c.total).toLocaleString('fr-FR')} HTG</span></div>
+        ${c.notes_acheteur ? `<div class="detail-section">Notes</div><p style="font-size:13px;color:var(--text-muted)">${c.notes_acheteur}</p>` : ''}
+      `;
+    } catch (_) {
+      document.getElementById('drawer-body').innerHTML =
+        '<p style="text-align:center;color:var(--text-muted);padding:40px">Impossible de charger le détail.</p>';
+    }
+  }
+
+  function closeDrawer() {
+    document.getElementById('drawer-overlay').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+  }
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => filterCommandes(btn.dataset.filter));
+  });
+
+  mpAuthCheck(['acheteur', 'collecteur']).then(async user => {
+    if (!user) return;
+    const token = localStorage.getItem('mp_access');
+    try {
+      const r = await fetch('/api/auth/commandes/', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (r.ok) {
+        allCommandes = await r.json();
+        if (allCommandes.length === 0) {
+          document.querySelector('.table-wrap').style.display = 'none';
+          document.getElementById('cmd-empty').style.display = 'block';
+        } else {
+          renderTable(allCommandes);
+        }
+      }
+    } catch (_) {}
+  });
+{% endblock %}

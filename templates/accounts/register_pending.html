@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demande reçue — {{ site_settings.nom_site }}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0faf4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.08);
+      max-width: 560px;
+      width: 100%;
+      overflow: hidden;
+      animation: fadeUp .5s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Bandeau supérieur */
+    .card-top {
+      background: linear-gradient(135deg, #1a6b2f 0%, #27ae60 100%);
+      padding: 40px 40px 56px;
+      text-align: center;
+      position: relative;
+    }
+    .card-top::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 40px;
+      background: #fff;
+      border-radius: 40px 40px 0 0;
+    }
+
+    .check-circle {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.2);
+      border: 3px solid rgba(255,255,255,.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 34px;
+      color: #fff;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.3); }
+      50%       { box-shadow: 0 0 0 14px rgba(255,255,255,.0); }
+    }
+
+    .card-top h1 { color: #fff; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .card-top p  { color: rgba(255,255,255,.85); font-size: 14px; }
+
+    /* Corps */
+    .card-body { padding: 32px 40px 36px; }
+
+    .greeting {
+      font-size: 16px;
+      color: #2c3e50;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .message {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.8;
+      margin-bottom: 24px;
+    }
+
+    /* Badge délai */
+    .delay-badge {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #f0faf4;
+      border: 1.5px solid #a9dfbf;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+    .delay-badge .icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      background: #27ae60;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .delay-badge .text strong {
+      display: block;
+      font-size: 15px;
+      color: #1a6b2f;
+      margin-bottom: 2px;
+    }
+    .delay-badge .text span {
+      font-size: 13px;
+      color: #555;
+    }
+
+    /* Étapes */
+    .steps { margin-bottom: 28px; }
+    .steps-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #aaa;
+      margin-bottom: 14px;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #e8f8ee;
+      color: #27ae60;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-num.active {
+      background: #27ae60;
+      color: #fff;
+    }
+    .step-text strong { display: block; font-size: 13px; color: #2c3e50; }
+    .step-text span   { font-size: 12px; color: #888; }
+
+    /* Infos compte */
+    .account-info {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 24px;
+      display: none; /* rempli par JS */
+    }
+    .account-info .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .account-info .row:last-child { border-bottom: none; }
+    .account-info .row .label { color: #888; }
+    .account-info .row .value { font-weight: 600; color: #2c3e50; }
+
+    /* Boutons */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 24px;
+      background: linear-gradient(135deg, #1a6b2f, #27ae60);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+    .btn-primary:hover { opacity: .88; }
+
+    .btn-secondary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: transparent;
+      color: #555;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1.5px solid #ddd;
+      transition: background .2s;
+    }
+    .btn-secondary:hover { background: #f5f5f5; }
+
+    @media (max-width: 480px) {
+      .card-top   { padding: 32px 24px 48px; }
+      .card-body  { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-top">
+    <div class="check-circle"><i class="fas fa-clock"></i></div>
+    <h1>Demande bien reçue !</h1>
+    <p>Votre dossier est entre nos mains</p>
+  </div>
+
+  <div class="card-body">
+    <p class="greeting" id="greeting">Merci pour votre inscription !</p>
+    <p class="message">
+      Votre demande de compte producteur sur <strong>{{ site_settings.nom_site }}</strong>
+      a été enregistrée avec succès. Notre équipe va examiner votre dossier
+      et prendre contact avec vous dans les meilleurs délais.
+    </p>
+
+    <div class="delay-badge">
+      <div class="icon"><i class="fas fa-hourglass-half"></i></div>
+      <div class="text">
+        <strong>Délai de traitement : 24 à 48 heures</strong>
+        <span>Un email de confirmation vous sera envoyé à la validation de votre compte.</span>
+      </div>
+    </div>
+
+    <!-- Infos compte (rempli par JS) -->
+    <div class="account-info" id="account-info"></div>
+
+    <div class="steps">
+      <div class="steps-title">Prochaines étapes</div>
+      <div class="step">
+        <div class="step-num active">1</div>
+        <div class="step-text">
+          <strong>Dossier en examen</strong>
+          <span>Notre équipe vérifie vos informations</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <strong>Notification par email</strong>
+          <span>Vous recevrez un email de validation ou de contact</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <strong>Accès à votre espace producteur</strong>
+          <span>Publiez vos produits et recevez vos premières commandes</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a href="/dashboard/producteur/en-attente/" class="btn-primary">
+        <i class="fas fa-hourglass-half"></i>
+        Voir le statut de ma demande
+      </a>
+      <a href="/" class="btn-secondary">
+        <i class="fas fa-store"></i>
+        Retour au catalogue
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Remplir le nom si JWT disponible
+  const raw = localStorage.getItem('mp_user');
+  if (raw) {
+    try {
+      const u = JSON.parse(raw);
+      const name = u.first_name || u.username || '';
+      if (name) document.getElementById('greeting').textContent = `Merci, ${name} !`;
+
+      const info = document.getElementById('account-info');
+      info.style.display = 'block';
+      info.innerHTML = `
+        <div class="row"><span class="label">Nom d'utilisateur</span><span class="value">@${u.username}</span></div>
+        <div class="row"><span class="label">Email</span><span class="value">${u.email || '—'}</span></div>
+        <div class="row"><span class="label">Statut</span><span class="value" style="color:#e67e22">En attente de validation</span></div>
+      `;
+    } catch (_) {}
+  }
+</script>
+
+</body>
+</html>

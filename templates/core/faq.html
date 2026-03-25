@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — {{ site_settings.nom_site|default:"Makèt Peyizan" }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --vert-fonce:#1a6b2f; --vert-vif:#27ae60; --vert-menthe:#e8f8ee;
+      --jaune:#e8d800; --jaune-clair:#fdfbe8;
+      --blanc:#ffffff; --noir:#1a1a1a; --gris-clair:#f4f6f9; --gris-texte:#555;
+      --shadow:0 4px 24px rgba(0,0,0,.08); --shadow-lg:0 8px 40px rgba(0,0,0,.14);
+      --radius:12px; --radius-lg:20px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:var(--blanc);color:var(--noir);overflow-x:hidden;}
+    a{text-decoration:none;color:inherit;}
+    .container{max-width:900px;margin:0 auto;padding:0 24px;}
+    .container-wide{max-width:1200px;margin:0 auto;padding:0 24px;}
+
+    /* Navbar */
+    .navbar{position:sticky;top:0;z-index:100;background:var(--vert-fonce);box-shadow:0 2px 16px rgba(0,0,0,.15);}
+    .navbar-inner{display:flex;align-items:center;justify-content:space-between;height:68px;}
+    .navbar-logo{display:flex;align-items:center;gap:12px;}
+    .navbar-logo-icon{width:42px;height:42px;background:var(--jaune);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .navbar-logo-text{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:var(--blanc);line-height:1.1;}
+    .navbar-logo-text span{display:block;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:400;color:rgba(255,255,255,.7);}
+    .navbar-actions{display:flex;align-items:center;gap:12px;}
+    .btn-nav{padding:9px 20px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;font-family:'DM Sans',sans-serif;}
+    .btn-nav-outline{background:transparent;border:1.5px solid rgba(255,255,255,.5);color:var(--blanc);}
+    .btn-nav-outline:hover{background:rgba(255,255,255,.1);}
+    .btn-nav-primary{background:var(--jaune);color:var(--noir);}
+    .btn-nav-primary:hover{background:#d4c800;}
+
+    /* Page header */
+    .page-header{background:linear-gradient(150deg, var(--vert-fonce) 0%, #1e8449 100%);padding:60px 0 48px;text-align:center;position:relative;overflow:hidden;}
+    .page-header::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");}
+    .page-header-inner{position:relative;z-index:1;}
+    .breadcrumb{display:flex;justify-content:center;gap:8px;font-size:13px;color:rgba(255,255,255,.6);margin-bottom:14px;}
+    .breadcrumb a{color:rgba(255,255,255,.6);}
+    .breadcrumb a:hover{color:var(--jaune);}
+    .page-title{font-family:'Playfair Display',serif;font-size:48px;font-weight:900;color:var(--blanc);margin-bottom:12px;}
+    .page-subtitle{font-size:15px;color:rgba(255,255,255,.75);font-style:italic;}
+
+    /* Recherche FAQ */
+    .faq-search{
+      max-width:500px;margin:0 auto 48px;
+      display:flex;background:var(--blanc);border:1.5px solid #e0e0e0;
+      border-radius:50px;overflow:hidden;box-shadow:var(--shadow);
+    }
+    .faq-search input{flex:1;padding:14px 20px;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:14px;}
+    .faq-search button{padding:14px 22px;background:var(--vert-vif);border:none;cursor:pointer;color:white;font-size:14px;}
+
+    /* FAQ content */
+    .faq-layout{display:grid;grid-template-columns:240px 1fr;gap:40px;align-items:start;}
+    .faq-nav{position:sticky;top:90px;}
+    .faq-nav-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-texte);margin-bottom:12px;}
+    .faq-nav-link{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 14px;border-radius:var(--radius);
+      font-size:13px;font-weight:500;color:var(--gris-texte);
+      cursor:pointer;transition:all .2s;margin-bottom:4px;
+    }
+    .faq-nav-link:hover,.faq-nav-link.active{background:var(--vert-menthe);color:var(--vert-fonce);font-weight:600;}
+    .faq-nav-link i{width:16px;text-align:center;color:var(--vert-vif);}
+    .faq-nav-count{margin-left:auto;background:var(--vert-menthe);color:var(--vert-fonce);padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+
+    /* Accordéon FAQ */
+    .faq-section{margin-bottom:40px;}
+    .faq-section-title{
+      display:flex;align-items:center;gap:10px;
+      font-family:'Playfair Display',serif;
+      font-size:22px;font-weight:900;color:var(--vert-fonce);
+      margin-bottom:16px;padding-bottom:12px;
+      border-bottom:2px solid var(--vert-menthe);
+    }
+    .faq-section-title i{color:var(--vert-vif);font-size:18px;}
+    .faq-item{
+      border:1px solid rgba(0,0,0,.06);border-radius:var(--radius);
+      margin-bottom:10px;overflow:hidden;
+      transition:box-shadow .2s;
+    }
+    .faq-item:hover{box-shadow:var(--shadow);}
+    .faq-question{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:18px 20px;cursor:pointer;
+      font-weight:600;font-size:15px;color:var(--vert-fonce);
+      background:var(--blanc);transition:background .2s;
+      user-select:none;
+    }
+    .faq-question:hover{background:var(--vert-menthe);}
+    .faq-question.open{background:var(--vert-menthe);}
+    .faq-chevron{
+      width:28px;height:28px;border-radius:50%;
+      background:var(--vert-menthe);color:var(--vert-fonce);
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;flex-shrink:0;transition:transform .3s;
+    }
+    .faq-question.open .faq-chevron{transform:rotate(180deg);background:var(--vert-vif);color:white;}
+    .faq-reponse{
+      max-height:0;overflow:hidden;
+      transition:max-height .35s ease;
+    }
+    .faq-reponse.open{max-height:500px;}
+    .faq-reponse-inner{
+      padding:16px 20px 20px;
+      font-size:14px;color:var(--gris-texte);line-height:1.8;
+      border-top:1px solid rgba(0,0,0,.06);
+    }
+
+    /* Empty state */
+    .empty-state{text-align:center;padding:60px 20px;}
+    .empty-state .icon{font-size:56px;margin-bottom:16px;}
+    .empty-state h3{font-family:'Playfair Display',serif;font-size:22px;color:var(--vert-fonce);margin-bottom:8px;}
+    .empty-state p{font-size:14px;color:var(--gris-texte);}
+
+    /* CTA */
+    .cta-section{background:var(--vert-menthe);padding:48px 0;text-align:center;border-top:1px solid rgba(26,107,47,.1);}
+    .cta-section p{font-size:15px;color:var(--gris-texte);margin-bottom:20px;}
+    .btn-contact{display:inline-flex;align-items:center;gap:8px;padding:13px 26px;background:var(--vert-vif);color:white;border-radius:50px;font-weight:600;font-size:14px;transition:all .2s;}
+    .btn-contact:hover{background:var(--vert-fonce);transform:translateY(-2px);}
+
+    /* Footer */
+    .footer{background:var(--noir);color:rgba(255,255,255,.7);padding:48px 0 24px;}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:32px;}
+    .footer-brand h3{font-family:'Playfair Display',serif;font-size:20px;color:var(--blanc);margin-bottom:8px;}
+    .footer-brand p{font-size:13px;line-height:1.8;color:rgba(255,255,255,.55);}
+    .footer-brand .slogan{font-style:italic;color:var(--jaune);font-size:12px;margin-top:4px;}
+    .footer-col h4{font-size:12px;font-weight:700;color:var(--blanc);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;}
+    .footer-col ul{list-style:none;}
+    .footer-col li{margin-bottom:8px;font-size:13px;}
+    .footer-col a{color:rgba(255,255,255,.55);transition:color .2s;}
+    .footer-col a:hover{color:var(--jaune);}
+    .footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,.35);flex-wrap:wrap;gap:8px;}
+
+    @media(max-width:768px){
+      .faq-layout{grid-template-columns:1fr;}
+      .faq-nav{display:none;}
+      .page-title{font-size:32px;}
+      .footer-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container-wide">
+      <div class="navbar-inner">
+        <a href="/" class="navbar-logo">
+          {% if site_settings.logo %}
+            <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.nom_site }}" style="height:38px;object-fit:contain;">
+          {% else %}
+            <div class="navbar-logo-icon">🌾</div>
+          {% endif %}
+          <div class="navbar-logo-text">
+            {{ site_settings.nom_site|default:"Makèt Peyizan" }}
+            <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
+          </div>
+        </a>
+        <div class="navbar-actions">
+          <a href="/" class="btn-nav btn-nav-outline"><i class="fas fa-store"></i> Catalogue</a>
+          <a href="{% url 'core:apropos' %}" class="btn-nav btn-nav-outline"><i class="fas fa-info-circle"></i> À propos</a>
+          <a href="{% url 'core:contact' %}" class="btn-nav btn-nav-outline"><i class="fas fa-envelope"></i> Contact</a>
+          <a href="/admin/" class="btn-nav btn-nav-primary"><i class="fas fa-lock"></i> Admin</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="container">
+      <div class="page-header-inner">
+        <div class="breadcrumb">
+          <a href="/">Accueil</a><span>›</span><span>FAQ</span>
+        </div>
+        <h1 class="page-title">Questions fréquentes</h1>
+        <p class="page-subtitle">Toutes les réponses à vos questions sur la plateforme</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENU FAQ -->
+  <section style="padding:60px 0">
+    <div class="container">
+
+      <!-- Recherche -->
+      <div class="faq-search">
+        <input type="text" id="faqSearch" placeholder="Rechercher une question..." oninput="filtrerFAQ(this.value)">
+        <button><i class="fas fa-search"></i></button>
+      </div>
+
+      {% if categories %}
+      <div class="faq-layout">
+
+        <!-- Navigation latérale -->
+        <nav class="faq-nav">
+          <div class="faq-nav-title">Catégories</div>
+          {% for cat in categories %}
+          <div class="faq-nav-link {% if forloop.first %}active{% endif %}"
+               onclick="scrollToSection('cat-{{ cat.pk }}', this)">
+            {% if cat.icone %}
+              <i class="{{ cat.icone }}"></i>
+            {% else %}
+              <i class="fas fa-chevron-right"></i>
+            {% endif %}
+            {{ cat.titre }}
+            <span class="faq-nav-count">{{ cat.items.count }}</span>
+          </div>
+          {% endfor %}
+        </nav>
+
+        <!-- Questions -->
+        <div id="faqContent">
+          {% for cat in categories %}
+          <div class="faq-section" id="cat-{{ cat.pk }}">
+            <div class="faq-section-title">
+              {% if cat.icone %}
+                <i class="{{ cat.icone }}"></i>
+              {% else %}
+                <i class="fas fa-question-circle"></i>
+              {% endif %}
+              {{ cat.titre }}
+            </div>
+
+            {% for item in cat.items.all %}
+            {% if item.is_active %}
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFAQ(this)">
+                {{ item.question }}
+                <div class="faq-chevron">
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+              <div class="faq-reponse">
+                <div class="faq-reponse-inner">{{ item.reponse|linebreaksbr }}</div>
+              </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="icon">❓</div>
+        <h3>Aucune question pour le moment</h3>
+        <p>La FAQ sera disponible prochainement. En attendant, contactez-nous directement.</p>
+      </div>
+      {% endif %}
+
+    </div>
+  </section>
+
+  <!-- CTA CONTACT -->
+  <div class="cta-section">
+    <div class="container">
+      <p>Vous n'avez pas trouvé votre réponse ? Notre équipe est là pour vous aider.</p>
+      <a href="{% url 'core:contact' %}" class="btn-contact">
+        <i class="fas fa-envelope"></i>
+        Nous contacter
+      </a>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container-wide">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>🌾 {{ site_settings.nom_site|default:"Makèt Peyizan" }}</h3>
+          <p>{{ site_settings.slogan|default:"Marketplace agricole haïtienne." }}</p>
+          <p class="slogan">« Sòti nan jaden rive lakay »</p>
+        </div>
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="/">Accueil</a></li>
+            <li><a href="/#catalogue">Catalogue</a></li>
+            <li><a href="{% url 'core:apropos' %}">À propos</a></li>
+            <li><a href="{% url 'core:faq' %}">FAQ</a></li>
+            <li><a href="{% url 'core:contact' %}">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Plateforme</h4>
+          <ul>
+            <li><a href="/admin/">Administration</a></li>
+            <li><a href="/analytics/dashboard/">Dashboard BI</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <ul>
+            <li><a href="mailto:{{ site_settings.email_contact|default:'info@maketpeyizan.ht' }}"><i class="fas fa-envelope"></i> {{ site_settings.email_contact|default:"info@maketpeyizan.ht" }}</a></li>
+            {% if site_settings.telephone %}<li><i class="fas fa-phone"></i> {{ site_settings.telephone }}</li>{% endif %}
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© {% now "Y" %} {{ site_settings.copyright_texte|default:"Makèt Peyizan Haiti. Tous droits réservés." }}</span>
+        <span>Développé avec ❤️ pour les peyizan haïtiens</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function toggleFAQ(el) {
+      const reponse = el.nextElementSibling;
+      const isOpen  = reponse.classList.contains('open');
+      // Fermer tous
+      document.querySelectorAll('.faq-reponse.open').forEach(r => r.classList.remove('open'));
+      document.querySelectorAll('.faq-question.open').forEach(q => q.classList.remove('open'));
+      // Ouvrir celui-ci si fermé
+      if (!isOpen) {
+        reponse.classList.add('open');
+        el.classList.add('open');
+      }
+    }
+
+    function scrollToSection(id, navEl) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelectorAll('.faq-nav-link').forEach(l => l.classList.remove('active'));
+      navEl.classList.add('active');
+    }
+
+    function filtrerFAQ(query) {
+      const q = query.toLowerCase().trim();
+      document.querySelectorAll('.faq-item').forEach(item => {
+        const question = item.querySelector('.faq-question').textContent.toLowerCase();
+        const reponse  = item.querySelector('.faq-reponse-inner')?.textContent.toLowerCase() || '';
+        item.style.display = (!q || question.includes(q) || reponse.includes(q)) ? '' : 'none';
+      });
+      document.querySelectorAll('.faq-section').forEach(section => {
+        const visible = [...section.querySelectorAll('.faq-item')].some(i => i.style.display !== 'none');
+        section.style.display = visible ? '' : 'none';
+      });
+    }
+  </script>
+
+</body>
+</html>

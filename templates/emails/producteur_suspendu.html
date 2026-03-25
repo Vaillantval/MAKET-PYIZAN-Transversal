@@ -1,0 +1,30 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Bonjour {{ prenom }},</p>
+
+<div class="alert-box">
+  ⚠️ Votre compte producteur a été temporairement <strong>suspendu</strong>.
+</div>
+
+<p class="message">
+  Votre accès à la plateforme <strong>Makèt Peyizan</strong> est momentanément suspendu.
+  Pour obtenir plus d'informations ou contester cette décision, veuillez nous contacter.
+</p>
+
+{% if motif %}
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">Motif</span>
+    <span class="card-value">{{ motif }}</span>
+  </div>
+</div>
+{% endif %}
+
+<hr class="divider">
+<p style="font-size:13px; color:#aaa; text-align:center">
+  Pour toute question, contactez-nous à
+  <a href="mailto:info@maketpeyizan.ht" style="color:#27ae60">info@maketpeyizan.ht</a>
+</p>
+
+{% endblock %}

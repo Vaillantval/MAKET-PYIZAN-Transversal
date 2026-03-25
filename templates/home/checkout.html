@@ -1,0 +1,1075 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finaliser ma commande — {{ site_settings.nom_site|default:"Makèt Peyizan" }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --vert-fonce:#1a6b2f; --vert-vif:#27ae60; --vert-menthe:#e8f8ee;
+      --jaune:#e8d800; --blanc:#fff; --noir:#1a1a1a; --gris:#f4f6f9;
+      --gris-bord:#e2e8f0; --gris-texte:#555; --shadow:0 4px 24px rgba(0,0,0,.08);
+      --radius:14px;
+    }
+    *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'DM Sans',sans-serif; background:var(--gris); color:var(--noir); min-height:100vh; }
+    a { text-decoration:none; color:inherit; }
+    .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+
+    /* ── Navbar ─────────────────────────────────────────────── */
+    .navbar { position:sticky; top:0; z-index:100; background:var(--vert-fonce); box-shadow:0 2px 16px rgba(0,0,0,.15); }
+    .navbar-inner { display:flex; align-items:center; justify-content:space-between; height:64px; }
+    .navbar-logo { display:flex; align-items:center; gap:10px; }
+    .navbar-logo-icon { width:38px; height:38px; background:var(--jaune); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .navbar-logo-text { font-family:'Playfair Display',serif; font-size:18px; font-weight:900; color:var(--blanc); line-height:1.1; }
+    .navbar-logo-text span { display:block; font-size:11px; font-weight:400; opacity:.7; font-family:'DM Sans',sans-serif; }
+    .navbar-actions { display:flex; align-items:center; gap:12px; }
+    .btn-nav { padding:9px 18px; border-radius:50px; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; }
+    .btn-nav-outline { background:transparent; border:1.5px solid rgba(255,255,255,.5); color:var(--blanc); }
+    .btn-nav-outline:hover { background:rgba(255,255,255,.1); border-color:var(--blanc); }
+    .btn-nav-primary { background:var(--jaune); color:var(--noir); border:none; }
+    .btn-nav-primary:hover { background:#d4c800; }
+    .user-menu { display:flex; align-items:center; gap:10px; }
+    .user-avatar { width:34px; height:34px; background:var(--jaune); color:var(--noir); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
+    .user-name { font-size:13px; font-weight:600; color:var(--blanc); max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-role-badge { font-size:10px; padding:2px 7px; border-radius:20px; font-weight:700; }
+    .btn-logout { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); color:rgba(255,255,255,.85); padding:6px 12px; border-radius:50px; font-size:12px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; display:flex; align-items:center; gap:5px; }
+    .btn-logout:hover { background:rgba(255,0,0,.2); color:#fff; }
+
+    /* ── Progress bar ────────────────────────────────────────── */
+    .progress-wrap { background:var(--blanc); border-bottom:1px solid var(--gris-bord); padding:18px 0; }
+    .steps { display:flex; align-items:center; justify-content:center; }
+    .step { display:flex; flex-direction:column; align-items:center; gap:5px; min-width:100px; }
+    .step-circle { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; transition:all .2s; }
+    .step.done .step-circle { background:var(--vert-vif); color:#fff; }
+    .step.active .step-circle { background:var(--vert-fonce); color:#fff; box-shadow:0 0 0 4px rgba(26,107,47,.15); }
+    .step.pending .step-circle { background:#e0e0e0; color:#999; }
+    .step-label { font-size:11px; font-weight:600; white-space:nowrap; }
+    .step.done .step-label { color:var(--vert-vif); }
+    .step.active .step-label { color:var(--vert-fonce); font-weight:800; }
+    .step.pending .step-label { color:#aaa; }
+    .step-connector { flex:1; height:2px; margin:0 4px; margin-bottom:16px; max-width:80px; }
+    .step-connector.done { background:var(--vert-vif); }
+    .step-connector.pending { background:#e0e0e0; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .checkout-wrap { padding:32px 0 48px; }
+    .checkout-grid { display:grid; grid-template-columns:1fr 360px; gap:24px; align-items:start; }
+    @media(max-width:880px) { .checkout-grid { grid-template-columns:1fr; } }
+    .checkout-main { display:flex; flex-direction:column; gap:18px; }
+
+    /* ── Section cards ───────────────────────────────────────── */
+    .c-section { background:var(--blanc); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .c-section-head { display:flex; align-items:center; gap:14px; padding:18px 24px; border-bottom:1px solid var(--gris-bord); }
+    .c-num { width:30px; height:30px; background:var(--vert-fonce); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; flex-shrink:0; }
+    .c-title { font-size:16px; font-weight:800; }
+    .c-body { padding:20px 24px; }
+
+    /* ── Loading skeleton ────────────────────────────────────── */
+    .skel { background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; border-radius:6px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .skel-line { height:14px; margin-bottom:10px; }
+    .skel-card { height:72px; margin-bottom:10px; border-radius:10px; }
+
+    /* ── Address options ─────────────────────────────────────── */
+    .addr-option { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border:2px solid var(--gris-bord); border-radius:10px; cursor:pointer; margin-bottom:10px; transition:all .15s; }
+    .addr-option:hover { border-color:var(--vert-vif); background:#f5fbf7; }
+    .addr-option.selected { border-color:var(--vert-vif); background:#f0fbf4; }
+    .addr-option input[type="radio"] { margin-top:3px; accent-color:var(--vert-vif); width:16px; height:16px; flex-shrink:0; cursor:pointer; }
+    .addr-info { flex:1; min-width:0; }
+    .addr-libelle { font-size:13px; font-weight:700; color:var(--vert-fonce); display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+    .addr-default { font-size:10px; background:#e8f5e9; color:var(--vert-vif); padding:2px 7px; border-radius:20px; font-weight:700; }
+    .addr-dest { font-size:13px; font-weight:600; margin-bottom:2px; }
+    .addr-rue { font-size:12px; color:#555; }
+    .addr-dept { font-size:11px; color:#999; margin-top:2px; }
+
+    /* ── Address form toggles ────────────────────────────────── */
+    .addr-toggles { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+    .btn-toggle { display:flex; align-items:center; gap:7px; padding:9px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; font-family:'DM Sans',sans-serif; border:1.5px solid var(--gris-bord); color:var(--gris-texte); background:var(--blanc); }
+    .btn-toggle:hover { border-color:var(--vert-vif); color:var(--vert-vif); }
+    .btn-toggle.active { border-color:var(--vert-vif); color:var(--vert-vif); background:#f0fbf4; }
+
+    /* ── Inline address form ─────────────────────────────────── */
+    .addr-form-wrap { margin-top:16px; background:#f8fff9; border:1px solid #c8e6c9; border-radius:12px; padding:20px; animation:fadeIn .2s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+    .form-title { font-size:13px; font-weight:700; color:var(--vert-fonce); margin-bottom:14px; display:flex; align-items:center; gap:7px; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .form-group { display:flex; flex-direction:column; gap:4px; }
+    .form-group.full { grid-column:1/-1; }
+    .form-label { font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.04em; }
+    .form-label .req { color:#e74c3c; }
+    .f-input { padding:10px 12px; border:1.5px solid var(--gris-bord); border-radius:8px; font-size:13px; font-family:'DM Sans',sans-serif; outline:none; background:#fff; transition:border-color .15s; }
+    .f-input:focus { border-color:var(--vert-vif); }
+    .f-input:disabled { background:#f5f5f5; color:#999; cursor:not-allowed; }
+    .f-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23555' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; cursor:pointer; }
+    .save-check { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--gris-texte); cursor:pointer; margin-top:12px; }
+    .save-check input { accent-color:var(--vert-vif); width:15px; height:15px; cursor:pointer; }
+
+    /* ── Payment methods ─────────────────────────────────────── */
+    .pm-list { display:flex; flex-direction:column; gap:10px; }
+    .pm-option { display:flex; align-items:center; gap:14px; padding:14px 16px; border:2px solid var(--gris-bord); border-radius:10px; cursor:pointer; transition:all .15s; position:relative; }
+    .pm-option:hover:not(.pm-disabled) { border-color:var(--vert-vif); background:#f5fbf7; }
+    .pm-option.pm-selected { border-color:var(--vert-vif); background:#f0fbf4; }
+    .pm-option.pm-disabled { opacity:.55; cursor:not-allowed; }
+    .pm-option input[type="radio"] { accent-color:var(--vert-vif); width:16px; height:16px; flex-shrink:0; }
+    .pm-icon-wrap { width:42px; height:42px; border-radius:10px; background:#f4f6f9; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+    .pm-name { font-size:14px; font-weight:700; }
+    .pm-desc { font-size:11px; color:#888; margin-top:2px; }
+    .pm-check { margin-left:auto; color:var(--vert-vif); font-size:20px; opacity:0; transition:opacity .15s; }
+    .pm-option.pm-selected .pm-check { opacity:1; }
+    .pm-soon { position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:700; background:#f0f0f0; color:#888; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+
+    /* ── Payment extra info boxes ────────────────────────────── */
+    .pm-extra { margin-top:12px; border-radius:10px; padding:14px 16px; font-size:13px; animation:fadeIn .2s ease; display:none; }
+    .pm-extra.pm-extra-moncash { background:#fff8f0; border:1px solid #fde68a; }
+    .pm-extra.pm-extra-hors-ligne { background:#f0f4ff; border:1px solid #c7d2fe; }
+    .pm-extra-title { font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:7px; }
+    .pm-extra-moncash .pm-extra-title { color:#b45309; }
+    .pm-extra-hors-ligne .pm-extra-title { color:#3730a3; }
+    .pm-extra p { color:#555; line-height:1.5; margin-bottom:8px; }
+    .pm-extra p:last-child { margin-bottom:0; }
+    .pm-upload-wrap { margin-top:10px; }
+    .pm-upload-label { font-size:11px; font-weight:700; color:#3730a3; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; display:block; }
+    .pm-upload-input { display:block; width:100%; padding:10px 12px; border:1.5px dashed #818cf8; border-radius:8px; font-size:13px; font-family:'DM Sans',sans-serif; background:#fff; cursor:pointer; color:#555; }
+    .pm-upload-input:hover { border-color:#4f46e5; background:#f5f3ff; }
+    .pm-upload-hint { font-size:11px; color:#818cf8; margin-top:4px; }
+
+    /* ── Notes ───────────────────────────────────────────────── */
+    .notes-area { width:100%; padding:12px; border:1.5px solid var(--gris-bord); border-radius:8px; font-size:13px; font-family:'DM Sans',sans-serif; resize:vertical; min-height:80px; outline:none; transition:border-color .15s; }
+    .notes-area:focus { border-color:var(--vert-vif); }
+    .notes-hint { font-size:11px; color:#aaa; margin-top:6px; }
+
+    /* ── Recap card (sticky) ─────────────────────────────────── */
+    .recap-card { background:var(--blanc); border-radius:var(--radius); box-shadow:var(--shadow); position:sticky; top:84px; overflow:hidden; }
+    .recap-head { padding:16px 20px; border-bottom:1px solid var(--gris-bord); display:flex; align-items:center; justify-content:space-between; }
+    .recap-head-title { font-size:15px; font-weight:800; }
+    .recap-head-link { font-size:12px; color:var(--vert-vif); display:flex; align-items:center; gap:5px; }
+    .recap-head-link:hover { text-decoration:underline; }
+    .recap-items { padding:0 20px; max-height:280px; overflow-y:auto; }
+    .recap-item { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #f5f5f5; }
+    .recap-item:last-child { border-bottom:none; }
+    .recap-item-img { width:48px; height:48px; border-radius:8px; object-fit:cover; background:#f0f0f0; flex-shrink:0; }
+    .recap-item-info { flex:1; min-width:0; }
+    .recap-item-name { font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .recap-item-qty { font-size:11px; color:#888; margin-top:2px; }
+    .recap-item-price { font-size:13px; font-weight:800; color:var(--vert-fonce); white-space:nowrap; }
+    .recap-totals { padding:14px 20px; border-top:1px solid var(--gris-bord); background:#fafafa; }
+    .recap-line { display:flex; justify-content:space-between; font-size:13px; margin-bottom:8px; color:#666; }
+    .recap-line span:last-child { font-weight:600; color:var(--noir); }
+    .recap-total { display:flex; justify-content:space-between; font-size:19px; font-weight:900; color:var(--vert-fonce); padding-top:10px; border-top:2px solid var(--gris-bord); margin-top:4px; }
+    .recap-footer { padding:16px 20px; }
+    .btn-submit { width:100%; padding:16px; background:var(--vert-fonce); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .btn-submit:hover:not(:disabled) { background:#145a26; transform:translateY(-1px); box-shadow:0 6px 20px rgba(26,107,47,.25); }
+    .btn-submit:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+    .security-note { font-size:11px; color:#bbb; text-align:center; margin-top:12px; line-height:1.6; display:flex; align-items:flex-start; gap:5px; justify-content:center; }
+    .security-note i { margin-top:1px; color:#27ae60; }
+
+    /* ── Multi-producteur warning ────────────────────────────── */
+    .multi-warn { background:#fff4e0; border:1px solid #fde68a; border-radius:10px; padding:12px 14px; font-size:12px; color:#92400e; display:none; align-items:flex-start; gap:8px; margin-bottom:4px; }
+    .multi-warn i { margin-top:1px; flex-shrink:0; }
+
+    /* ── Auth wall ───────────────────────────────────────────── */
+    #auth-wall { display:none; padding:60px 24px; text-align:center; }
+    .wall-icon { font-size:48px; opacity:.2; display:block; margin-bottom:16px; }
+    .wall-title { font-size:20px; font-weight:800; margin-bottom:8px; }
+    .wall-text { font-size:14px; color:#888; margin-bottom:24px; }
+    .btn-wall { display:inline-flex; align-items:center; gap:8px; padding:12px 28px; background:var(--vert-fonce); color:#fff; border:none; border-radius:50px; font-size:14px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; }
+
+    /* ── Confirmation overlay ────────────────────────────────── */
+    .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; display:none; align-items:center; justify-content:center; padding:24px; }
+    .confirm-card { background:#fff; border-radius:20px; padding:40px 36px; max-width:460px; width:100%; text-align:center; animation:zoomIn .3s ease; }
+    @keyframes zoomIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:none} }
+    .confirm-icon { width:80px; height:80px; background:var(--vert-vif); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:34px; color:#fff; }
+    .confirm-title { font-size:22px; font-weight:900; color:var(--vert-fonce); margin-bottom:8px; }
+    .confirm-sub { font-size:14px; color:#777; margin-bottom:20px; line-height:1.5; }
+    .confirm-orders { background:#f0fbf4; border-radius:10px; padding:14px 16px; margin-bottom:24px; text-align:left; }
+    .confirm-order { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--vert-fonce); margin-bottom:6px; }
+    .confirm-order:last-child { margin-bottom:0; }
+    .confirm-order-total { margin-left:auto; color:var(--vert-vif); }
+    .confirm-btns { display:flex; gap:10px; }
+    .btn-conf-dash { flex:1; padding:13px; background:var(--vert-fonce); color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none; }
+    .btn-conf-dash:hover { background:#145a26; }
+    .btn-conf-cat { flex:1; padding:13px; background:transparent; color:var(--vert-fonce); border:2px solid var(--vert-fonce); border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none; }
+    .btn-conf-cat:hover { background:var(--vert-menthe); }
+
+    /* ── Toast ───────────────────────────────────────────────── */
+    .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:10px; }
+    .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:14px; font-weight:500; box-shadow:0 4px 20px rgba(0,0,0,.15); color:#fff; animation:slideUp .25s ease; }
+    .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; } .toast.info { background:#2980b9; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media(max-width:640px) {
+      .navbar-logo-text span { display:none; }
+      .form-grid { grid-template-columns:1fr; }
+      .confirm-btns { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ NAVBAR ══ -->
+<nav class="navbar">
+  <div class="container">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-logo">
+        <div class="navbar-logo-icon">
+          {% if site_settings.logo %}
+            <img src="{{ site_settings.logo.url }}" alt="" style="width:26px;height:26px;object-fit:contain;border-radius:50%;">
+          {% else %}
+            🌾
+          {% endif %}
+        </div>
+        <div class="navbar-logo-text">
+          {{ site_settings.nom_site|default:"Makèt Peyizan" }}
+          <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
+        </div>
+      </a>
+
+      <div class="navbar-actions">
+        <a href="/panier/" class="btn-nav btn-nav-outline" style="position:relative">
+          <i class="fas fa-shopping-basket"></i> Panier
+          <span style="position:absolute;top:-5px;right:-5px;background:var(--jaune);color:var(--noir);font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:50%;display:{% if nb_panier == 0 %}none{% else %}flex{% endif %};align-items:center;justify-content:center;padding:0 4px;">{{ nb_panier }}</span>
+        </a>
+
+        <div id="nav-guest" style="display:flex;align-items:center;gap:10px">
+          <a href="{% url 'home:login' %}" class="btn-nav btn-nav-outline">
+            <i class="fas fa-sign-in-alt"></i> Connexion
+          </a>
+        </div>
+        <div id="nav-user" style="display:none;align-items:center;gap:10px">
+          <a id="nav-dashboard-link" href="/dashboard/" class="btn-nav btn-nav-outline">
+            <i class="fas fa-th-large"></i> <span id="nav-dashboard-label">Mon espace</span>
+          </a>
+          <div class="user-menu">
+            <div class="user-avatar" id="nav-avatar">?</div>
+            <div>
+              <div class="user-name" id="nav-fullname"></div>
+              <span class="user-role-badge" id="nav-role-badge"></span>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="mpLogout()">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ PROGRESS BAR ══ -->
+<div class="progress-wrap">
+  <div class="container">
+    <div class="steps">
+      <a href="/panier/" class="step done" style="text-decoration:none">
+        <div class="step-circle"><i class="fas fa-check" style="font-size:13px"></i></div>
+        <div class="step-label">Mon panier</div>
+      </a>
+      <div class="step-connector done"></div>
+      <div class="step active">
+        <div class="step-circle">2</div>
+        <div class="step-label">Livraison & Paiement</div>
+      </div>
+      <div class="step-connector pending"></div>
+      <div class="step pending">
+        <div class="step-circle">3</div>
+        <div class="step-label">Confirmation</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AUTH WALL ══ -->
+<div id="auth-wall">
+  <span class="wall-icon"><i class="fas fa-lock"></i></span>
+  <div class="wall-title">Connexion requise</div>
+  <div class="wall-text">Vous devez être connecté en tant qu'acheteur pour passer commande.</div>
+  <a id="wall-login-btn" href="{% url 'home:login' %}?next=/commander/" class="btn-wall">
+    <i class="fas fa-sign-in-alt"></i> Se connecter
+  </a>
+</div>
+
+<!-- ══ CHECKOUT CONTENT ══ -->
+<div id="checkout-content" style="display:none">
+  <div class="checkout-wrap">
+    <div class="container">
+      <div class="checkout-grid">
+
+        <!-- ── LEFT: Formulaire ──────────────────────────────── -->
+        <main class="checkout-main">
+
+          <!-- Section 1: Adresse de livraison -->
+          <div class="c-section">
+            <div class="c-section-head">
+              <div class="c-num">1</div>
+              <div>
+                <div class="c-title">Adresse de livraison</div>
+              </div>
+            </div>
+            <div class="c-body">
+
+              <!-- Skeleton loading -->
+              <div id="addr-loading">
+                <div class="skel skel-card"></div>
+                <div class="skel skel-card"></div>
+              </div>
+
+              <!-- Multi-producteur warning -->
+              <div class="multi-warn" id="multi-prod-warn">
+                <i class="fas fa-info-circle"></i>
+                <span>Votre panier contient des produits de plusieurs producteurs. Une commande sera créée pour chacun.</span>
+              </div>
+
+              <!-- Address list (JS populated) -->
+              <div id="addr-list"></div>
+
+              <!-- Toggles -->
+              <div class="addr-toggles" id="addr-toggles" style="display:none">
+                <button class="btn-toggle" id="btn-autre" onclick="toggleAddrForm('autre')">
+                  <i class="fas fa-map-marker-alt"></i> Livrer à une autre adresse
+                </button>
+                <button class="btn-toggle" id="btn-nouvelle" onclick="toggleAddrForm('nouvelle')">
+                  <i class="fas fa-plus-circle"></i> Ajouter une nouvelle adresse
+                </button>
+              </div>
+
+              <!-- Inline address form -->
+              <div class="addr-form-wrap" id="addr-form-wrap" style="display:none">
+                <div class="form-title">
+                  <i class="fas fa-map-pin" style="color:var(--vert-vif)"></i>
+                  <span id="form-mode-title">Nouvelle adresse de livraison</span>
+                </div>
+                <form id="addr-form" onsubmit="return false">
+                  <div class="form-grid">
+
+                    <!-- Libellé (nouvelle seulement) -->
+                    <div class="form-group full" id="f-libelle-group" style="display:none">
+                      <label class="form-label">Libellé <span class="req">*</span></label>
+                      <input id="f-libelle" class="f-input" type="text" placeholder="Ex : Domicile, Bureau…" maxlength="100">
+                    </div>
+
+                    <!-- Nom complet -->
+                    <div class="form-group">
+                      <label class="form-label">Nom du destinataire <span class="req">*</span></label>
+                      <input id="f-nom" class="f-input" type="text" placeholder="Prénom Nom" maxlength="150" oninput="validateSubmit()">
+                    </div>
+
+                    <!-- Téléphone -->
+                    <div class="form-group">
+                      <label class="form-label">Téléphone</label>
+                      <input id="f-tel" class="f-input" type="tel" placeholder="509 XXXX XXXX" maxlength="20">
+                    </div>
+
+                    <!-- Département -->
+                    <div class="form-group">
+                      <label class="form-label">Département <span class="req">*</span></label>
+                      <select id="f-dept" class="f-input f-select" onchange="loadCommunes();validateSubmit()">
+                        <option value="">— Sélectionner —</option>
+                      </select>
+                    </div>
+
+                    <!-- Commune -->
+                    <div class="form-group">
+                      <label class="form-label">Commune <span class="req">*</span></label>
+                      <select id="f-commune" class="f-input f-select" onchange="loadSections();validateSubmit()" disabled>
+                        <option value="">— Sélectionner un département —</option>
+                      </select>
+                    </div>
+
+                    <!-- Section communale -->
+                    <div class="form-group full">
+                      <label class="form-label">Section communale <span style="color:#bbb;font-weight:400">(optionnel)</span></label>
+                      <select id="f-section" class="f-input f-select" disabled>
+                        <option value="">— Optionnel —</option>
+                      </select>
+                    </div>
+
+                    <!-- Rue / Adresse -->
+                    <div class="form-group full">
+                      <label class="form-label">Rue / Adresse complète <span class="req">*</span></label>
+                      <input id="f-rue" class="f-input" type="text" placeholder="N° rue, quartier, repère…" maxlength="255" oninput="validateSubmit()">
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="form-group full">
+                      <label class="form-label">Instructions de livraison <span style="color:#bbb;font-weight:400">(optionnel)</span></label>
+                      <input id="f-instructions" class="f-input" type="text" placeholder="Code d'accès, repère, disponibilités…" maxlength="255">
+                    </div>
+
+                  </div>
+
+                  <!-- Save checkbox (nouvelle adresse seulement) -->
+                  <div id="f-save-group" style="display:none">
+                    <label class="save-check">
+                      <input type="checkbox" id="f-save" checked>
+                      Enregistrer cette adresse dans mon compte
+                    </label>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Section 2: Mode de paiement -->
+          <div class="c-section">
+            <div class="c-section-head">
+              <div class="c-num">2</div>
+              <div class="c-title">Mode de paiement</div>
+            </div>
+            <div class="c-body">
+              <div class="pm-list">
+
+                <!-- 1. MonCash -->
+                <label class="pm-option" id="pm-moncash" onclick="selectPayment('moncash',this)">
+                  <input type="radio" name="pm" value="moncash">
+                  <div class="pm-icon-wrap" style="background:#fff8f0;padding:4px">
+                    <img src="/media/logo/moncash.jfif" alt="MonCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
+                  </div>
+                  <div>
+                    <div class="pm-name">MonCash</div>
+                    <div class="pm-desc">Mobile money Digicel Haiti — paiement immédiat</div>
+                  </div>
+                  <div class="pm-check"><i class="fas fa-check-circle"></i></div>
+                </label>
+
+                <!-- 2. Hors ligne -->
+                <label class="pm-option" id="pm-hors_ligne" onclick="selectPayment('hors_ligne',this)">
+                  <input type="radio" name="pm" value="hors_ligne">
+                  <div class="pm-icon-wrap" style="background:#f0f4ff"><i class="fas fa-receipt" style="color:#4f46e5"></i></div>
+                  <div>
+                    <div class="pm-name">Hors ligne</div>
+                    <div class="pm-desc">Virement / dépôt avec preuve de paiement</div>
+                  </div>
+                  <div class="pm-check"><i class="fas fa-check-circle"></i></div>
+                </label>
+
+                <!-- 3. À la livraison (espèces) -->
+                <label class="pm-option pm-selected" id="pm-cash" onclick="selectPayment('cash',this)">
+                  <input type="radio" name="pm" value="cash" checked>
+                  <div class="pm-icon-wrap" style="background:#e8f5e9"><i class="fas fa-money-bill-wave" style="color:var(--vert-vif)"></i></div>
+                  <div>
+                    <div class="pm-name">À la livraison</div>
+                    <div class="pm-desc">Paiement en espèces à la réception — aucun frais</div>
+                  </div>
+                  <div class="pm-check"><i class="fas fa-check-circle"></i></div>
+                </label>
+
+                <!-- 4. NatCash (bientôt) -->
+                <div class="pm-option pm-disabled">
+                  <input type="radio" name="pm" value="natcash" disabled>
+                  <div class="pm-icon-wrap" style="background:#f5fbff;padding:4px">
+                    <img src="/media/logo/natcash.jfif" alt="NatCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
+                  </div>
+                  <div>
+                    <div class="pm-name">NatCash</div>
+                    <div class="pm-desc">Mobile money Natcom Haiti</div>
+                  </div>
+                  <span class="pm-soon">Bientôt</span>
+                </div>
+
+                <!-- 5. Virement bancaire (bientôt) -->
+                <div class="pm-option pm-disabled">
+                  <input type="radio" name="pm" value="virement" disabled>
+                  <div class="pm-icon-wrap" style="background:#f5f0ff"><i class="fas fa-university" style="color:#8e44ad"></i></div>
+                  <div>
+                    <div class="pm-name">Compte bancaire</div>
+                    <div class="pm-desc">Virement bancaire direct</div>
+                  </div>
+                  <span class="pm-soon">Bientôt</span>
+                </div>
+
+              </div>
+
+              <!-- Extra info boxes -->
+              <div class="pm-extra pm-extra-moncash" id="pm-extra-moncash">
+                <div class="pm-extra-title">
+                  <img src="/media/logo/moncash.jfif" alt="MonCash" style="width:22px;height:22px;object-fit:contain;border-radius:4px;vertical-align:middle">
+                  Paiement via MonCash
+                </div>
+                <p>Vous allez être redirigé vers la plateforme MonCash de Digicel pour effectuer votre paiement en toute sécurité.</p>
+                <p>Montant à payer : <strong id="mc-montant">—</strong></p>
+                <p style="font-size:11px;color:#92400e"><i class="fas fa-info-circle"></i> Votre commande sera validée automatiquement après confirmation du paiement.</p>
+              </div>
+
+              <div class="pm-extra pm-extra-hors-ligne" id="pm-extra-hors-ligne">
+                <div class="pm-extra-title"><i class="fas fa-receipt"></i> Preuve de paiement</div>
+                <p>Effectuez votre virement ou dépôt puis importez votre reçu ci-dessous. L'administrateur vérifiera et validera votre commande sous 24h.</p>
+                <div class="pm-upload-wrap">
+                  <label class="pm-upload-label" for="preuve-paiement-input">
+                    <i class="fas fa-upload"></i> Joindre la preuve <span style="color:#e74c3c">*</span>
+                  </label>
+                  <input type="file" id="preuve-paiement-input" class="pm-upload-input"
+                    accept="image/*,.pdf" onchange="validateSubmit()">
+                  <div class="pm-upload-hint">Formats acceptés : JPG, PNG, PDF — max 5 Mo</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Instructions -->
+          <div class="c-section">
+            <div class="c-section-head">
+              <div class="c-num">3</div>
+              <div class="c-title">Instructions supplémentaires <span style="font-size:12px;font-weight:400;color:#aaa">(optionnel)</span></div>
+            </div>
+            <div class="c-body">
+              <textarea id="checkout-notes" class="notes-area" rows="3"
+                placeholder="Horaires de disponibilité, instructions spéciales, allergies, informations utiles pour le producteur…"></textarea>
+              <div class="notes-hint"><i class="fas fa-info-circle"></i> Ces informations seront transmises au(x) producteur(s).</div>
+            </div>
+          </div>
+
+          <!-- Bouton submit mobile -->
+          <button class="btn-submit" id="btn-submit-mobile" onclick="passerCommande()" disabled style="display:none">
+            <i class="fas fa-lock"></i> Passer la commande
+          </button>
+
+        </main>
+
+        <!-- ── RIGHT: Récapitulatif (sticky) ──────────────────── -->
+        <aside>
+          <div class="recap-card">
+            <div class="recap-head">
+              <div class="recap-head-title"><i class="fas fa-receipt" style="color:var(--vert-vif);margin-right:6px;font-size:14px"></i>Récapitulatif</div>
+              <a href="/panier/" class="recap-head-link"><i class="fas fa-edit"></i> Modifier</a>
+            </div>
+
+            <!-- Items (JS populated) -->
+            <div class="recap-items" id="recap-items">
+              <div style="padding:20px 0;text-align:center;color:#ccc">
+                <i class="fas fa-spinner fa-spin"></i>
+              </div>
+            </div>
+
+            <div class="recap-totals">
+              <div class="recap-line">
+                <span>Sous-total</span>
+                <span id="recap-subtotal">—</span>
+              </div>
+              <div class="recap-line">
+                <span>Livraison</span>
+                <span style="color:var(--vert-vif)">Gratuit</span>
+              </div>
+              <div class="recap-total">
+                <span>Total</span>
+                <span id="recap-total">—</span>
+              </div>
+            </div>
+
+            <div class="recap-footer">
+              <button class="btn-submit" id="btn-submit" onclick="passerCommande()" disabled>
+                <i class="fas fa-lock"></i> Passer la commande
+              </button>
+              <div class="security-note">
+                <i class="fas fa-shield-alt"></i>
+                <span>Vous ne serez prélevé qu'après confirmation du producteur. Paiement à la livraison.</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONFIRMATION OVERLAY ══ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-card">
+    <div class="confirm-icon">
+      <i class="fas fa-check"></i>
+    </div>
+    <div class="confirm-title">Commande passée !</div>
+    <div class="confirm-sub">
+      Votre commande a été transmise au(x) producteur(s).<br>
+      Vous serez contacté pour confirmer la livraison.
+    </div>
+    <div class="confirm-orders" id="confirm-orders"></div>
+    <div class="confirm-btns">
+      <a href="/dashboard/acheteur/commandes/" class="btn-conf-dash">
+        <i class="fas fa-list-alt"></i> Mes commandes
+      </a>
+      <a href="/" class="btn-conf-cat">
+        <i class="fas fa-store"></i> Catalogue
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  // ── Constantes ────────────────────────────────────────────────────────────
+  const DEPT_LABELS = {
+    'ouest':'Ouest','sud_est':'Sud-Est','nord':'Nord','nord_est':'Nord-Est',
+    'artibonite':'Artibonite','centre':'Centre','sud':'Sud',
+    'grand_anse':"Grand'Anse",'nord_ouest':'Nord-Ouest','nippes':'Nippes'
+  };
+  const DEPTS = Object.entries(DEPT_LABELS).map(([slug,nom]) => ({slug,nom}));
+
+  // ── État ──────────────────────────────────────────────────────────────────
+  let cartData       = null;
+  let addresses      = [];
+  let selectedAddrId = null;
+  let formMode       = null;   // null | 'autre' | 'nouvelle'
+  let selectedPM     = 'cash';
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function _esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmtPrice(n) {
+    return Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' HTG';
+  }
+
+  // ── Auth check ────────────────────────────────────────────────────────────
+  (function checkAuth() {
+    const raw = localStorage.getItem('mp_user');
+    if (!raw) { window.location.href = '{% url "home:login" %}?next=/commander/'; return; }
+    let user;
+    try { user = JSON.parse(raw); } catch { window.location.href = '{% url "home:login" %}'; return; }
+    if (!['acheteur','collecteur'].includes(user.role) && !user.is_superuser) {
+      document.getElementById('auth-wall').style.display = 'block';
+      return;
+    }
+    initCheckout(user);
+  })();
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  async function initCheckout(user) {
+    try {
+      const access = localStorage.getItem('mp_access');
+
+      // Fetch cart + addresses en parallèle
+      const [cartRes, addrRes] = await Promise.all([
+        fetch('/api/orders/panier/'),
+        fetch('/api/auth/adresses/', { headers: {'Authorization': 'Bearer ' + access} }),
+      ]);
+
+      cartData = await cartRes.json();
+
+      if (!cartData.items || cartData.items.length === 0) {
+        window.location.href = '/panier/';
+        return;
+      }
+
+      if (addrRes.ok) addresses = await addrRes.json();
+
+    } catch {
+      showToast('Erreur de chargement. Veuillez actualiser la page.', 'error');
+      return;
+    }
+
+    renderSummary(cartData);
+    renderAddresses(addresses);
+    initNavbar(user);
+
+    document.getElementById('checkout-content').style.display = 'block';
+    validateSubmit();
+  }
+
+  // ── Render: récapitulatif ─────────────────────────────────────────────────
+  function renderSummary(data) {
+    const items = data.items || [];
+    document.getElementById('recap-items').innerHTML = items.map(it => `
+      <div class="recap-item">
+        <img class="recap-item-img" src="${_esc(it.image||'')}" alt="${_esc(it.nom)}" onerror="this.style.display='none'">
+        <div class="recap-item-info">
+          <div class="recap-item-name">${_esc(it.nom)}</div>
+          <div class="recap-item-qty">${it.quantite} × ${_esc(it.unite_vente_label||it.unite_vente)}</div>
+        </div>
+        <div class="recap-item-price">${fmtPrice(it.sous_total)}</div>
+      </div>`).join('');
+
+    document.getElementById('recap-subtotal').textContent = fmtPrice(data.total);
+    document.getElementById('recap-total').textContent    = fmtPrice(data.total);
+
+    if ((data.producteurs||[]).length > 1) {
+      document.getElementById('multi-prod-warn').style.display = 'flex';
+    }
+  }
+
+  // ── Render: adresses ──────────────────────────────────────────────────────
+  function renderAddresses(addrs) {
+    document.getElementById('addr-loading').style.display = 'none';
+    document.getElementById('addr-toggles').style.display = 'flex';
+
+    const livraison = addrs.filter(a => !a.type_adresse || a.type_adresse === 'livraison');
+    const container = document.getElementById('addr-list');
+
+    if (livraison.length === 0) {
+      container.innerHTML = '';
+      showAddrForm('nouvelle'); // directly show form, no toggles for "autre"
+      document.getElementById('btn-autre').style.display = 'none';
+      return;
+    }
+
+    container.innerHTML = livraison.map((a, i) => `
+      <label class="addr-option ${i===0?'selected':''}" id="addr-opt-${a.id}" onclick="selectAddr(${a.id},this)">
+        <input type="radio" name="addr" value="${a.id}" ${i===0?'checked':''}>
+        <div class="addr-info">
+          <div class="addr-libelle">
+            ${_esc(a.libelle)}
+            ${a.is_default ? '<span class="addr-default">Par défaut</span>' : ''}
+          </div>
+          <div class="addr-dest">${_esc(a.nom_complet)}${a.telephone?' · <span style="font-weight:400;color:#777">'+_esc(a.telephone)+'</span>':''}</div>
+          <div class="addr-rue">${_esc(a.rue)}, ${_esc(a.commune)}</div>
+          <div class="addr-dept">${DEPT_LABELS[a.departement]||_esc(a.departement)}${a.section_communale?' · '+_esc(a.section_communale):''}</div>
+        </div>
+      </label>`).join('');
+
+    selectedAddrId = livraison[0].id;
+  }
+
+  function selectAddr(id, el) {
+    document.querySelectorAll('.addr-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedAddrId = id;
+    if (formMode) hideAddrForm();
+    validateSubmit();
+  }
+
+  // ── Form: adresse inline ──────────────────────────────────────────────────
+  function showAddrForm(mode) {
+    formMode = mode;
+    const wrap = document.getElementById('addr-form-wrap');
+    wrap.style.display = 'block';
+
+    const isNew = mode === 'nouvelle';
+    document.getElementById('f-libelle-group').style.display = isNew ? '' : 'none';
+    document.getElementById('f-save-group').style.display    = isNew ? '' : 'none';
+    document.getElementById('form-mode-title').textContent =
+      isNew ? 'Sauvegarder une nouvelle adresse' : 'Indiquer une autre adresse de livraison';
+
+    document.getElementById('btn-autre').classList.toggle('active', mode==='autre');
+    document.getElementById('btn-nouvelle').classList.toggle('active', mode==='nouvelle');
+
+    // Dé-sélectionner les adresses sauvegardées si "autre"
+    if (mode === 'autre') {
+      selectedAddrId = null;
+      document.querySelectorAll('.addr-option').forEach(o => {
+        o.classList.remove('selected');
+        const r = o.querySelector('input[type=radio]');
+        if (r) r.checked = false;
+      });
+    }
+
+    // Populate dept select
+    const deptSel = document.getElementById('f-dept');
+    if (!deptSel.options.length || deptSel.options[0].value === '') {
+      deptSel.innerHTML = '<option value="">— Sélectionner —</option>' +
+        DEPTS.map(d => `<option value="${d.slug}">${d.nom}</option>`).join('');
+    }
+    validateSubmit();
+  }
+
+  function hideAddrForm() {
+    formMode = null;
+    document.getElementById('addr-form-wrap').style.display = 'none';
+    document.getElementById('btn-autre').classList.remove('active');
+    document.getElementById('btn-nouvelle').classList.remove('active');
+  }
+
+  function toggleAddrForm(mode) {
+    if (formMode === mode) { hideAddrForm(); }
+    else { showAddrForm(mode); }
+    validateSubmit();
+  }
+
+  // ── Géo cascade ──────────────────────────────────────────────────────────
+  async function loadCommunes() {
+    const dept = document.getElementById('f-dept').value;
+    const sel  = document.getElementById('f-commune');
+    const secSel = document.getElementById('f-section');
+
+    sel.innerHTML = '<option value="">Chargement…</option>';
+    sel.disabled  = true;
+    secSel.innerHTML = '<option value="">— Optionnel —</option>';
+    secSel.disabled  = true;
+
+    if (!dept) { sel.innerHTML = '<option value="">— Sélectionner un département —</option>'; return; }
+
+    try {
+      const r    = await fetch(`/api/geo/communes/?dept=${dept}`);
+      const data = await r.json();
+      if (data.success) {
+        sel.innerHTML = '<option value="">— Sélectionner une commune —</option>' +
+          data.data.map(c => `<option value="${_esc(c.nom)}">${_esc(c.nom)}</option>`).join('');
+        sel.disabled = false;
+      }
+    } catch { sel.innerHTML = '<option value="">Erreur de chargement</option>'; }
+  }
+
+  async function loadSections() {
+    const dept    = document.getElementById('f-dept').value;
+    const commune = document.getElementById('f-commune').value;
+    const secSel  = document.getElementById('f-section');
+
+    secSel.innerHTML = '<option value="">Chargement…</option>';
+    secSel.disabled  = true;
+    if (!dept || !commune) { secSel.innerHTML = '<option value="">— Optionnel —</option>'; return; }
+
+    try {
+      const r    = await fetch(`/api/geo/sections/?dept=${dept}&commune=${encodeURIComponent(commune)}`);
+      const data = await r.json();
+      if (data.success && data.data.sections_communales?.length) {
+        secSel.innerHTML = '<option value="">— Optionnel —</option>' +
+          data.data.sections_communales.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
+        secSel.disabled = false;
+      } else {
+        secSel.innerHTML = '<option value="">— Aucune section trouvée —</option>';
+      }
+    } catch { secSel.innerHTML = '<option value="">— Optionnel —</option>'; }
+  }
+
+  // ── Validation bouton submit ──────────────────────────────────────────────
+  function validateSubmit() {
+    const hasAddr   = selectedAddrId !== null || (formMode !== null && isFormFilled());
+    const preuveOk  = selectedPM !== 'hors_ligne' ||
+                      document.getElementById('preuve-paiement-input')?.files?.length > 0;
+    const canSubmit = hasAddr && preuveOk;
+    ['btn-submit','btn-submit-mobile'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = !canSubmit;
+    });
+  }
+
+  function isFormFilled() {
+    const rue  = document.getElementById('f-rue')?.value.trim();
+    const nom  = document.getElementById('f-nom')?.value.trim();
+    const dept = document.getElementById('f-dept')?.value;
+    const comm = document.getElementById('f-commune')?.value;
+    return !!(rue && nom && dept && comm);
+  }
+
+  // ── Paiement ──────────────────────────────────────────────────────────────
+  function selectPayment(method, el) {
+    if (el.classList.contains('pm-disabled')) return;
+    selectedPM = method;
+    document.querySelectorAll('.pm-option').forEach(o => o.classList.remove('pm-selected'));
+    el.classList.add('pm-selected');
+    el.querySelector('input[type=radio]').checked = true;
+
+    // Masquer toutes les extra boxes
+    document.querySelectorAll('.pm-extra').forEach(b => b.style.display = 'none');
+
+    if (method === 'moncash') {
+      const box = document.getElementById('pm-extra-moncash');
+      box.style.display = 'block';
+      // Mettre à jour le montant affiché
+      if (cartData) {
+        document.getElementById('mc-montant').textContent = fmtPrice(cartData.total);
+      }
+      // Mettre à jour la note de sécurité
+      document.querySelector('.security-note span').textContent =
+        'Vous serez redirigé vers MonCash pour effectuer le paiement en toute sécurité.';
+    } else if (method === 'hors_ligne') {
+      document.getElementById('pm-extra-hors-ligne').style.display = 'block';
+      document.querySelector('.security-note span').textContent =
+        'Votre commande sera validée après vérification de votre preuve de paiement par l\'administrateur.';
+    } else {
+      document.querySelector('.security-note span').textContent =
+        'Vous ne serez prélevé qu\'après confirmation du producteur. Paiement à la livraison.';
+    }
+    validateSubmit();
+  }
+
+  // ── Passer la commande ────────────────────────────────────────────────────
+  async function passerCommande() {
+    const btns = ['btn-submit','btn-submit-mobile'].map(id => document.getElementById(id)).filter(Boolean);
+    btns.forEach(b => { b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement…'; });
+
+    const access = localStorage.getItem('mp_access');
+    let adresse_livraison_id   = selectedAddrId;
+    let adresse_livraison_text = '';
+    let ville_livraison        = '';
+    let departement_livraison  = '';
+
+    // ── Traitement du formulaire d'adresse ───────────────────
+    if (formMode) {
+      const dept    = document.getElementById('f-dept').value;
+      const commune = document.getElementById('f-commune').value;
+      const section = document.getElementById('f-section').value;
+      const rue     = document.getElementById('f-rue').value.trim();
+      const nom     = document.getElementById('f-nom').value.trim();
+      const tel     = document.getElementById('f-tel').value.trim();
+      const instr   = document.getElementById('f-instructions').value.trim();
+      const libelle = document.getElementById('f-libelle')?.value.trim() || 'Adresse livraison';
+
+      if (!rue || !nom || !dept || !commune) {
+        showToast('Veuillez remplir les champs obligatoires (*).',  'error');
+        btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+        return;
+      }
+
+      // Sauvegarder si case cochée
+      if (formMode === 'nouvelle' && document.getElementById('f-save')?.checked) {
+        try {
+          const saveRes = await fetch('/api/auth/adresses/', {
+            method:  'POST',
+            headers: {'Content-Type':'application/json','Authorization':'Bearer '+access},
+            body:    JSON.stringify({
+              libelle, nom_complet:nom, telephone:tel, rue,
+              commune, departement:dept, section_communale:section,
+              details:instr, type_adresse:'livraison', is_default:false,
+            }),
+          });
+          if (saveRes.ok) {
+            const saved = await saveRes.json();
+            adresse_livraison_id = saved.id;
+          }
+        } catch {}
+      }
+
+      if (!adresse_livraison_id) {
+        adresse_livraison_text = `${rue}${section ? ', ' + section : ''}, ${commune}`;
+        ville_livraison        = commune;
+        departement_livraison  = DEPT_LABELS[dept] || dept;
+      }
+    }
+
+    // ── Hors ligne : validation du fichier ───────────────────
+    if (selectedPM === 'hors_ligne') {
+      const fileInput = document.getElementById('preuve-paiement-input');
+      if (!fileInput || !fileInput.files.length) {
+        showToast('Veuillez joindre une preuve de paiement.', 'error');
+        btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+        return;
+      }
+      // Envoyer en multipart/form-data
+      const fd = new FormData();
+      fd.append('methode_paiement', 'hors_ligne');
+      fd.append('mode_livraison', 'domicile');
+      fd.append('notes', document.getElementById('checkout-notes').value.trim());
+      if (adresse_livraison_id) {
+        fd.append('adresse_livraison_id', adresse_livraison_id);
+      } else {
+        fd.append('adresse_livraison_text', adresse_livraison_text);
+        fd.append('ville_livraison', ville_livraison);
+        fd.append('departement_livraison', departement_livraison);
+      }
+      fd.append('preuve_paiement', fileInput.files[0]);
+
+      try {
+        const r    = await fetch('/api/orders/commander/', {
+          method:  'POST',
+          headers: {'Authorization': 'Bearer ' + access},  // pas de Content-Type — le navigateur le gère
+          body:    fd,
+        });
+        const data = await r.json();
+        if (r.ok) {
+          showConfirmation(data);
+        } else {
+          showToast(data.detail || 'Erreur lors de la commande.', 'error');
+          btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+        }
+      } catch {
+        showToast('Erreur réseau. Veuillez réessayer.', 'error');
+        btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+      }
+      return;
+    }
+
+    const payload = {
+      methode_paiement: selectedPM,
+      mode_livraison:   'domicile',
+      notes:            document.getElementById('checkout-notes').value.trim(),
+      ...(adresse_livraison_id
+        ? { adresse_livraison_id }
+        : { adresse_livraison_text, ville_livraison, departement_livraison }
+      ),
+    };
+
+    try {
+      const r = await fetch('/api/orders/commander/', {
+        method:  'POST',
+        headers: {'Content-Type':'application/json','Authorization':'Bearer '+access},
+        body:    JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        if (selectedPM === 'moncash' && data.redirect_url) {
+          // Rediriger vers la passerelle MonCash
+          window.location.href = data.redirect_url;
+        } else {
+          showConfirmation(data);
+        }
+      } else {
+        showToast(data.detail || 'Erreur lors de la commande.', 'error');
+        btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+      }
+    } catch {
+      showToast('Erreur réseau. Veuillez réessayer.', 'error');
+      btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+    }
+  }
+
+  // ── Confirmation ──────────────────────────────────────────────────────────
+  function showConfirmation(data) {
+    const ordersHtml = (data.commandes || []).map(c => `
+      <div class="confirm-order">
+        <i class="fas fa-receipt" style="color:var(--vert-vif);flex-shrink:0"></i>
+        <span>${_esc(c.numero_commande)}</span>
+        <span style="font-weight:400;color:#666;font-size:12px;flex:1;padding-left:4px">— ${_esc(c.producteur)}</span>
+        <span class="confirm-order-total">${fmtPrice(c.total)}</span>
+      </div>`).join('');
+    document.getElementById('confirm-orders').innerHTML = ordersHtml;
+    document.getElementById('confirm-overlay').style.display = 'flex';
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function showToast(msg, type='success') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    const icon = type==='success' ? 'check-circle' : type==='error' ? 'exclamation-circle' : 'info-circle';
+    t.innerHTML = `<i class="fas fa-${icon}"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 4500);
+  }
+
+  // ── Navbar auth ───────────────────────────────────────────────────────────
+  const ROLE_LABELS = { superadmin:'Super Admin', admin:'Admin', producteur:'Producteur', acheteur:'Acheteur', collecteur:'Collecteur' };
+  const ROLE_COLORS = { superadmin:'#e74c3c', admin:'#e67e22', producteur:'#27ae60', acheteur:'#2980b9', collecteur:'#8e44ad' };
+
+  function initNavbar(user) {
+    document.getElementById('nav-guest').style.display = 'none';
+    const navUser = document.getElementById('nav-user');
+    navUser.style.display = 'flex';
+
+    const name = user.full_name || user.username || '?';
+    document.getElementById('nav-avatar').textContent   = name.charAt(0).toUpperCase();
+    document.getElementById('nav-fullname').textContent = name;
+
+    const role  = user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
+    const badge = document.getElementById('nav-role-badge');
+    badge.textContent      = ROLE_LABELS[role] || role;
+    badge.style.background = (ROLE_COLORS[role]||'#555') + '22';
+    badge.style.color      = ROLE_COLORS[role]||'#555';
+    badge.style.border     = '1px solid ' + (ROLE_COLORS[role]||'#555') + '44';
+
+    const url = user.is_superuser ? '/dashboard/superadmin/'
+              : user.role==='producteur' ? '/dashboard/producteur/'
+              : '/dashboard/acheteur/';
+    document.getElementById('nav-dashboard-link').href = url;
+  }
+
+  async function mpLogout() {
+    const refresh = localStorage.getItem('mp_refresh');
+    const access  = localStorage.getItem('mp_access');
+    if (refresh && access) {
+      try { await fetch('/api/auth/logout/', {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+access},body:JSON.stringify({refresh})}); } catch {}
+    }
+    localStorage.removeItem('mp_access'); localStorage.removeItem('mp_refresh'); localStorage.removeItem('mp_user');
+    window.location.href = '/';
+  }
+</script>
+</body>
+</html>

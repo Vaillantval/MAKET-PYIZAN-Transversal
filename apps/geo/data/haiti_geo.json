@@ -1,0 +1,679 @@
+{
+  "pays": "Haïti",
+  "code": "HT",
+  "departements": [
+    {
+      "nom": "Artibonite",
+      "slug": "artibonite",
+      "capitale": "Gonaïves",
+      "arrondissements": [
+        {
+          "nom": "Dessalines",
+          "communes": [
+            {
+              "nom": "Dessalines",
+              "sections_communales": ["Bocozelle", "Grande Saline", "Petite Rivière de l'Artibonite", "Pont Sondé", "Saint-Michel de l'Attalaye"]
+            },
+            {
+              "nom": "Grande Saline",
+              "sections_communales": ["Grande Saline Centre", "Lizon", "Savane Désolée"]
+            },
+            {
+              "nom": "Petite Rivière de l'Artibonite",
+              "sections_communales": ["Bas Trou du Nord", "Crête Brûlée", "Délices", "La Chapelle", "Petite Rivière Centre"]
+            }
+          ]
+        },
+        {
+          "nom": "Gonaïves",
+          "communes": [
+            {
+              "nom": "Gonaïves",
+              "sections_communales": ["Bassin", "Ennery", "La Scierie", "Raboteau", "Santo", "Savane Désolée"]
+            },
+            {
+              "nom": "Ennery",
+              "sections_communales": ["Ennery Centre", "Lacoma", "Plaisance"]
+            },
+            {
+              "nom": "Gros Morne",
+              "sections_communales": ["Bas de Sault", "Gros Morne Centre", "Savane Carré", "Source Chaude"]
+            },
+            {
+              "nom": "L'Estère",
+              "sections_communales": ["L'Estère Centre", "Plaine du Nord", "Saint-Marc"]
+            }
+          ]
+        },
+        {
+          "nom": "Marmelade",
+          "communes": [
+            {
+              "nom": "Marmelade",
+              "sections_communales": ["Bas Marmelade", "Haut Marmelade", "Marmelade Centre"]
+            }
+          ]
+        },
+        {
+          "nom": "Saint-Marc",
+          "communes": [
+            {
+              "nom": "Saint-Marc",
+              "sections_communales": ["Bocozelle", "Bretelle", "La Chapelle", "Saint-Marc Centre", "Vérettes"]
+            },
+            {
+              "nom": "Verrettes",
+              "sections_communales": ["Bas Verrettes", "Haut Verrettes", "Verrettes Centre"]
+            },
+            {
+              "nom": "La Chapelle",
+              "sections_communales": ["Bas La Chapelle", "La Chapelle Centre", "Montagne Noire"]
+            }
+          ]
+        },
+        {
+          "nom": "Terre Neuve",
+          "communes": [
+            {
+              "nom": "Terre Neuve",
+              "sections_communales": ["Bas Terre Neuve", "Haut Terre Neuve"]
+            },
+            {
+              "nom": "Desdunes",
+              "sections_communales": ["Desdunes Centre", "Petite Montagne"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Centre",
+      "slug": "centre",
+      "capitale": "Hinche",
+      "arrondissements": [
+        {
+          "nom": "Hinche",
+          "communes": [
+            {
+              "nom": "Hinche",
+              "sections_communales": ["Bas Plateau Central", "Cachiman", "Cerca Cavajal", "Hinche Centre", "La Hoye", "Maïssade"]
+            },
+            {
+              "nom": "Maïssade",
+              "sections_communales": ["Maïssade Centre", "Mont Organisé", "Savane Zombie"]
+            },
+            {
+              "nom": "Thomonde",
+              "sections_communales": ["Bas Thomonde", "Haut Thomonde", "Thomonde Centre"]
+            }
+          ]
+        },
+        {
+          "nom": "Lascahobas",
+          "communes": [
+            {
+              "nom": "Lascahobas",
+              "sections_communales": ["Bas Lascahobas", "Corporant", "Lascahobas Centre", "Savane Zombi"]
+            },
+            {
+              "nom": "Savanette",
+              "sections_communales": ["Savanette Centre", "Bas Savanette"]
+            },
+            {
+              "nom": "Belladère",
+              "sections_communales": ["Belladère Centre", "Fond Melon", "Rivière Blanche"]
+            }
+          ]
+        },
+        {
+          "nom": "Mirebalais",
+          "communes": [
+            {
+              "nom": "Mirebalais",
+              "sections_communales": ["Bas Mirebalais", "Haut Mirebalais", "Mirebalais Centre", "Montagne Terrible"]
+            },
+            {
+              "nom": "Saut d'Eau",
+              "sections_communales": ["Bas Saut d'Eau", "Saut d'Eau Centre", "Montagne Terrible"]
+            },
+            {
+              "nom": "Boucan Carré",
+              "sections_communales": ["Boucan Carré Centre", "Plateau Central"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Grand'Anse",
+      "slug": "grand_anse",
+      "capitale": "Jérémie",
+      "arrondissements": [
+        {
+          "nom": "Jérémie",
+          "communes": [
+            {
+              "nom": "Jérémie",
+              "sections_communales": ["Bas Pays", "Chambellan", "Corail Soult", "Jérémie Centre", "Roseaux", "Trou Bonbon"]
+            },
+            {
+              "nom": "Moron",
+              "sections_communales": ["Bas Moron", "Haut Moron", "Moron Centre"]
+            },
+            {
+              "nom": "Bonbon",
+              "sections_communales": ["Bonbon Centre", "Trou Bonbon"]
+            }
+          ]
+        },
+        {
+          "nom": "Anse d'Hainault",
+          "communes": [
+            {
+              "nom": "Anse d'Hainault",
+              "sections_communales": ["Anse d'Hainault Centre", "Grandoit", "Les Roseaux"]
+            },
+            {
+              "nom": "Dame Marie",
+              "sections_communales": ["Dame Marie Centre", "Fond des Blancs"]
+            },
+            {
+              "nom": "Abricots",
+              "sections_communales": ["Abricots Centre", "Beaumont"]
+            }
+          ]
+        },
+        {
+          "nom": "Corail",
+          "communes": [
+            {
+              "nom": "Corail",
+              "sections_communales": ["Corail Centre", "Duchity", "Pestel"]
+            },
+            {
+              "nom": "Pestel",
+              "sections_communales": ["Pestel Centre", "Bélony"]
+            },
+            {
+              "nom": "Beaumont",
+              "sections_communales": ["Beaumont Centre", "Carrefour Charles"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Nippes",
+      "slug": "nippes",
+      "capitale": "Miragoâne",
+      "arrondissements": [
+        {
+          "nom": "Miragoâne",
+          "communes": [
+            {
+              "nom": "Miragoâne",
+              "sections_communales": ["Arnaud", "Baradères", "Miragoâne Centre", "Petite Rivière de Nippes"]
+            },
+            {
+              "nom": "Petit Trou de Nippes",
+              "sections_communales": ["Petit Trou Centre", "Banet", "Rivière Froide"]
+            }
+          ]
+        },
+        {
+          "nom": "Baradères",
+          "communes": [
+            {
+              "nom": "Baradères",
+              "sections_communales": ["Baradères Centre", "Grand Boucan", "Piton"]
+            },
+            {
+              "nom": "L'Asile",
+              "sections_communales": ["L'Asile Centre", "Fond des Blancs", "Montagne des Nippes"]
+            }
+          ]
+        },
+        {
+          "nom": "Plaisance du Sud",
+          "communes": [
+            {
+              "nom": "Plaisance du Sud",
+              "sections_communales": ["Clonard", "Plaisance du Sud Centre", "Villa"]
+            },
+            {
+              "nom": "Fond des Nègres",
+              "sections_communales": ["Fond des Nègres Centre", "Pichon"]
+            },
+            {
+              "nom": "Arnaud",
+              "sections_communales": ["Arnaud Centre", "Grande Source"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Nord",
+      "slug": "nord",
+      "capitale": "Cap-Haïtien",
+      "arrondissements": [
+        {
+          "nom": "Cap-Haïtien",
+          "communes": [
+            {
+              "nom": "Cap-Haïtien",
+              "sections_communales": ["Bas Limbé", "Bande du Nord", "Cap-Haïtien Centre", "Carénage", "Haut du Cap", "Milot"]
+            },
+            {
+              "nom": "Milot",
+              "sections_communales": ["Bas Milot", "Haut Milot", "Milot Centre"]
+            },
+            {
+              "nom": "Limonade",
+              "sections_communales": ["Bas Limonade", "Haut Limonade", "Limonade Centre"]
+            },
+            {
+              "nom": "Quartier Morin",
+              "sections_communales": ["Bas Quartier Morin", "Haut Quartier Morin"]
+            },
+            {
+              "nom": "Acul du Nord",
+              "sections_communales": ["Acul du Nord Centre", "Bas Acul"]
+            }
+          ]
+        },
+        {
+          "nom": "Grande Rivière du Nord",
+          "communes": [
+            {
+              "nom": "Grande Rivière du Nord",
+              "sections_communales": ["Bas Grande Rivière", "Grande Rivière Centre", "La Victoire", "Mombin Crochu"]
+            },
+            {
+              "nom": "Saint-Raphaël",
+              "sections_communales": ["Bas Saint-Raphaël", "Haut Saint-Raphaël", "Saint-Raphaël Centre"]
+            },
+            {
+              "nom": "Bahon",
+              "sections_communales": ["Bahon Centre", "Haut Bahon"]
+            }
+          ]
+        },
+        {
+          "nom": "Limbé",
+          "communes": [
+            {
+              "nom": "Limbé",
+              "sections_communales": ["Bas Limbé", "Haut Limbé", "Limbé Centre", "Plaine du Nord"]
+            },
+            {
+              "nom": "Plaine du Nord",
+              "sections_communales": ["Bas Plaine", "Haut Plaine", "Plaine Centre"]
+            },
+            {
+              "nom": "Bas Limbé",
+              "sections_communales": ["Bas Limbé Centre", "Rivière Blanche"]
+            }
+          ]
+        },
+        {
+          "nom": "Plaisance",
+          "communes": [
+            {
+              "nom": "Plaisance",
+              "sections_communales": ["Bas Plaisance", "Haut Plaisance", "Plaisance Centre"]
+            },
+            {
+              "nom": "Pilate",
+              "sections_communales": ["Bas Pilate", "Haut Pilate", "Pilate Centre"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Nord-Est",
+      "slug": "nord_est",
+      "capitale": "Fort-Liberté",
+      "arrondissements": [
+        {
+          "nom": "Fort-Liberté",
+          "communes": [
+            {
+              "nom": "Fort-Liberté",
+              "sections_communales": ["Bas Fort-Liberté", "Fort-Liberté Centre", "Malfety", "Terrier Rouge"]
+            },
+            {
+              "nom": "Ferrier",
+              "sections_communales": ["Ferrier Centre", "Haut Ferrier"]
+            },
+            {
+              "nom": "Malfety",
+              "sections_communales": ["Malfety Centre", "Haut Malfety"]
+            }
+          ]
+        },
+        {
+          "nom": "Ouanaminthe",
+          "communes": [
+            {
+              "nom": "Ouanaminthe",
+              "sections_communales": ["Acul Samedi", "Capotille", "Mombin Crochu", "Ouanaminthe Centre"]
+            },
+            {
+              "nom": "Capotille",
+              "sections_communales": ["Capotille Centre", "Mont Organisé"]
+            },
+            {
+              "nom": "Mont Organisé",
+              "sections_communales": ["Mont Organisé Centre", "Bas Mont Organisé"]
+            }
+          ]
+        },
+        {
+          "nom": "Vallières",
+          "communes": [
+            {
+              "nom": "Vallières",
+              "sections_communales": ["Bas Vallières", "Haut Vallières", "Vallières Centre"]
+            },
+            {
+              "nom": "Carice",
+              "sections_communales": ["Carice Centre", "Haut Carice"]
+            },
+            {
+              "nom": "Mombin Crochu",
+              "sections_communales": ["Mombin Crochu Centre", "Bas Mombin"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Nord-Ouest",
+      "slug": "nord_ouest",
+      "capitale": "Port-de-Paix",
+      "arrondissements": [
+        {
+          "nom": "Port-de-Paix",
+          "communes": [
+            {
+              "nom": "Port-de-Paix",
+              "sections_communales": ["Baie de Henne", "Bas Port-de-Paix", "Port-de-Paix Centre", "Terre Neuve"]
+            },
+            {
+              "nom": "Bassin Bleu",
+              "sections_communales": ["Bassin Bleu Centre", "Haut Bassin Bleu"]
+            },
+            {
+              "nom": "Chansolme",
+              "sections_communales": ["Chansolme Centre", "Petite Anse"]
+            }
+          ]
+        },
+        {
+          "nom": "Saint-Louis du Nord",
+          "communes": [
+            {
+              "nom": "Saint-Louis du Nord",
+              "sections_communales": ["Anse à Foleur", "Baie de Henne", "Saint-Louis Centre", "Tortue"]
+            },
+            {
+              "nom": "Anse à Foleur",
+              "sections_communales": ["Anse à Foleur Centre", "Haut Anse"]
+            }
+          ]
+        },
+        {
+          "nom": "Môle Saint-Nicolas",
+          "communes": [
+            {
+              "nom": "Môle Saint-Nicolas",
+              "sections_communales": ["Baie de Henne", "Bombardopolis", "Môle Centre", "Jean Rabel"]
+            },
+            {
+              "nom": "Jean Rabel",
+              "sections_communales": ["Aquin", "Jean Rabel Centre", "Nan Café"]
+            },
+            {
+              "nom": "Bombardopolis",
+              "sections_communales": ["Bombardopolis Centre", "Haut Bombardopolis"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Ouest",
+      "slug": "ouest",
+      "capitale": "Port-au-Prince",
+      "arrondissements": [
+        {
+          "nom": "Port-au-Prince",
+          "communes": [
+            {
+              "nom": "Port-au-Prince",
+              "sections_communales": ["Bas Peu de Chose", "Bel Air", "Centre-Ville", "Christ-Roi", "Cité Soleil", "Delmas", "Fort National", "Martissant", "Turgeau"]
+            },
+            {
+              "nom": "Carrefour",
+              "sections_communales": ["Bizoton", "Carrefour Centre", "Diquini", "Gressier", "Léogâne", "Thor"]
+            },
+            {
+              "nom": "Delmas",
+              "sections_communales": ["Delmas 2", "Delmas 19", "Delmas 24", "Delmas 32", "Delmas 40", "Delmas 60", "Delmas 73", "Delmas 83", "Delmas 95"]
+            },
+            {
+              "nom": "Pétion-Ville",
+              "sections_communales": ["Boutilliers", "Canapé Vert", "Frères", "Juvenat", "Morne Calvaire", "Pétion-Ville Centre", "Thomassin"]
+            },
+            {
+              "nom": "Cité Soleil",
+              "sections_communales": ["Boston", "Cité Soleil Centre", "Drouillard", "Simon"]
+            },
+            {
+              "nom": "Tabarre",
+              "sections_communales": ["Tabarre 1", "Tabarre 2", "Tabarre 3", "Lizon", "Morne à Chandelle"]
+            },
+            {
+              "nom": "Croix-des-Bouquets",
+              "sections_communales": ["Bon Repos", "Croix-des-Bouquets Centre", "Ganthier", "Morne à Chandelle", "Pernier", "Thomazeau"]
+            }
+          ]
+        },
+        {
+          "nom": "Arcahaie",
+          "communes": [
+            {
+              "nom": "Arcahaie",
+              "sections_communales": ["Arcahaie Centre", "Cabaret", "Découzé", "Fond Baptiste", "La Tremblay", "Montrouis"]
+            },
+            {
+              "nom": "Cabaret",
+              "sections_communales": ["Cabaret Centre", "Cazeau", "Saintard"]
+            }
+          ]
+        },
+        {
+          "nom": "Croix-des-Bouquets",
+          "communes": [
+            {
+              "nom": "Croix-des-Bouquets",
+              "sections_communales": ["Bon Repos", "Croix-des-Bouquets Centre", "Ganthier", "Morne à Chandelle", "Pernier"]
+            },
+            {
+              "nom": "Thomazeau",
+              "sections_communales": ["Fond Parisien", "Thomazeau Centre"]
+            },
+            {
+              "nom": "Ganthier",
+              "sections_communales": ["Fond Parisien", "Ganthier Centre", "Manneville"]
+            }
+          ]
+        },
+        {
+          "nom": "Léogâne",
+          "communes": [
+            {
+              "nom": "Léogâne",
+              "sections_communales": ["Bas Léogâne", "Deslandes", "Fond Baptiste", "Grand Goâve", "Léogâne Centre", "Mapou"]
+            },
+            {
+              "nom": "Gressier",
+              "sections_communales": ["Gressier Centre", "Petite Anse"]
+            },
+            {
+              "nom": "Grand Goâve",
+              "sections_communales": ["Fonds des Nègres", "Grand Goâve Centre", "Petit Goâve"]
+            },
+            {
+              "nom": "Petit Goâve",
+              "sections_communales": ["Bas Petit Goâve", "Haut Petit Goâve", "Petit Goâve Centre", "Trou Caïman"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Sud",
+      "slug": "sud",
+      "capitale": "Les Cayes",
+      "arrondissements": [
+        {
+          "nom": "Les Cayes",
+          "communes": [
+            {
+              "nom": "Les Cayes",
+              "sections_communales": ["Cavaillon", "Ile-à-Vache", "Les Cayes Centre", "Port-Salut", "Torbeck"]
+            },
+            {
+              "nom": "Torbeck",
+              "sections_communales": ["Bas Torbeck", "Chardonnières", "Torbeck Centre"]
+            },
+            {
+              "nom": "Cavaillon",
+              "sections_communales": ["Bas Cavaillon", "Cavaillon Centre", "Haut Cavaillon"]
+            },
+            {
+              "nom": "Port-Salut",
+              "sections_communales": ["Arnaud", "Macéan", "Port-Salut Centre"]
+            },
+            {
+              "nom": "Ile-à-Vache",
+              "sections_communales": ["Ile-à-Vache Centre", "Madame Bernard"]
+            }
+          ]
+        },
+        {
+          "nom": "Aquin",
+          "communes": [
+            {
+              "nom": "Aquin",
+              "sections_communales": ["Aquin Centre", "Bas Aquin", "Saint-Louis du Sud", "Vieux Bourg d'Aquin"]
+            },
+            {
+              "nom": "Saint-Louis du Sud",
+              "sections_communales": ["Bas Saint-Louis", "Haut Saint-Louis", "Saint-Louis Centre"]
+            }
+          ]
+        },
+        {
+          "nom": "Chardonnières",
+          "communes": [
+            {
+              "nom": "Chardonnières",
+              "sections_communales": ["Chardonnières Centre", "Les Anglais", "Tiburon"]
+            },
+            {
+              "nom": "Tiburon",
+              "sections_communales": ["Bas Tiburon", "Tiburon Centre"]
+            },
+            {
+              "nom": "Les Anglais",
+              "sections_communales": ["Les Anglais Centre", "Bas Les Anglais"]
+            }
+          ]
+        },
+        {
+          "nom": "Côteaux",
+          "communes": [
+            {
+              "nom": "Côteaux",
+              "sections_communales": ["Côteaux Centre", "Port-à-Piment", "Roche à Bateau"]
+            },
+            {
+              "nom": "Port-à-Piment",
+              "sections_communales": ["Bas Port-à-Piment", "Port-à-Piment Centre"]
+            },
+            {
+              "nom": "Roche à Bateau",
+              "sections_communales": ["Roche à Bateau Centre", "Haut Roche"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Sud-Est",
+      "slug": "sud_est",
+      "capitale": "Jacmel",
+      "arrondissements": [
+        {
+          "nom": "Jacmel",
+          "communes": [
+            {
+              "nom": "Jacmel",
+              "sections_communales": ["Bas Jacmel", "Cayes Jacmel", "Jacmel Centre", "La Gosseline", "Marigot", "Marbial"]
+            },
+            {
+              "nom": "Cayes Jacmel",
+              "sections_communales": ["Bas Cayes Jacmel", "Cayes Jacmel Centre"]
+            },
+            {
+              "nom": "Marigot",
+              "sections_communales": ["Bas Marigot", "Haut Marigot", "Marigot Centre"]
+            },
+            {
+              "nom": "La Vallée",
+              "sections_communales": ["Bodarie", "La Vallée Centre", "Marbial"]
+            }
+          ]
+        },
+        {
+          "nom": "Bainet",
+          "communes": [
+            {
+              "nom": "Bainet",
+              "sections_communales": ["Bainet Centre", "Côtes de Fer", "Grand Gosier"]
+            },
+            {
+              "nom": "Côtes de Fer",
+              "sections_communales": ["Côtes de Fer Centre", "Mapou"]
+            },
+            {
+              "nom": "Grand Gosier",
+              "sections_communales": ["Grand Gosier Centre", "Haut Grand Gosier"]
+            }
+          ]
+        },
+        {
+          "nom": "Belle Anse",
+          "communes": [
+            {
+              "nom": "Belle Anse",
+              "sections_communales": ["Anse à Pitres", "Belle Anse Centre", "Thiotte"]
+            },
+            {
+              "nom": "Thiotte",
+              "sections_communales": ["Bas Thiotte", "Thiotte Centre"]
+            },
+            {
+              "nom": "Anse à Pitres",
+              "sections_communales": ["Anse à Pitres Centre", "Fond Jean Denis"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

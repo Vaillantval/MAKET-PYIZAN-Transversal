@@ -1,0 +1,470 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Mes adresses{% endblock %}
+
+{% block sidebar_nav %}
+  <div class="nav-section-label">Navigation</div>
+  <a href="/dashboard/acheteur/" class="nav-item">
+    <i class="fas fa-th-large"></i> Vue d'ensemble
+  </a>
+  <a href="/dashboard/acheteur/commandes/" class="nav-item">
+    <i class="fas fa-clipboard-list"></i> Mes commandes
+  </a>
+  <a href="/dashboard/acheteur/adresses/" class="nav-item active">
+    <i class="fas fa-map-marker-alt"></i> Mes adresses
+  </a>
+  <a href="/" class="nav-item">
+    <i class="fas fa-store"></i> Catalogue
+  </a>
+  <div class="nav-section-label">Compte</div>
+  <a href="/dashboard/acheteur/profil/" class="nav-item">
+    <i class="fas fa-user-edit"></i> Mon profil
+  </a>
+{% endblock %}
+
+{% block page_title %}Mes adresses{% endblock %}
+{% block page_subtitle %}Gérez vos adresses de livraison et facturation{% endblock %}
+
+{% block extra_css %}
+<style>
+  .page-actions { margin-bottom: 24px; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px; background: var(--green-mid); color: #fff;
+    border-radius: 9px; font-size: 14px; font-weight: 600;
+    border: none; cursor: pointer; font-family: inherit;
+    transition: background .2s, transform .1s; box-shadow: 0 3px 10px rgba(39,174,96,.3);
+  }
+  .btn-primary:hover { background: var(--green); transform: translateY(-1px); }
+
+  .addr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .addr-card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px;
+    border: 2px solid transparent; position: relative;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .addr-card.default { border-color: var(--green-mid); }
+  .addr-card:hover { box-shadow: var(--shadow-lg); }
+
+  .addr-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .addr-libelle { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .addr-libelle i { color: var(--green-mid); }
+  .addr-type-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .addr-type-livraison   { background: #e8f8ee; color: #27ae60; }
+  .addr-type-facturation { background: #e8f2ff; color: #2980b9; }
+
+  .default-badge {
+    position: absolute; top: 14px; right: 14px;
+    background: var(--green-mid); color: #fff;
+    font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+
+  .addr-info { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin-bottom: 16px; }
+  .addr-info strong { color: var(--text); }
+
+  .addr-actions { display: flex; gap: 8px; }
+  .btn-icon {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    border: 1.5px solid var(--border); background: #fff; cursor: pointer;
+    font-family: inherit; color: var(--text-muted); transition: all .2s;
+  }
+  .btn-icon:hover { border-color: var(--green-mid); color: var(--green); }
+  .btn-icon.danger:hover { border-color: #e74c3c; color: #e74c3c; }
+  .btn-icon.success { border-color: var(--green-mid); color: var(--green-mid); }
+
+  .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
+  .empty-state i { font-size: 40px; opacity: .2; display: block; margin-bottom: 14px; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 200; backdrop-filter: blur(3px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 16px;
+    width: 100%; max-width: 520px; max-height: 90vh;
+    overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    animation: slideUp .3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } }
+  .modal-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h3 { font-size: 17px; font-weight: 700; }
+  .modal-close {
+    background: none; border: none; font-size: 18px;
+    color: var(--text-muted); cursor: pointer; padding: 4px;
+    transition: color .2s;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #444; margin-bottom: 6px; }
+  .form-group label .req { color: #e74c3c; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .ds-input {
+    width: 100%; padding: 10px 14px; border: 1.5px solid #e8e8e8;
+    border-radius: 9px; font-size: 14px; font-family: inherit; background: #fafafa;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .ds-input:focus { border-color: var(--green-mid); box-shadow: 0 0 0 3px rgba(39,174,96,.1); background: #fff; }
+  .ds-select { cursor: pointer; }
+  .ds-textarea { resize: vertical; min-height: 72px; }
+  .btn-cancel {
+    padding: 10px 20px; border: 1.5px solid var(--border); background: #fff;
+    border-radius: 9px; font-size: 14px; font-weight: 600; font-family: inherit;
+    cursor: pointer; color: var(--text-muted); transition: all .2s;
+  }
+  .btn-cancel:hover { border-color: #aaa; color: var(--text); }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 300;
+    background: #1a1a1a; color: #fff; padding: 12px 20px; border-radius: 10px;
+    font-size: 14px; display: none; align-items: center; gap: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.3); animation: fadeInUp .3s ease;
+  }
+  .toast.show { display: flex; }
+  .toast.success { background: var(--green); }
+  .toast.error   { background: #e74c3c; }
+  @keyframes fadeInUp { from { transform: translateY(10px); opacity: 0; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+  <div class="page-actions">
+    <button class="btn-primary" onclick="openModal()">
+      <i class="fas fa-plus"></i> Ajouter une adresse
+    </button>
+  </div>
+
+  <div id="addr-loading" style="text-align:center;padding:40px;color:var(--text-muted)">
+    <i class="fas fa-spinner fa-spin" style="font-size:24px"></i>
+  </div>
+  <div class="addr-grid" id="addr-grid" style="display:none"></div>
+  <div class="empty-state" id="addr-empty" style="display:none">
+    <i class="fas fa-map-marker-alt"></i>
+    <p>Aucune adresse enregistrée.<br>Ajoutez une adresse pour faciliter vos commandes.</p>
+  </div>
+
+  <!-- Modal ajout / édition -->
+  <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Nouvelle adresse</h3>
+        <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="addr-form">
+        <div class="modal-body">
+          <input type="hidden" id="addr-id">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="f-libelle">Libellé <span class="req">*</span></label>
+              <input type="text" id="f-libelle" class="ds-input" placeholder="Ex : Domicile, Bureau…">
+            </div>
+            <div class="form-group">
+              <label for="f-type">Type <span class="req">*</span></label>
+              <select id="f-type" class="ds-input ds-select">
+                <option value="livraison">Livraison</option>
+                <option value="facturation">Facturation</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="f-nom">Nom complet du destinataire <span class="req">*</span></label>
+            <input type="text" id="f-nom" class="ds-input" placeholder="Prénom et nom">
+          </div>
+
+          <div class="form-group">
+            <label for="f-tel">Téléphone</label>
+            <input type="tel" id="f-tel" class="ds-input" placeholder="+509 3700 0000">
+          </div>
+
+          <div class="form-group">
+            <label for="f-rue">Rue / Adresse <span class="req">*</span></label>
+            <input type="text" id="f-rue" class="ds-input" placeholder="Numéro et nom de rue">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="f-dept">Département <span class="req">*</span></label>
+              <select id="f-dept" class="ds-input ds-select">
+                <option value="">-- Choisir --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="f-commune">Commune <span class="req">*</span></label>
+              <input type="text" id="f-commune" class="ds-input" placeholder="Ex : Léogâne">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="f-section">Section communale</label>
+            <input type="text" id="f-section" class="ds-input" placeholder="Section communale">
+          </div>
+
+          <div class="form-group">
+            <label for="f-details">Instructions de livraison</label>
+            <textarea id="f-details" class="ds-input ds-textarea"
+              placeholder="Appartement, étage, point de repère…"></textarea>
+          </div>
+
+          <div class="form-group" style="display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="f-default" style="width:16px;height:16px;accent-color:var(--green-mid)">
+            <label for="f-default" style="margin:0;font-size:13px;cursor:pointer;color:var(--text)">
+              Définir comme adresse par défaut
+            </label>
+          </div>
+
+          <div id="form-error" style="display:none;background:#fde8e8;color:#c0392b;
+            padding:10px 14px;border-radius:8px;font-size:13px;margin-top:4px"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
+          <button type="submit" class="btn-primary" id="save-btn">
+            <i class="fas fa-save"></i> Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+{% endblock %}
+
+{% block page_script %}
+  let editingId = null;
+
+  // Widget géographique — modal adresse (cascade : département → commune → section)
+  const _geoAddr = new GeoSelector({
+    deptEl:    document.getElementById('f-dept'),
+    communeEl: document.getElementById('f-commune'),
+    sectionEl: document.getElementById('f-section'),
+    baseUrl:   '/api/geo',
+  });
+
+  function toast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.className = 'toast show ' + type;
+    t.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── Ouvrir le modal (async pour attendre le prefill géo) ─────────────────
+  async function openModal(addr = null) {
+    editingId = addr ? addr.id : null;
+    document.getElementById('modal-title').textContent = addr ? 'Modifier l\'adresse' : 'Nouvelle adresse';
+    document.getElementById('f-libelle').value   = addr?.libelle      || '';
+    document.getElementById('f-type').value      = addr?.type_adresse || 'livraison';
+    document.getElementById('f-nom').value       = addr?.nom_complet  || '';
+    document.getElementById('f-tel').value       = addr?.telephone    || '';
+    document.getElementById('f-rue').value       = addr?.rue          || '';
+    document.getElementById('f-details').value   = addr?.details      || '';
+    document.getElementById('f-default').checked = addr?.is_default   || false;
+    document.getElementById('form-error').style.display = 'none';
+    document.getElementById('modal-overlay').classList.add('open');
+
+    // Bloquer le bouton save pendant le chargement des données géo
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement…';
+
+    await _geoAddr.prefill({
+      deptSlug:   addr?.departement       || '',
+      communeNom: addr?.commune           || '',
+      sectionNom: addr?.section_communale || '',
+    });
+
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+  }
+
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+  // ── Chargement de la liste ────────────────────────────────────────────────
+  async function loadAdresses() {
+    const token = localStorage.getItem('mp_access');
+    try {
+      const r = await fetch('/api/auth/adresses/', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (!r.ok) throw new Error();
+      const list = await r.json();
+      renderAdresses(list);
+    } catch (_) {
+      document.getElementById('addr-loading').style.display = 'none';
+      document.getElementById('addr-grid').style.display = 'none';
+      document.getElementById('addr-empty').style.display = 'block';
+    }
+  }
+
+  // ── Rendu des cartes ──────────────────────────────────────────────────────
+  function renderAdresses(list) {
+    document.getElementById('addr-loading').style.display = 'none';
+    const grid  = document.getElementById('addr-grid');
+    const empty = document.getElementById('addr-empty');
+
+    if (list.length === 0) {
+      grid.style.display  = 'none';
+      grid.innerHTML      = '';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    grid.style.display  = 'grid';
+    grid.innerHTML = '';
+
+    list.forEach(a => {
+      const typeClass = a.type_adresse === 'livraison' ? 'addr-type-livraison' : 'addr-type-facturation';
+      grid.innerHTML += `
+        <div class="addr-card ${a.is_default ? 'default' : ''}" id="card-${a.id}">
+          ${a.is_default ? '<span class="default-badge"><i class="fas fa-star" style="font-size:8px"></i> Défaut</span>' : ''}
+          <div class="addr-card-header">
+            <div class="addr-libelle">
+              <i class="fas fa-map-marker-alt"></i> ${_esc(a.libelle)}
+            </div>
+            <span class="addr-type-badge ${typeClass}">${_esc(a.type_adresse_display)}</span>
+          </div>
+          <div class="addr-info">
+            <strong>${_esc(a.nom_complet)}</strong><br>
+            ${a.telephone ? _esc(a.telephone) + '<br>' : ''}
+            ${_esc(a.rue)}<br>
+            ${_esc(a.commune)}${a.section_communale ? ', ' + _esc(a.section_communale) : ''}, ${_esc(a.departement_display)}<br>
+            ${a.details ? '<em style="font-size:12px">' + _esc(a.details) + '</em>' : ''}
+          </div>
+          <div class="addr-actions">
+            ${!a.is_default ? `<button class="btn-icon success" onclick="setDefault(${a.id})">
+              <i class="fas fa-star"></i> Défaut
+            </button>` : ''}
+            <button class="btn-icon" onclick='openModal(JSON.parse(decodeURIComponent("${encodeURIComponent(JSON.stringify(a))}")))'>
+              <i class="fas fa-edit"></i> Modifier
+            </button>
+            <button class="btn-icon danger" onclick="deleteAddr(${a.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>`;
+    });
+  }
+
+  // Échappement HTML pour éviter les injections dans innerHTML
+  function _esc(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── Soumission du formulaire ──────────────────────────────────────────────
+  document.getElementById('addr-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const token  = localStorage.getItem('mp_access');
+    const errEl  = document.getElementById('form-error');
+    const saveBtn = document.getElementById('save-btn');
+    errEl.style.display = 'none';
+
+    const payload = {
+      libelle:           document.getElementById('f-libelle').value.trim(),
+      type_adresse:      document.getElementById('f-type').value,
+      nom_complet:       document.getElementById('f-nom').value.trim(),
+      telephone:         document.getElementById('f-tel').value.trim(),
+      rue:               document.getElementById('f-rue').value.trim(),
+      departement:       document.getElementById('f-dept').value,
+      commune:           document.getElementById('f-commune').value.trim(),
+      section_communale: document.getElementById('f-section').value.trim(),
+      details:           document.getElementById('f-details').value.trim(),
+      is_default:        document.getElementById('f-default').checked,
+    };
+
+    if (!payload.libelle || !payload.nom_complet || !payload.rue || !payload.departement || !payload.commune) {
+      errEl.textContent = 'Veuillez remplir tous les champs obligatoires (libellé, destinataire, rue, département, commune).';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement…';
+
+    const url    = editingId ? `/api/auth/adresses/${editingId}/` : '/api/auth/adresses/';
+    const method = editingId ? 'PUT' : 'POST';
+    try {
+      const r = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) {
+        // Tenter de lire le message d'erreur de l'API
+        let msg = 'Une erreur est survenue. Vérifiez les champs.';
+        try {
+          const err = await r.json();
+          const msgs = Object.entries(err).map(([k, v]) => {
+            const label = { departement: 'Département', commune: 'Commune', libelle: 'Libellé',
+                            nom_complet: 'Destinataire', rue: 'Rue', type_adresse: 'Type' }[k] || k;
+            return `${label} : ${Array.isArray(v) ? v.join(', ') : v}`;
+          });
+          if (msgs.length) msg = msgs.join(' — ');
+        } catch (_) {}
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+        return;
+      }
+      closeModal();
+      toast(editingId ? 'Adresse mise à jour !' : 'Adresse ajoutée !');
+      loadAdresses();
+    } catch (_) {
+      errEl.textContent = 'Erreur réseau. Vérifiez votre connexion et réessayez.';
+      errEl.style.display = 'block';
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+    }
+  });
+
+  // ── Définir comme adresse par défaut ─────────────────────────────────────
+  async function setDefault(id) {
+    const token = localStorage.getItem('mp_access');
+    try {
+      const r = await fetch(`/api/auth/adresses/${id}/default/`, {
+        method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (r.ok) { toast('Adresse par défaut mise à jour !'); loadAdresses(); }
+      else toast('Impossible de définir l\'adresse par défaut.', 'error');
+    } catch (_) { toast('Erreur réseau.', 'error'); }
+  }
+
+  // ── Supprimer une adresse ─────────────────────────────────────────────────
+  async function deleteAddr(id) {
+    if (!confirm('Supprimer cette adresse ? Cette action est irréversible.')) return;
+    const token = localStorage.getItem('mp_access');
+    try {
+      const r = await fetch(`/api/auth/adresses/${id}/`, {
+        method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (r.status === 204) { toast('Adresse supprimée.'); loadAdresses(); }
+      else toast('Impossible de supprimer cette adresse.', 'error');
+    } catch (_) { toast('Erreur réseau.', 'error'); }
+  }
+
+  mpAuthCheck(['acheteur', 'collecteur']).then(user => { if (user) loadAdresses(); });
+{% endblock %}

@@ -1,0 +1,467 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon panier — {{ site_settings.nom_site|default:"Makèt Peyizan" }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --vert-fonce:#1a6b2f; --vert-vif:#27ae60; --vert-menthe:#e8f8ee;
+      --jaune:#e8d800; --blanc:#fff; --noir:#1a1a1a; --gris:#f4f6f9;
+      --gris-bord:#e2e8f0; --gris-texte:#555; --shadow:0 4px 24px rgba(0,0,0,.08);
+      --radius:12px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:var(--gris);color:var(--noir);}
+    a{text-decoration:none;color:inherit;}
+    .container{max-width:960px;margin:0 auto;padding:0 24px;}
+
+    /* Navbar */
+    .navbar{position:sticky;top:0;z-index:100;background:var(--vert-fonce);box-shadow:0 2px 16px rgba(0,0,0,.15);}
+    .navbar-inner{display:flex;align-items:center;justify-content:space-between;height:64px;}
+    .navbar-logo{display:flex;align-items:center;gap:10px;}
+    .navbar-logo-icon{width:38px;height:38px;background:var(--jaune);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .navbar-logo-text{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:var(--blanc);line-height:1.1;}
+    @media(max-width:640px){.navbar-search{display:none;}}
+    .btn-nav{padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+    .btn-outline{background:transparent;border:1.5px solid rgba(255,255,255,.5);color:var(--blanc);}
+    .btn-outline:hover{background:rgba(255,255,255,.1);}
+    .btn-nav-outline{background:transparent;border:1.5px solid rgba(255,255,255,.5);color:var(--blanc);}
+    .btn-nav-outline:hover{background:rgba(255,255,255,.1);border-color:var(--blanc);}
+    .btn-nav-primary{background:var(--jaune);color:var(--noir);border:none;}
+    .btn-nav-primary:hover{background:#d4c800;}
+    .navbar-actions{display:flex;align-items:center;gap:12px;}
+    .navbar-search{flex:1;max-width:400px;margin:0 24px;}
+    .navbar-search form{display:flex;align-items:center;background:rgba(255,255,255,.15);border-radius:50px;overflow:hidden;border:1.5px solid rgba(255,255,255,.25);}
+    .navbar-search input{flex:1;background:transparent;border:none;outline:none;padding:9px 16px;font-size:13px;color:var(--blanc);font-family:'DM Sans',sans-serif;}
+    .navbar-search input::placeholder{color:rgba(255,255,255,.6);}
+    .navbar-search button{background:var(--jaune);border:none;width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:var(--noir);cursor:pointer;}
+    .user-menu{display:flex;align-items:center;gap:10px;}
+    .user-avatar{width:36px;height:36px;background:var(--jaune);color:var(--noir);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;cursor:pointer;border:2px solid rgba(255,255,255,.3);flex-shrink:0;}
+    .user-name{color:#fff;font-size:13px;font-weight:600;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .user-role-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+    .btn-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.85);padding:7px 14px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s,color .2s;display:flex;align-items:center;gap:6px;}
+    .btn-logout:hover{background:rgba(255,0,0,.2);color:#fff;border-color:rgba(255,100,100,.4);}
+
+    /* Cart dropdown */
+    .cart-dd-wrap{position:relative;}
+    .btn-panier{position:relative;display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:50px;font-size:13px;font-weight:600;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:var(--blanc);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;text-decoration:none;}
+    .btn-panier:hover{background:rgba(255,255,255,.25);}
+    .panier-badge{position:absolute;top:-6px;right:-6px;background:var(--jaune);color:var(--noir);font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+    .panier-badge.hidden{display:none;}
+    .cart-dd{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:9999;display:none;flex-direction:column;overflow:hidden;}
+    .cart-dd.open{display:flex;}
+    .cart-dd-header{padding:12px 16px;border-bottom:1px solid #eee;font-weight:700;font-size:13px;color:#333;}
+    .cart-dd-body{max-height:260px;overflow-y:auto;}
+    .cart-dd-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #f0f0f0;}
+    .cart-dd-item:last-child{border-bottom:none;}
+    .cart-dd-item img{width:40px;height:40px;object-fit:cover;border-radius:6px;background:#f0f0f0;flex-shrink:0;}
+    .cart-dd-item-info{flex:1;min-width:0;}
+    .cart-dd-item-name{font-size:12px;font-weight:600;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .cart-dd-item-price{font-size:11px;color:#666;margin-top:2px;}
+    .cart-dd-total{padding:10px 16px;border-top:2px solid #eee;font-weight:700;font-size:13px;color:#222;display:flex;justify-content:space-between;align-items:center;}
+    .cart-dd-total span{color:var(--vert-vif);}
+    .cart-dd-footer{padding:10px 16px;display:flex;gap:8px;background:#f9f9f9;}
+    .cart-dd-empty{padding:24px 16px;text-align:center;color:#999;font-size:13px;}
+    .cart-dd-loading{padding:18px 16px;text-align:center;color:#999;font-size:13px;}
+    .btn-dd-voir{flex:1;text-align:center;padding:8px 12px;border-radius:50px;font-size:12px;font-weight:600;border:1.5px solid var(--vert-vif);color:var(--vert-vif);background:transparent;cursor:pointer;text-decoration:none;transition:all .15s;}
+    .btn-dd-voir:hover{background:var(--vert-vif);color:#fff;}
+    .btn-dd-cmd{flex:1;text-align:center;padding:8px 12px;border-radius:50px;font-size:12px;font-weight:600;border:none;color:var(--noir);background:var(--jaune);cursor:pointer;text-decoration:none;transition:all .15s;}
+    .btn-dd-cmd:hover{background:#d4c800;}
+
+    /* Page */
+    .page-header{padding:28px 0 12px;display:flex;align-items:center;gap:12px;}
+    .page-header h1{font-size:24px;font-weight:800;}
+    .page-header .back-link{font-size:13px;color:var(--vert-vif);display:flex;align-items:center;gap:5px;}
+    .page-header .back-link:hover{text-decoration:underline;}
+
+    /* Panier */
+    .panier-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;padding-bottom:40px;}
+    @media(max-width:760px){.panier-grid{grid-template-columns:1fr;}}
+
+    .cart-items{background:var(--blanc);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+    .cart-header{padding:16px 20px;border-bottom:1px solid var(--gris-bord);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:space-between;}
+    .cart-item{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--gris-bord);}
+    .cart-item:last-child{border-bottom:none;}
+    .item-img{width:64px;height:64px;border-radius:8px;overflow:hidden;background:var(--gris);flex-shrink:0;}
+    .item-img img{width:100%;height:100%;object-fit:cover;}
+    .item-img .no-img{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.2;}
+    .item-body{flex:1;}
+    .item-nom{font-size:14px;font-weight:700;margin-bottom:2px;}
+    .item-producteur{font-size:11px;color:#aaa;margin-bottom:4px;}
+    .item-prix{font-size:13px;color:var(--gris-texte);}
+    .item-total{font-size:15px;font-weight:800;color:var(--vert-fonce);text-align:right;white-space:nowrap;}
+    .item-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+    .qty-mini{display:flex;align-items:center;gap:4px;}
+    .qty-mini button{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--gris-bord);background:var(--blanc);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+    .qty-mini button:hover{background:var(--vert-menthe);}
+    .qty-mini span{width:34px;text-align:center;font-size:14px;font-weight:700;}
+    .btn-retirer{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px;padding:2px 0;}
+    .btn-retirer:hover{text-decoration:underline;}
+
+    .empty-cart{padding:60px 20px;text-align:center;color:var(--gris-texte);}
+    .empty-cart i{font-size:48px;opacity:.15;display:block;margin-bottom:14px;}
+    .empty-cart p{margin-bottom:16px;}
+
+    /* Récap */
+    .recap{background:var(--blanc);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;position:sticky;top:84px;}
+    .recap-title{font-size:15px;font-weight:800;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--gris-bord);}
+    .recap-line{display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px;color:var(--gris-texte);}
+    .recap-total{display:flex;justify-content:space-between;font-size:18px;font-weight:800;color:var(--vert-fonce);padding-top:12px;border-top:2px solid var(--gris-bord);margin-top:4px;}
+    .btn-checkout{width:100%;margin-top:16px;padding:14px;background:var(--vert-fonce);color:var(--blanc);border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+    .btn-checkout:hover{background:#145a26;}
+    .btn-checkout:disabled{opacity:.5;cursor:not-allowed;}
+    .btn-vider{width:100%;margin-top:10px;padding:10px;background:transparent;color:#e74c3c;border:1.5px solid #fbd;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+    .btn-vider:hover{background:#fde8e8;}
+    .checkout-note{font-size:11px;color:#aaa;text-align:center;margin-top:10px;line-height:1.5;}
+
+    .multi-producteur-warn{background:#fff4e0;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:12px;color:#92400e;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;}
+    .multi-producteur-warn i{margin-top:1px;flex-shrink:0;}
+
+    /* Toast */
+    .toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;}
+    .toast{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.15);color:#fff;animation:slideUp .25s ease;}
+    .toast.success{background:#27ae60;} .toast.error{background:#e74c3c;}
+    @keyframes slideUp{from{opacity:0;transform:translateY(10px);}}
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="container">
+    <div class="navbar-inner">
+
+      <a href="/" class="navbar-logo">
+        <div class="navbar-logo-icon">
+          {% if site_settings.logo %}
+            <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.nom_site }}" style="width:26px;height:26px;object-fit:contain;border-radius:50%;">
+          {% else %}
+            🌾
+          {% endif %}
+        </div>
+        <div class="navbar-logo-text">
+          {{ site_settings.nom_site|default:"Makèt Peyizan" }}
+          <span style="display:block;font-size:11px;font-weight:400;opacity:.75;font-family:'DM Sans',sans-serif;">{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
+        </div>
+      </a>
+
+      <div class="navbar-search">
+        <form method="GET" action="/#catalogue">
+          <input type="text" name="q" placeholder="Chercher haricot, maïs, légumes...">
+          <button type="submit"><i class="fas fa-search"></i></button>
+        </form>
+      </div>
+
+      <div class="navbar-actions">
+        <a href="/" class="btn-nav btn-nav-outline"><i class="fas fa-store"></i> Catalogue</a>
+
+        <!-- Panier + dropdown -->
+        <div class="cart-dd-wrap" id="cart-dd-wrap">
+          <a href="{% url 'home:panier' %}" class="btn-panier" id="btn-panier-nav">
+            <i class="fas fa-shopping-basket"></i> Panier
+            <span class="panier-badge {% if resume.nb_articles == 0 %}hidden{% endif %}" id="nav-panier-badge">{{ resume.nb_articles }}</span>
+          </a>
+          <div class="cart-dd" id="cart-dd">
+            <div class="cart-dd-loading"><i class="fas fa-spinner fa-spin"></i> Chargement…</div>
+          </div>
+        </div>
+
+        <!-- État non connecté -->
+        <div id="nav-guest" style="display:flex;align-items:center;gap:10px">
+          <a href="{% url 'home:login' %}" class="btn-nav btn-nav-outline">
+            <i class="fas fa-sign-in-alt"></i> Connexion
+          </a>
+          <a href="{% url 'home:register' %}" class="btn-nav btn-nav-primary">
+            <i class="fas fa-user-plus"></i> S'inscrire
+          </a>
+        </div>
+
+        <!-- État connecté -->
+        <div id="nav-user" style="display:none;align-items:center;gap:10px">
+          <a id="nav-dashboard-link" href="/dashboard/" class="btn-nav btn-nav-outline">
+            <i class="fas fa-th-large"></i> <span id="nav-dashboard-label">Mon espace</span>
+          </a>
+          <div class="user-menu">
+            <div class="user-avatar" id="nav-avatar">?</div>
+            <div>
+              <div class="user-name" id="nav-fullname"></div>
+              <span class="user-role-badge" id="nav-role-badge"></span>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="mpLogout()">
+            <i class="fas fa-sign-out-alt"></i> Sortir
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="page-header">
+    <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Continuer mes achats</a>
+    <h1><i class="fas fa-shopping-basket" style="color:var(--vert-vif);font-size:20px;"></i> Mon panier</h1>
+  </div>
+
+  <div class="panier-grid">
+
+    <!-- Liste articles -->
+    <div id="cart-items-container">
+      {% if resume.items %}
+        <div class="cart-items">
+          <div class="cart-header">
+            <span>{{ resume.nb_articles }} article{{ resume.nb_articles|pluralize }}</span>
+            <span style="font-size:12px;color:#aaa;font-weight:400;">{{ resume.nb_items }} produit{{ resume.nb_items|pluralize }}</span>
+          </div>
+          {% for item in resume.items %}
+          <div class="cart-item" id="item-{{ item.slug }}">
+            <a href="/produits/{{ item.slug }}/" class="item-img">
+              {% if item.image %}
+                <img src="{{ item.image }}" alt="{{ item.nom }}">
+              {% else %}
+                <div class="no-img">🌱</div>
+              {% endif %}
+            </a>
+            <div class="item-body">
+              <div class="item-nom">
+                <a href="/produits/{{ item.slug }}/">{{ item.nom }}</a>
+              </div>
+              <div class="item-producteur"><i class="fas fa-map-marker-alt" style="color:var(--vert-vif);font-size:10px"></i> {{ item.producteur_nom }}</div>
+              <div class="item-prix">HTG {{ item.prix_unitaire }} / {{ item.unite_vente_label }}</div>
+            </div>
+            <div class="item-actions">
+              <div class="item-total" id="total-{{ item.slug }}">HTG {{ item.sous_total }}</div>
+              <div class="qty-mini">
+                <button onclick="modifierQty('{{ item.slug }}', {{ item.quantite }} - 1)">−</button>
+                <span id="qty-{{ item.slug }}">{{ item.quantite }}</span>
+                <button onclick="modifierQty('{{ item.slug }}', {{ item.quantite }} + 1)">+</button>
+              </div>
+              <button class="btn-retirer" onclick="retirerItem('{{ item.slug }}')">
+                <i class="fas fa-trash"></i> Supprimer
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="cart-items">
+          <div class="empty-cart">
+            <i class="fas fa-shopping-basket"></i>
+            <p>Votre panier est vide.</p>
+            <a href="/" style="display:inline-flex;align-items:center;gap:7px;padding:11px 22px;background:var(--vert-fonce);color:#fff;border-radius:50px;font-weight:600;font-size:14px;">
+              <i class="fas fa-store"></i> Découvrir le catalogue
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Récapitulatif -->
+    <div>
+      <div class="recap" id="recap-bloc">
+        <div class="recap-title">Récapitulatif</div>
+
+        {% if resume.producteurs|length > 1 %}
+        <div class="multi-producteur-warn">
+          <i class="fas fa-info-circle"></i>
+          Votre panier contient des produits de {{ resume.producteurs|length }} producteurs différents. Une commande sera créée par producteur.
+        </div>
+        {% endif %}
+
+        <div class="recap-line">
+          <span>Sous-total</span>
+          <span id="recap-total">HTG {{ resume.total }}</span>
+        </div>
+        <div class="recap-line">
+          <span>Livraison</span>
+          <span style="color:#aaa;font-style:italic;">Calculée à la commande</span>
+        </div>
+        <div class="recap-total">
+          <span>Total estimé</span>
+          <span id="recap-total-final">HTG {{ resume.total }}</span>
+        </div>
+
+        <button class="btn-checkout" {% if not resume.items %}disabled{% endif %} onclick="procederCommande()">
+          <i class="fas fa-lock"></i> Passer la commande
+        </button>
+        {% if resume.items %}
+        <button class="btn-vider" onclick="viderPanier()">
+          <i class="fas fa-trash"></i> Vider le panier
+        </button>
+        {% endif %}
+
+        <p class="checkout-note">
+          <i class="fas fa-shield-alt" style="color:var(--vert-vif)"></i>
+          Paiement sécurisé — MonCash, NatCash ou espèces
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  function showToast(msg, type='success') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-exclamation-circle'}"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  async function modifierQty(slug, nouvelleQty) {
+    if (nouvelleQty < 1) { retirerItem(slug); return; }
+    try {
+      const r = await fetch(`/api/orders/panier/modifier/${slug}/`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ quantite: nouvelleQty }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        // Recharger la page pour afficher les nouveaux totaux
+        window.location.reload();
+      } else {
+        showToast(data.detail || 'Erreur.', 'error');
+      }
+    } catch (_) { showToast('Erreur réseau.', 'error'); }
+  }
+
+  async function retirerItem(slug) {
+    try {
+      const r = await fetch(`/api/orders/panier/retirer/${slug}/`, { method: 'DELETE' });
+      if (r.ok) { window.location.reload(); }
+      else showToast('Erreur lors de la suppression.', 'error');
+    } catch (_) { showToast('Erreur réseau.', 'error'); }
+  }
+
+  async function viderPanier() {
+    if (!confirm('Vider tout le panier ?')) return;
+    try {
+      const r = await fetch('/api/orders/panier/vider/', { method: 'DELETE' });
+      if (r.ok) { window.location.reload(); }
+    } catch (_) { showToast('Erreur réseau.', 'error'); }
+  }
+
+  function procederCommande() {
+    window.location.href = '/commander/';
+  }
+
+  // ── Auth navbar ─────────────────────────────────────────────────────────────
+  const ROLE_LABELS = { superadmin:'Super Admin', admin:'Admin', producteur:'Producteur', acheteur:'Acheteur', collecteur:'Collecteur' };
+  const ROLE_COLORS = { superadmin:'#e74c3c', admin:'#e67e22', producteur:'#27ae60', acheteur:'#2980b9', collecteur:'#8e44ad' };
+
+  function getDashboardUrl(user) {
+    if (user.is_superuser || user.role === 'superadmin') return '/dashboard/superadmin/';
+    if (user.role === 'admin')      return '/dashboard/admin/';
+    if (user.role === 'producteur') return '/dashboard/producteur/';
+    return '/dashboard/acheteur/';
+  }
+
+  (function initNavbar() {
+    const raw = localStorage.getItem('mp_user');
+    if (!raw) return;
+    let user; try { user = JSON.parse(raw); } catch { return; }
+
+    document.getElementById('nav-guest').style.display = 'none';
+    const navUser = document.getElementById('nav-user');
+    navUser.style.display = 'flex';
+
+    const name = user.full_name || user.username || '?';
+    document.getElementById('nav-avatar').textContent   = name.charAt(0).toUpperCase();
+    document.getElementById('nav-fullname').textContent = name;
+
+    const role  = user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
+    const badge = document.getElementById('nav-role-badge');
+    badge.textContent      = ROLE_LABELS[role] || role;
+    badge.style.background = (ROLE_COLORS[role] || '#555') + '22';
+    badge.style.color      = ROLE_COLORS[role] || '#555';
+    badge.style.border     = '1px solid ' + (ROLE_COLORS[role] || '#555') + '44';
+
+    document.getElementById('nav-dashboard-link').href            = getDashboardUrl(user);
+    document.getElementById('nav-dashboard-label').textContent    = 'Mon espace';
+  })();
+
+  async function mpLogout() {
+    const refresh = localStorage.getItem('mp_refresh');
+    const access  = localStorage.getItem('mp_access');
+    if (refresh && access) {
+      try { await fetch('/api/auth/logout/', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+access}, body:JSON.stringify({refresh}) }); } catch {}
+    }
+    localStorage.removeItem('mp_access'); localStorage.removeItem('mp_refresh'); localStorage.removeItem('mp_user');
+    window.location.href = '/';
+  }
+
+  // ── Cart dropdown hover ───────────────────────────────────────────────────
+  (function() {
+    const wrap = document.getElementById('cart-dd-wrap');
+    const dd   = document.getElementById('cart-dd');
+    if (!wrap || !dd) return;
+    let fetched = false, hideTimer = null;
+
+    function _esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function renderDD(data) {
+      const items = data.items || [];
+      const total = data.total || '0.00';
+      const raw = localStorage.getItem('mp_user');
+      let canOrder = false;
+      if (raw) { try { const u = JSON.parse(raw); canOrder = ['acheteur','collecteur'].includes(u.role); } catch {} }
+
+      if (!items.length) {
+        dd.innerHTML = `
+          <div class="cart-dd-header"><i class="fas fa-shopping-basket" style="color:var(--vert-vif);margin-right:6px"></i>Mon panier</div>
+          <div class="cart-dd-empty"><i class="fas fa-shopping-basket" style="font-size:26px;opacity:.15;display:block;margin-bottom:8px"></i>Votre panier est vide</div>
+          <div class="cart-dd-footer"><a href="/panier/" class="btn-dd-voir">Voir le panier</a></div>`;
+        return;
+      }
+      const rows = items.map(it => `
+        <div class="cart-dd-item">
+          <img src="${it.image ? _esc(it.image) : ''}" alt="${_esc(it.nom)}" onerror="this.style.display='none'">
+          <div class="cart-dd-item-info">
+            <div class="cart-dd-item-name">${_esc(it.nom)}</div>
+            <div class="cart-dd-item-price">${it.quantite} × ${it.prix_unitaire} HTG</div>
+          </div>
+        </div>`).join('');
+      dd.innerHTML = `
+        <div class="cart-dd-header"><i class="fas fa-shopping-basket" style="color:var(--vert-vif);margin-right:6px"></i>Mon panier (${items.length})</div>
+        <div class="cart-dd-body">${rows}</div>
+        <div class="cart-dd-total">Total <span>${total} HTG</span></div>
+        <div class="cart-dd-footer">
+          <a href="/panier/" class="btn-dd-voir">Voir le panier</a>
+          ${canOrder ? '<a href="/panier/" class="btn-dd-cmd">Commander</a>' : ''}
+        </div>`;
+    }
+
+    wrap.addEventListener('mouseenter', async () => {
+      clearTimeout(hideTimer);
+      dd.classList.add('open');
+      if (!fetched) {
+        fetched = true;
+        try {
+          const r = await fetch('/api/orders/panier/');
+          renderDD(await r.json());
+        } catch {
+          dd.innerHTML = '<div class="cart-dd-empty">Erreur de chargement.</div>';
+        }
+      }
+    });
+    wrap.addEventListener('mouseleave', () => {
+      hideTimer = setTimeout(() => dd.classList.remove('open'), 200);
+    });
+  })();
+</script>
+</body>
+</html>

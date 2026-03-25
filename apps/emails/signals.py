@@ -11,11 +11,15 @@ from apps.collectes.models import ParticipationCollecte
 @receiver(post_save, sender=Producteur)
 def on_producteur_cree(sender, instance, created, **kwargs):
     if created:
-        from apps.emails.utils import email_producteur_bienvenue
+        from apps.emails.utils import (
+            email_producteur_bienvenue,
+            email_admin_nouveau_producteur,
+        )
         email_producteur_bienvenue(instance)
+        email_admin_nouveau_producteur(instance)
 
 
-# ── Signal : Statut producteur changé (validation/rejet) ───────
+# ── Signal : Statut producteur changé (validation/rejet/suspension) ───────
 @receiver(pre_save, sender=Producteur)
 def on_producteur_statut_change(sender, instance, **kwargs):
     if not instance.pk:
@@ -30,11 +34,14 @@ def on_producteur_statut_change(sender, instance, **kwargs):
 
     from apps.emails.utils import (
         email_producteur_valide,
-        email_producteur_rejete
+        email_producteur_suspendu,
+        email_producteur_rejete,
     )
 
     if instance.statut == Producteur.Statut.ACTIF:
         email_producteur_valide(instance)
+    elif instance.statut == Producteur.Statut.SUSPENDU:
+        email_producteur_suspendu(instance)
     elif instance.statut == Producteur.Statut.INACTIF:
         email_producteur_rejete(instance)
 

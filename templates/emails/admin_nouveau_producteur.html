@@ -1,0 +1,76 @@
+{% extends "emails/base.html" %}
+{% block content %}
+
+<p class="greeting">Nouvelle inscription producteur 🌱</p>
+
+<div class="info-box">
+  Un nouveau producteur vient de s'inscrire sur <strong>Makèt Peyizan</strong> et attend votre validation.
+</div>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">Nom complet</span>
+    <span class="card-value">{{ producteur.user.get_full_name }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Nom d'utilisateur</span>
+    <span class="card-value">{{ producteur.user.username }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Email</span>
+    <span class="card-value">{{ producteur.user.email }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Téléphone</span>
+    <span class="card-value">{{ producteur.user.telephone|default:"—" }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Code producteur</span>
+    <span class="card-value">{{ producteur.code_producteur }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Département</span>
+    <span class="card-value">{{ producteur.get_departement_display }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Commune</span>
+    <span class="card-value">{{ producteur.commune }}</span>
+  </div>
+  {% if producteur.localite %}
+  <div class="card-row">
+    <span class="card-label">Localité</span>
+    <span class="card-value">{{ producteur.localite }}</span>
+  </div>
+  {% endif %}
+  {% if producteur.superficie_ha %}
+  <div class="card-row">
+    <span class="card-label">Superficie</span>
+    <span class="card-value">{{ producteur.superficie_ha }} ha</span>
+  </div>
+  {% endif %}
+  <div class="card-row">
+    <span class="card-label">Statut</span>
+    <span class="badge badge-orange">En attente de validation</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">Date d'inscription</span>
+    <span class="card-value">{{ producteur.created_at|date:"d/m/Y à H:i" }}</span>
+  </div>
+</div>
+
+{% if producteur.description %}
+<p class="message"><strong>Description :</strong><br>{{ producteur.description }}</p>
+{% endif %}
+
+<div style="text-align:center; margin: 28px 0">
+  <a href="{{ site_url }}/admin/accounts/producteur/{{ producteur.pk }}/change/" class="btn">
+    Examiner la demande dans l'admin
+  </a>
+</div>
+
+<hr class="divider">
+<p style="font-size:13px; color:#aaa; text-align:center">
+  Ce producteur sera contacté dans les 24-48h selon votre décision de validation.
+</p>
+
+{% endblock %}

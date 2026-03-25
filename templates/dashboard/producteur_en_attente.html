@@ -1,0 +1,242 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Compte en attente — Producteur{% endblock %}
+
+{% block sidebar_nav %}
+  <div class="nav-section-label">Navigation</div>
+  <a href="/dashboard/producteur/en-attente/" class="nav-item active">
+    <i class="fas fa-hourglass-half"></i> Mon statut
+  </a>
+  <a href="/" class="nav-item">
+    <i class="fas fa-store"></i> Catalogue public
+  </a>
+
+  <div class="nav-section-label">Compte</div>
+  <a href="/dashboard/producteur/profil/" class="nav-item">
+    <i class="fas fa-user-edit"></i> Mon profil
+  </a>
+{% endblock %}
+
+{% block page_title %}Votre compte est en cours d'examen{% endblock %}
+{% block page_subtitle %}Notre équipe examine votre dossier{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pending-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 160px);
+  }
+
+  .pending-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    max-width: 560px;
+    width: 100%;
+    overflow: hidden;
+    animation: fadeUp .4s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .pending-top {
+    background: linear-gradient(135deg, #1a6b2f, #27ae60);
+    padding: 40px;
+    text-align: center;
+    color: #fff;
+  }
+  .pending-top .icon-circle {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    border: 2.5px solid rgba(255,255,255,.45);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    font-size: 28px;
+    animation: slowPulse 2.5s infinite;
+  }
+  @keyframes slowPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.25); }
+    50%       { box-shadow: 0 0 0 12px rgba(255,255,255,.0); }
+  }
+  .pending-top h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .pending-top p  { font-size: 13px; opacity: .85; }
+
+  .pending-body { padding: 32px 36px; }
+
+  .delay-box {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #f0faf4;
+    border: 1.5px solid #a9dfbf;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+  }
+  .delay-box i { font-size: 22px; color: #27ae60; flex-shrink: 0; }
+  .delay-box strong { display: block; font-size: 14px; color: #1a6b2f; }
+  .delay-box span   { font-size: 12px; color: #555; }
+
+  .steps { margin-bottom: 28px; }
+  .steps-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #aaa; margin-bottom: 14px;
+  }
+  .step {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;
+  }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    background: #e8f8ee; color: #27ae60;
+  }
+  .step-num.active { background: #27ae60; color: #fff; }
+  .step-text strong { display: block; font-size: 13px; color: var(--text); }
+  .step-text span   { font-size: 12px; color: var(--text-muted); }
+
+  .account-box {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+  .account-row {
+    display: flex; justify-content: space-between;
+    padding: 5px 0; border-bottom: 1px solid var(--border);
+  }
+  .account-row:last-child { border-bottom: none; }
+  .account-row .label { color: var(--text-muted); }
+  .account-row .value { font-weight: 600; color: var(--text); }
+
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 24px;
+    background: var(--green-mid); color: #fff;
+    border-radius: 8px; font-size: 14px; font-weight: 700;
+    text-decoration: none; transition: background .2s;
+    border: none; cursor: pointer; font-family: inherit; width: 100%;
+    margin-bottom: 10px;
+  }
+  .btn-primary:hover { background: var(--green); }
+  .btn-ghost {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 24px;
+    background: transparent; color: var(--text-muted);
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    text-decoration: none;
+    border: 1.5px solid var(--border); transition: background .2s; width: 100%;
+  }
+  .btn-ghost:hover { background: var(--bg); color: var(--text); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="pending-wrapper">
+  <div class="pending-card">
+
+    <div class="pending-top">
+      <div class="icon-circle"><i class="fas fa-hourglass-half"></i></div>
+      <h2>Compte en attente de validation</h2>
+      <p>Votre dossier est en cours d'examen par notre équipe</p>
+    </div>
+
+    <div class="pending-body">
+
+      <div class="delay-box">
+        <i class="fas fa-clock"></i>
+        <div>
+          <strong>Délai de traitement : 24 à 48 heures</strong>
+          <span>Vous serez notifié par email dès la validation de votre compte.</span>
+        </div>
+      </div>
+
+      <div class="account-box" id="account-box">
+        <!-- rempli par JS -->
+      </div>
+
+      <div class="steps">
+        <div class="steps-title">Prochaines étapes</div>
+        <div class="step">
+          <div class="step-num active">1</div>
+          <div class="step-text">
+            <strong>Dossier en examen</strong>
+            <span>Notre équipe vérifie vos informations</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <strong>Notification par email</strong>
+            <span>Vous recevrez une réponse sous 24-48h</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <strong>Accès complet à votre espace</strong>
+            <span>Publiez vos produits et recevez vos premières commandes</span>
+          </div>
+        </div>
+      </div>
+
+      <a href="/dashboard/producteur/profil/" class="btn-primary">
+        <i class="fas fa-user-edit"></i> Compléter mon profil
+      </a>
+      <a href="/" class="btn-ghost">
+        <i class="fas fa-store"></i> Retour au catalogue
+      </a>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block page_script %}
+  async function loadPending(user) {
+    const headers = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
+    let code = '—';
+    let commune = '—';
+
+    try {
+      const r = await fetch('/api/auth/producteur/profil/', { headers });
+      if (r.ok) {
+        const p = await r.json();
+        code    = p.code_producteur || '—';
+        commune = [p.commune, p.departement_label].filter(Boolean).join(', ') || '—';
+
+        // Si le statut n'est plus en_attente, rediriger vers le dashboard normal
+        if (p.statut && p.statut !== 'en_attente') {
+          window.location.href = '/dashboard/producteur/';
+          return;
+        }
+      }
+    } catch (_) {}
+
+    document.getElementById('account-box').innerHTML = `
+      <div class="account-row"><span class="label">Nom</span>
+        <span class="value">${[user.first_name, user.last_name].filter(Boolean).join(' ') || user.username}</span></div>
+      <div class="account-row"><span class="label">Code producteur</span>
+        <span class="value">${code}</span></div>
+      <div class="account-row"><span class="label">Localisation</span>
+        <span class="value">${commune}</span></div>
+      <div class="account-row"><span class="label">Email</span>
+        <span class="value">${user.email || '—'}</span></div>
+      <div class="account-row"><span class="label">Statut</span>
+        <span class="value" style="color:#e67e22">En attente de validation</span></div>
+    `;
+  }
+
+  // Pour cette page on n'appelle PAS mpProducteurGuard (on est déjà sur la bonne page)
+  mpAuthCheck('producteur').then(user => {
+    if (user) loadPending(user);
+  });
+{% endblock %}

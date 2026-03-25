@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import CustomUser, Producteur, Acheteur
+from .models import CustomUser, Producteur, Acheteur, Adresse
 
 
 @admin.register(CustomUser)
@@ -60,10 +60,37 @@ class ProducteurAdmin(admin.ModelAdmin):
 
 @admin.register(Acheteur)
 class AcheteurAdmin(admin.ModelAdmin):
-    list_display    = ('get_nom', 'type_acheteur', 'ville', 'total_commandes', 'total_depense', 'created_at')
+    list_display    = ('get_nom', 'type_acheteur', 'departement', 'nom_organisation', 'total_commandes', 'total_depense', 'created_at')
     list_filter     = ('type_acheteur', 'departement')
-    search_fields   = ('user__first_name', 'user__last_name', 'nom_organisation', 'ville')
-    readonly_fields = ('total_commandes', 'total_depense', 'created_at')
+    search_fields   = ('user__first_name', 'user__last_name', 'nom_organisation')
+    readonly_fields = ('total_commandes', 'total_depense', 'created_at', 'updated_at')
+    ordering        = ('-created_at',)
+
+    fieldsets = (
+        ('Compte',       {'fields': ('user',)}),
+        ('Profil',       {'fields': ('type_acheteur', 'nom_organisation')}),
+        ('Localisation', {'fields': ('departement',)}),
+        ('Stats',        {'fields': ('total_commandes', 'total_depense'), 'classes': ('collapse',)}),
+    )
 
     def get_nom(self, obj): return str(obj)
     get_nom.short_description = 'Acheteur'
+
+
+@admin.register(Adresse)
+class AdresseAdmin(admin.ModelAdmin):
+    list_display    = ('libelle', 'get_user', 'nom_complet', 'commune', 'section_communale', 'departement', 'type_adresse', 'is_default')
+    list_filter     = ('type_adresse', 'departement', 'is_default')
+    search_fields   = ('user__username', 'user__first_name', 'user__last_name', 'nom_complet', 'commune')
+    ordering        = ('-created_at',)
+    readonly_fields = ('created_at', 'updated_at')
+
+    fieldsets = (
+        ('Identification', {'fields': ('user', 'libelle', 'type_adresse', 'is_default')}),
+        ('Destinataire',   {'fields': ('nom_complet', 'telephone')}),
+        ('Adresse',        {'fields': ('rue', 'departement', 'commune', 'section_communale')}),
+        ('Détails',        {'fields': ('details',)}),
+    )
+
+    def get_user(self, obj): return obj.user.get_full_name() or obj.user.username
+    get_user.short_description = 'Utilisateur'

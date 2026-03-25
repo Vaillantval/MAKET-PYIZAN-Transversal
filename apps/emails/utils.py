@@ -35,14 +35,28 @@ def envoyer_email(destinataire, sujet, template, contexte):
 
 
 def envoyer_email_admin(sujet, template, contexte):
-    """Envoie un email à l'administrateur principal."""
-    admin_email = settings.ADMINS_NOTIFY
-    if admin_email:
-        return envoyer_email(admin_email, sujet, template, contexte)
-    return False
+    """Envoie un email à tous les admins configurés dans ADMINS_NOTIFY."""
+    raw = settings.ADMINS_NOTIFY
+    if not raw:
+        return False
+    destinataires = [e.strip() for e in raw.split(',') if e.strip()]
+    if not destinataires:
+        return False
+    return envoyer_email(destinataires, sujet, template, contexte)
 
 
 # ── Emails Producteurs ──────────────────────────────────────────
+
+def email_admin_nouveau_producteur(producteur):
+    return envoyer_email_admin(
+        sujet=f"🌱 Nouvelle inscription producteur — {producteur.user.get_full_name()}",
+        template="admin_nouveau_producteur.html",
+        contexte={
+            "producteur": producteur,
+            "site_url":   settings.SITE_URL,
+        }
+    )
+
 
 def email_producteur_bienvenue(producteur):
     return envoyer_email(
@@ -66,6 +80,20 @@ def email_producteur_valide(producteur):
         contexte={
             "producteur": producteur,
             "prenom":     producteur.user.first_name,
+            "site_url":   settings.SITE_URL,
+        }
+    )
+
+
+def email_producteur_suspendu(producteur, motif=''):
+    return envoyer_email(
+        destinataire=producteur.user.email,
+        sujet="⚠️ Votre compte producteur a été suspendu",
+        template="producteur_suspendu.html",
+        contexte={
+            "producteur": producteur,
+            "prenom":     producteur.user.first_name,
+            "motif":      motif or producteur.note_admin,
             "site_url":   settings.SITE_URL,
         }
     )

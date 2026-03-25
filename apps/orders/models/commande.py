@@ -19,11 +19,12 @@ class Commande(models.Model):
         POINT_COLLECTE     = 'collecte', 'Point de collecte'
 
     class MethodePaiement(models.TextChoices):
-        MONCASH  = 'moncash',  'MonCash'
-        NATCASH  = 'natcash',  'NatCash'
-        VIREMENT = 'virement', 'Virement bancaire'
-        CASH     = 'cash',     'Especes'
-        VOUCHER  = 'voucher',  'e-Voucher'
+        MONCASH    = 'moncash',    'MonCash'
+        NATCASH    = 'natcash',    'NatCash'
+        VIREMENT   = 'virement',   'Virement bancaire'
+        CASH       = 'cash',       'Especes'
+        VOUCHER    = 'voucher',    'e-Voucher'
+        HORS_LIGNE = 'hors_ligne', 'Paiement hors ligne'
 
     class StatutPaiement(models.TextChoices):
         NON_PAYE       = 'non_paye',       'Non paye'
