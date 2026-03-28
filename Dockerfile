@@ -16,8 +16,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Dépendances Python
-COPY requirements/production.txt .
-RUN pip install --upgrade pip && pip install --no-cache-dir -r production.txt
+COPY requirements/ requirements/
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements/production.txt
 
 # Code source
 COPY . /app/
