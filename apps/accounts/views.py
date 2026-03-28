@@ -566,8 +566,8 @@ class ProducteurCommandeStatutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, numero):
-        from django.utils import timezone
         from apps.orders.models.commande import Commande
+        from apps.orders.services.commande_service import CommandeService
 
         prod = _get_producteur(request.user)
         if not prod:
@@ -592,10 +592,17 @@ class ProducteurCommandeStatutView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        c.statut = nouveau_statut
-        if nouveau_statut == 'confirmee':
-            c.date_confirmation = timezone.now()
-        c.save()
+        try:
+            if action == 'confirmer':
+                CommandeService.confirmer_commande(c, effectue_par=request.user)
+            elif action == 'annuler':
+                motif = request.data.get('motif', '')
+                CommandeService.annuler_commande(c, effectue_par=request.user, motif=motif)
+            else:
+                # preparer → en_preparation, prete → prete
+                CommandeService.changer_statut(c, nouveau_statut, effectue_par=request.user)
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             'statut':       c.statut,

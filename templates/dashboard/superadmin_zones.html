@@ -1,0 +1,423 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Zones & Points de collecte — Superadmin{% endblock %}
+{% block sidebar_nav %}{% include 'dashboard/superadmin_sidebar.html' with active='zones' %}{% endblock %}
+{% block page_title %}Zones &amp; Points de collecte{% endblock %}
+{% block page_subtitle %}Gestion du réseau de collecte terrain{% endblock %}
+
+{% block extra_css %}
+<style>
+  .tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; }
+  .tab-btn { padding:10px 20px; font-size:13px; font-weight:700; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--text-muted); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .18s; }
+  .tab-btn.active { color:var(--green-mid); border-bottom-color:var(--green-mid); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+  .filter-btn { padding:7px 14px; border-radius:8px; font-size:12px; font-weight:600; border:1.5px solid var(--border); background:var(--card); color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .btn-new { padding:8px 18px; border-radius:8px; font-size:13px; font-weight:700; border:none; cursor:pointer; background:var(--green-mid); color:#fff; font-family:inherit; white-space:nowrap; }
+  .btn-new:hover { opacity:.88; }
+
+  .table-wrap { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { background:var(--bg); padding:11px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); border-bottom:1px solid var(--border); }
+  tbody td { padding:10px 14px; font-size:13px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:#fafafa; }
+  .empty-state { text-align:center; padding:48px; color:var(--text-muted); font-size:13px; }
+  .action-btn { padding:5px 10px; border-radius:6px; font-size:11px; font-weight:700; border:none; cursor:pointer; font-family:inherit; }
+  .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .dot-green { background:#27ae60; } .dot-red { background:#e74c3c; }
+
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:600; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
+  .modal-overlay.open { opacity:1; pointer-events:auto; }
+  .modal-box { background:var(--card); border-radius:14px; padding:28px 32px; width:480px; max-width:96vw; box-shadow:0 12px 48px rgba(0,0,0,.18); max-height:90vh; overflow-y:auto; }
+  .modal-box h3 { font-size:16px; font-weight:700; margin-bottom:20px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .form-grid .full { grid-column:1/-1; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
+  .field input, .field select, .field textarea { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; }
+  .field input:focus, .field select:focus { border-color:var(--green-mid); }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+  .btn-cancel { padding:9px 18px; border-radius:8px; font-size:13px; font-weight:700; border:1.5px solid var(--border); background:var(--bg); color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .btn-save { padding:9px 22px; border-radius:8px; font-size:13px; font-weight:700; border:none; cursor:pointer; background:var(--green-mid); color:#fff; font-family:inherit; }
+
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:500; color:#fff; box-shadow:0 4px 20px rgba(0,0,0,.15); animation:slideUp .25s ease; }
+  .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="tc"></div>
+
+<!-- Modal Zone -->
+<div class="modal-overlay" id="zone-modal">
+  <div class="modal-box">
+    <h3 id="zone-modal-title">Nouvelle zone de collecte</h3>
+    <form id="zone-form" onsubmit="submitZone(event)">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Nom de la zone *</label>
+          <input type="text" id="z-nom" required placeholder="Ex: Zone Nord Artibonite">
+        </div>
+        <div class="field">
+          <label>Département *</label>
+          <select id="z-dept" required>
+            <option value="">-- Choisir --</option>
+            <option value="ouest">Ouest</option>
+            <option value="artibonite">Artibonite</option>
+            <option value="nord">Nord</option>
+            <option value="nord_est">Nord-Est</option>
+            <option value="nord_ouest">Nord-Ouest</option>
+            <option value="sud">Sud</option>
+            <option value="sud_est">Sud-Est</option>
+            <option value="centre">Centre</option>
+            <option value="grand_anse">Grand-Anse</option>
+            <option value="nippes">Nippes</option>
+          </select>
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:auto">
+            <input type="checkbox" id="z-active" checked> Zone active
+          </label>
+        </div>
+        <div class="field full">
+          <label>Description</label>
+          <textarea id="z-description" rows="2" style="resize:vertical"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeZoneModal()">Annuler</button>
+        <button type="submit" class="btn-save" id="z-submit"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Point -->
+<div class="modal-overlay" id="point-modal">
+  <div class="modal-box">
+    <h3 id="point-modal-title">Nouveau point de collecte</h3>
+    <form id="point-form" onsubmit="submitPoint(event)">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Zone *</label>
+          <select id="pt-zone" required></select>
+        </div>
+        <div class="field full">
+          <label>Nom du point *</label>
+          <input type="text" id="pt-nom" required placeholder="Ex: Marché de Pont-Sondé">
+        </div>
+        <div class="field">
+          <label>Commune *</label>
+          <input type="text" id="pt-commune" required placeholder="Ex: Saint-Marc">
+        </div>
+        <div class="field">
+          <label>Adresse</label>
+          <input type="text" id="pt-adresse" placeholder="Rue, quartier...">
+        </div>
+        <div class="field">
+          <label>Responsable</label>
+          <input type="text" id="pt-responsable" placeholder="Nom du responsable">
+        </div>
+        <div class="field">
+          <label>Téléphone</label>
+          <input type="text" id="pt-telephone" placeholder="+509 ...">
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="pt-active" checked> Point actif
+          </label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closePointModal()">Annuler</button>
+        <button type="submit" class="btn-save" id="pt-submit"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('zones',this)">Zones de collecte</button>
+  <button class="tab-btn" onclick="switchTab('points',this)">Points de collecte</button>
+</div>
+
+<!-- Onglet Zones -->
+<div class="tab-panel active" id="tab-zones">
+  <div class="toolbar">
+    <button class="btn-new" onclick="openZoneCreate()"><i class="fas fa-plus"></i> Nouvelle zone</button>
+  </div>
+  <div class="table-wrap">
+    <div class="empty-state" id="z-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+    <table id="z-tbl" style="display:none">
+      <thead>
+        <tr>
+          <th>Zone</th>
+          <th>Département</th>
+          <th>Points actifs</th>
+          <th>Collectes</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="z-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="z-empty" style="display:none">Aucune zone de collecte.</div>
+  </div>
+</div>
+
+<!-- Onglet Points -->
+<div class="tab-panel" id="tab-points">
+  <div class="toolbar">
+    <select id="pt-zone-filter" class="filter-btn" style="appearance:none;padding-right:24px" onchange="loadPoints()">
+      <option value="">Toutes les zones</option>
+    </select>
+    <button class="btn-new" onclick="openPointCreate()"><i class="fas fa-plus"></i> Nouveau point</button>
+  </div>
+  <div class="table-wrap">
+    <div class="empty-state" id="pt-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+    <table id="pt-tbl" style="display:none">
+      <thead>
+        <tr>
+          <th>Point</th>
+          <th>Zone</th>
+          <th>Commune</th>
+          <th>Responsable</th>
+          <th>Téléphone</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="pt-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="pt-empty" style="display:none">Aucun point de collecte.</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_script %}
+const H = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access'), 'Content-Type': 'application/json' };
+let _zEditId = null, _ptEditId = null, _zones = [];
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+  document.getElementById('tc').appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'zones') loadZones();
+  else loadPoints();
+}
+
+// ── Zones ─────────────────────────────────────────────────────────────────
+async function loadZones() {
+  document.getElementById('z-loading').style.display = 'block';
+  document.getElementById('z-tbl').style.display = 'none';
+  document.getElementById('z-empty').style.display = 'none';
+  const r = await fetch('/api/admin/zones/', { headers: H });
+  document.getElementById('z-loading').style.display = 'none';
+  if (!r.ok) return;
+  _zones = await r.json();
+  if (!_zones.length) { document.getElementById('z-empty').style.display = 'block'; return; }
+
+  // Mettre à jour les selects zones
+  const zsel = document.getElementById('pt-zone');
+  const zfil = document.getElementById('pt-zone-filter');
+  zsel.innerHTML = '<option value="">-- Sélectionner --</option>';
+  zfil.innerHTML = '<option value="">Toutes les zones</option>';
+  _zones.forEach(z => {
+    zsel.innerHTML += `<option value="${z.id}">${z.nom} (${z.departement})</option>`;
+    zfil.innerHTML += `<option value="${z.id}">${z.nom}</option>`;
+  });
+
+  const tbody = document.getElementById('z-tbody');
+  tbody.innerHTML = '';
+  _zones.forEach(z => {
+    tbody.innerHTML += `
+      <tr id="zrow-${z.id}">
+        <td>
+          <div style="font-weight:600">${z.nom}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${z.description||''}</div>
+        </td>
+        <td style="color:var(--text-muted)">${z.departement}</td>
+        <td><strong>${z.nb_points}</strong></td>
+        <td>${z.nb_collectes}</td>
+        <td><span class="status-dot ${z.is_active?'dot-green':'dot-red'}"></span>${z.is_active?'Active':'Inactive'}</td>
+        <td style="display:flex;gap:6px">
+          <button class="action-btn" style="background:var(--bg);border:1px solid var(--border);color:var(--text-muted)" onclick="openZoneEdit(${z.id})"><i class="fas fa-edit"></i></button>
+          <button class="action-btn" style="background:${z.is_active?'#fde8e8':'#e8f8ee'};color:${z.is_active?'#e74c3c':'#27ae60'}" onclick="toggleZone(${z.id},${z.is_active})">${z.is_active?'Désactiver':'Activer'}</button>
+          ${z.nb_collectes===0?`<button class="action-btn" style="background:#fde8e8;color:#e74c3c" onclick="deleteZone(${z.id},'${z.nom}')"><i class="fas fa-trash"></i></button>`:''}
+        </td>
+      </tr>`;
+  });
+  document.getElementById('z-tbl').style.display = 'table';
+}
+
+function openZoneCreate() {
+  _zEditId = null;
+  document.getElementById('zone-modal-title').textContent = 'Nouvelle zone de collecte';
+  document.getElementById('z-submit').innerHTML = '<i class="fas fa-plus"></i> Créer';
+  ['z-nom','z-description'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('z-dept').value = '';
+  document.getElementById('z-active').checked = true;
+  document.getElementById('zone-modal').classList.add('open');
+}
+
+async function openZoneEdit(id) {
+  _zEditId = id;
+  const r = await fetch(`/api/admin/zones/${id}/`, { headers: H });
+  if (!r.ok) return;
+  const z = await r.json();
+  document.getElementById('zone-modal-title').textContent = 'Modifier zone';
+  document.getElementById('z-submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+  document.getElementById('z-nom').value         = z.nom;
+  document.getElementById('z-dept').value        = z.departement;
+  document.getElementById('z-description').value = z.description;
+  document.getElementById('z-active').checked    = z.is_active;
+  document.getElementById('zone-modal').classList.add('open');
+}
+
+function closeZoneModal() { document.getElementById('zone-modal').classList.remove('open'); _zEditId = null; }
+
+async function submitZone(e) {
+  e.preventDefault();
+  const btn = document.getElementById('z-submit'); btn.disabled = true;
+  const body = {
+    nom:         document.getElementById('z-nom').value,
+    departement: document.getElementById('z-dept').value,
+    description: document.getElementById('z-description').value,
+    is_active:   document.getElementById('z-active').checked,
+  };
+  const url    = _zEditId ? `/api/admin/zones/${_zEditId}/` : '/api/admin/zones/';
+  const method = _zEditId ? 'PATCH' : 'POST';
+  const r = await fetch(url, { method, headers:H, body:JSON.stringify(body) });
+  btn.disabled = false;
+  if (r.ok) { showToast(_zEditId?'Zone mise à jour !':'Zone créée !'); closeZoneModal(); loadZones(); }
+  else showToast('Erreur', 'error');
+}
+
+async function toggleZone(id, isActive) {
+  const r = await fetch(`/api/admin/zones/${id}/`, { method:'PATCH', headers:H, body:JSON.stringify({is_active:!isActive}) });
+  if (r.ok) { showToast(`Zone ${isActive?'désactivée':'activée'}`); loadZones(); }
+  else showToast('Erreur', 'error');
+}
+
+async function deleteZone(id, nom) {
+  if (!confirm(`Supprimer la zone "${nom}" ?`)) return;
+  const r = await fetch(`/api/admin/zones/${id}/`, { method:'DELETE', headers:H });
+  if (r.ok) { showToast('Zone supprimée'); loadZones(); }
+  else { const d = await r.json(); showToast(d.detail||'Erreur', 'error'); }
+}
+
+// ── Points ────────────────────────────────────────────────────────────────
+async function loadPoints() {
+  const zoneId = document.getElementById('pt-zone-filter').value;
+  let url = '/api/admin/points/?';
+  if (zoneId) url += 'zone_id=' + zoneId + '&';
+  document.getElementById('pt-loading').style.display = 'block';
+  document.getElementById('pt-tbl').style.display = 'none';
+  document.getElementById('pt-empty').style.display = 'none';
+  const r = await fetch(url, { headers: H });
+  document.getElementById('pt-loading').style.display = 'none';
+  if (!r.ok) return;
+  const data = await r.json();
+  if (!data.length) { document.getElementById('pt-empty').style.display = 'block'; return; }
+
+  const tbody = document.getElementById('pt-tbody');
+  tbody.innerHTML = '';
+  data.forEach(p => {
+    tbody.innerHTML += `
+      <tr id="ptrow-${p.id}">
+        <td><div style="font-weight:600">${p.nom}</div><div style="font-size:11px;color:var(--text-muted)">${p.adresse||''}</div></td>
+        <td style="color:var(--text-muted)">${p.zone_nom}</td>
+        <td>${p.commune}</td>
+        <td>${p.responsable||'—'}</td>
+        <td style="color:var(--text-muted)">${p.telephone||'—'}</td>
+        <td><span class="status-dot ${p.is_active?'dot-green':'dot-red'}"></span>${p.is_active?'Actif':'Inactif'}</td>
+        <td style="display:flex;gap:6px">
+          <button class="action-btn" style="background:var(--bg);border:1px solid var(--border);color:var(--text-muted)" onclick="openPointEdit(${p.id})"><i class="fas fa-edit"></i></button>
+          <button class="action-btn" style="background:${p.is_active?'#fde8e8':'#e8f8ee'};color:${p.is_active?'#e74c3c':'#27ae60'}" onclick="togglePoint(${p.id},${p.is_active})">${p.is_active?'Désactiver':'Activer'}</button>
+          <button class="action-btn" style="background:#fde8e8;color:#e74c3c" onclick="deletePoint(${p.id},'${p.nom}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`;
+  });
+  document.getElementById('pt-tbl').style.display = 'table';
+}
+
+function openPointCreate() {
+  _ptEditId = null;
+  document.getElementById('point-modal-title').textContent = 'Nouveau point de collecte';
+  document.getElementById('pt-submit').innerHTML = '<i class="fas fa-plus"></i> Créer';
+  ['pt-nom','pt-commune','pt-adresse','pt-responsable','pt-telephone'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('pt-zone').value = '';
+  document.getElementById('pt-active').checked = true;
+  document.getElementById('point-modal').classList.add('open');
+}
+
+async function openPointEdit(id) {
+  _ptEditId = id;
+  const r = await fetch('/api/admin/points/?', { headers:H }); // load all then filter
+  // Direct approach: get from loaded data if available
+  const rp = await fetch(`/api/admin/points/?`, { headers:H });
+  if (!rp.ok) return;
+  const pts = await rp.json();
+  const p = pts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('point-modal-title').textContent = 'Modifier point';
+  document.getElementById('pt-submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+  document.getElementById('pt-zone').value       = p.zone_id;
+  document.getElementById('pt-nom').value        = p.nom;
+  document.getElementById('pt-commune').value    = p.commune;
+  document.getElementById('pt-adresse').value    = p.adresse;
+  document.getElementById('pt-responsable').value = p.responsable;
+  document.getElementById('pt-telephone').value  = p.telephone;
+  document.getElementById('pt-active').checked   = p.is_active;
+  document.getElementById('point-modal').classList.add('open');
+}
+
+function closePointModal() { document.getElementById('point-modal').classList.remove('open'); _ptEditId = null; }
+
+async function submitPoint(e) {
+  e.preventDefault();
+  const btn = document.getElementById('pt-submit'); btn.disabled = true;
+  const body = {
+    zone_id:     document.getElementById('pt-zone').value,
+    nom:         document.getElementById('pt-nom').value,
+    commune:     document.getElementById('pt-commune').value,
+    adresse:     document.getElementById('pt-adresse').value,
+    responsable: document.getElementById('pt-responsable').value,
+    telephone:   document.getElementById('pt-telephone').value,
+    is_active:   document.getElementById('pt-active').checked,
+  };
+  const url    = _ptEditId ? `/api/admin/points/${_ptEditId}/` : '/api/admin/points/';
+  const method = _ptEditId ? 'PATCH' : 'POST';
+  const r = await fetch(url, { method, headers:H, body:JSON.stringify(body) });
+  btn.disabled = false;
+  if (r.ok) { showToast(_ptEditId?'Point mis à jour !':'Point créé !'); closePointModal(); loadPoints(); }
+  else showToast('Erreur', 'error');
+}
+
+async function togglePoint(id, isActive) {
+  const r = await fetch(`/api/admin/points/${id}/`, { method:'PATCH', headers:H, body:JSON.stringify({is_active:!isActive}) });
+  if (r.ok) { showToast(`Point ${isActive?'désactivé':'activé'}`); loadPoints(); }
+  else showToast('Erreur', 'error');
+}
+
+async function deletePoint(id, nom) {
+  if (!confirm(`Supprimer le point "${nom}" ?`)) return;
+  const r = await fetch(`/api/admin/points/${id}/`, { method:'DELETE', headers:H });
+  if (r.ok) { showToast('Point supprimé'); loadPoints(); }
+  else showToast('Erreur', 'error');
+}
+
+mpAuthCheck('superadmin').then(u => { if (u && u.is_superuser) loadZones(); });
+{% endblock %}

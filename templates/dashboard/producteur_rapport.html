@@ -1,0 +1,173 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Mon Rapport — Producteur{% endblock %}
+
+{% block sidebar_nav %}
+  <div class="nav-section-label">Navigation</div>
+  <a href="/dashboard/producteur/" class="nav-item">
+    <i class="fas fa-th-large"></i> Vue d'ensemble
+  </a>
+  <a href="/dashboard/producteur/commandes/" class="nav-item">
+    <i class="fas fa-inbox"></i> Commandes reçues
+  </a>
+  <a href="/dashboard/producteur/collectes/" class="nav-item">
+    <i class="fas fa-truck"></i> Mes collectes
+  </a>
+  <a href="/dashboard/producteur/catalogue/" class="nav-item">
+    <i class="fas fa-seedling"></i> Mon catalogue
+  </a>
+  <a href="/" class="nav-item">
+    <i class="fas fa-store"></i> Catalogue public
+  </a>
+
+  <div class="nav-section-label">Compte</div>
+  <a href="/dashboard/producteur/profil/" class="nav-item">
+    <i class="fas fa-user-edit"></i> Mon profil
+  </a>
+  <a href="/dashboard/producteur/rapport/" class="nav-item active">
+    <i class="fas fa-file-alt"></i> Mon rapport
+  </a>
+{% endblock %}
+
+{% block page_title %}Mon Rapport{% endblock %}
+{% block page_subtitle %}Téléchargez un rapport de votre activité{% endblock %}
+
+{% block extra_css %}
+<style>
+  .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .export-grid { grid-template-columns: 1fr; } }
+  .exp-card { background: var(--card-bg, #fff); border-radius: var(--radius, 10px); padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.08); border: 1px solid var(--border, #e8edf2); }
+  .exp-card h2 { font-size: 16px; color: var(--text, #2c3e50); margin: 0 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border, #ecf0f1); }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--text, #2c3e50); }
+  .form-group input[type="date"] { width: 100%; padding: 10px 12px; border: 1px solid var(--border, #ddd); border-radius: 6px; font-size: 14px; color: var(--text, #2c3e50); box-sizing: border-box; background: var(--input-bg, #fff); }
+  .form-group small { display: block; margin-top: 4px; font-size: 11px; color: #95a5a6; }
+  .radio-group { display: flex; flex-direction: column; gap: 10px; }
+  .radio-option { display: flex; align-items: flex-start; cursor: pointer; padding: 12px; border: 2px solid var(--border, #ecf0f1); border-radius: 8px; transition: border-color .2s; }
+  .radio-option:has(input:checked) { border-color: #27ae60; background: #f0faf3; }
+  .radio-option input[type="radio"] { margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; accent-color: #27ae60; flex-shrink: 0; }
+  .radio-label { display: flex; flex-direction: column; gap: 2px; }
+  .radio-label strong { font-size: 14px; color: var(--text, #2c3e50); }
+  .radio-label small { font-size: 12px; color: #7f8c8d; }
+  .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .info-section { margin-bottom: 20px; }
+  .info-section:last-child { margin-bottom: 0; }
+  .info-section h3 { font-size: 14px; font-weight: 600; color: #27ae60; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .info-section ul { margin: 4px 0 0 20px; padding: 0; }
+  .info-section li { font-size: 12px; color: #7f8c8d; margin: 2px 0; }
+  #export-loading { display: none; align-items: center; gap: 10px; color: #27ae60; font-size: 14px; margin-top: 12px; }
+  .spinner { width: 20px; height: 20px; border: 3px solid #e0f5e9; border-top-color: #27ae60; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="export-grid">
+  <div class="exp-card">
+    <h2><i class="fas fa-file-export" style="color:#27ae60; margin-right:8px;"></i>Paramètres d'Export</h2>
+    <form method="post" action="/dashboard/producteur/rapport/" id="export-form">
+      {% csrf_token %}
+      <input type="hidden" name="_jwt" id="jwt-field">
+
+      <div class="form-group">
+        <label for="start_date">Date de début</label>
+        <input type="date" id="start_date" name="start_date" value="{{ default_start|date:'Y-m-d' }}" required>
+        <small>Par défaut : 30 jours avant aujourd'hui</small>
+      </div>
+
+      <div class="form-group">
+        <label for="end_date">Date de fin</label>
+        <input type="date" id="end_date" name="end_date" value="{{ today|date:'Y-m-d' }}" required>
+        <small>Par défaut : Aujourd'hui</small>
+      </div>
+
+      <div class="form-group">
+        <label>Format d'export</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="format" value="pdf" checked>
+            <span class="radio-label">
+              <strong><i class="fas fa-file-pdf" style="color:#e74c3c; margin-right:6px;"></i>PDF</strong>
+              <small>Rapport professionnel avec graphiques</small>
+            </span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="format" value="csv">
+            <span class="radio-label">
+              <strong><i class="fas fa-file-csv" style="color:#27ae60; margin-right:6px;"></i>CSV</strong>
+              <small>Données brutes, compatible Excel</small>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="btn-export">
+          <i class="fas fa-download"></i> Télécharger mon Rapport
+        </button>
+        <a href="/dashboard/producteur/" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i> Retour
+        </a>
+      </div>
+      <div id="export-loading">
+        <div class="spinner"></div>
+        <span>Génération en cours…</span>
+      </div>
+    </form>
+  </div>
+
+  <div class="exp-card" style="align-self: start; position: sticky; top: 80px;">
+    <h2><i class="fas fa-info-circle" style="color:#27ae60; margin-right:8px;"></i>Contenu du rapport</h2>
+    <div class="info-section">
+      <h3><i class="fas fa-tachometer-alt"></i> Tableau de bord</h3>
+      <ul>
+        <li>Commandes totales sur la période</li>
+        <li>Chiffre d'affaires encaissé</li>
+        <li>Commandes par statut (livrées, en cours…)</li>
+        <li>Produits actifs &amp; alertes stock</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3><i class="fas fa-chart-bar"></i> Graphiques</h3>
+      <ul>
+        <li>CA mensuel sur 12 mois</li>
+        <li>Répartition des statuts de commandes</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3><i class="fas fa-boxes"></i> Catalogue &amp; Stock</h3>
+      <ul>
+        <li>Top 10 produits par CA</li>
+        <li>État du stock (disponible / seuil alerte)</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3><i class="fas fa-clipboard-list"></i> Commandes récentes</h3>
+      <ul>
+        <li>15 dernières commandes avec statut</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_script %}
+// Auth check — affiche la page et valide le rôle
+mpAuthCheck('producteur').then(function(u) {
+  if (!u) return;
+
+  const token = localStorage.getItem('mp_access');
+  if (token) document.getElementById('jwt-field').value = token;
+
+  document.getElementById('export-form').addEventListener('submit', function () {
+    const t = localStorage.getItem('mp_access');
+    if (t) document.getElementById('jwt-field').value = t;
+    document.getElementById('btn-export').disabled = true;
+    document.getElementById('export-loading').style.display = 'flex';
+    setTimeout(function () {
+      document.getElementById('btn-export').disabled = false;
+      document.getElementById('export-loading').style.display = 'none';
+    }, 10000);
+  });
+});
+{% endblock %}

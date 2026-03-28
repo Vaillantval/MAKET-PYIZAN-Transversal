@@ -1988,14 +1988,12 @@
 
     function getDashboardUrl(user) {
       if (user.is_superuser || user.role === 'superadmin') return '/dashboard/superadmin/';
-      if (user.role === 'admin')      return '/dashboard/admin/';
       if (user.role === 'producteur') return '/dashboard/producteur/';
       return '/dashboard/acheteur/';
     }
 
     function getDashboardLabel(user) {
       if (user.is_superuser || user.role === 'superadmin') return 'Super Admin';
-      if (user.role === 'admin')      return 'Admin';
       if (user.role === 'producteur') return 'Mon espace';
       return 'Mon espace';
     }

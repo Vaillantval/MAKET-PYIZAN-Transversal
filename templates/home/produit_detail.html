@@ -831,7 +831,6 @@
 
   function getDashboardUrl(user) {
     if (user.is_superuser || user.role === 'superadmin') return '/dashboard/superadmin/';
-    if (user.role === 'admin')      return '/dashboard/admin/';
     if (user.role === 'producteur') return '/dashboard/producteur/';
     return '/dashboard/acheteur/';
   }

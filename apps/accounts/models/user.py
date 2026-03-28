@@ -5,7 +5,6 @@ from django.db import models
 class CustomUser(AbstractUser):
     class Role(models.TextChoices):
         SUPERADMIN = 'superadmin', 'Super Administrateur'
-        ADMIN      = 'admin',      'Administrateur'
         PRODUCTEUR = 'producteur', 'Producteur'
         ACHETEUR   = 'acheteur',   'Acheteur'
         COLLECTEUR = 'collecteur', 'Agent de Collecte'

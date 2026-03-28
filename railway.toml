@@ -1,5 +1,14 @@
 [build]
 builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python manage.py migrate --noinput --settings=config.settings.production && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --threads 4 --worker-class gthread --timeout 120"
+# 1. Migrations DB
+# 2. Collecte des fichiers statiques (whitenoise)
+# 3. Création du superadmin initial (idempotent)
+# 4. Lancement de gunicorn
+startCommand = "sh -c 'python manage.py migrate --noinput && python manage.py collectstatic --noinput && python init_site.py && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --threads 4 --worker-class gthread --timeout 120'"
+healthcheckPath = "/health/"
+healthcheckTimeout = 120
+restartPolicyType = "always"
+restartPolicyMaxRetries = 10

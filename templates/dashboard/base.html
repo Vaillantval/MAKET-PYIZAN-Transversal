@@ -1,36 +1,80 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Dashboard{% endblock %} — {{ site_settings.nom_site|default:"Makèt Peyizan" }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+    /* ══ TOKENS ══════════════════════════════════════════════════════════════ */
     :root {
       --sidebar-w:   240px;
-      --topbar-h:    64px;
+      --topbar-h:    60px;
+
+      /* Brand */
       --green:       #1a6b2f;
+      --green-dark:  #145525;
       --green-mid:   #27ae60;
       --green-light: #e8f8ee;
+      --green-glow:  rgba(39,174,96,.15);
       --yellow:      #e8d800;
+      --yellow-dark: #c9bb00;
+      --yellow-text: #4a3c00;
       --red:         #e74c3c;
       --orange:      #e67e22;
       --blue:        #2980b9;
       --purple:      #8e44ad;
-      --bg:          #f4f6f9;
+
+      /* Radius / shadows */
+      --radius:      10px;
+      --radius-sm:   7px;
+      --shadow:      0 1px 8px rgba(0,0,0,.08);
+      --shadow-md:   0 4px 20px rgba(0,0,0,.10);
+      --shadow-lg:   0 8px 32px rgba(0,0,0,.13);
+    }
+
+    /* ── LIGHT MODE ────────────────────────────────────────────────────────── */
+    [data-theme="light"] {
+      --bg:          #f0f3f7;
+      --bg-subtle:   #e8ecf2;
       --card:        #ffffff;
-      --border:      #eaeaea;
-      --text:        #1a1a1a;
-      --text-muted:  #888;
-      --radius:      12px;
-      --shadow:      0 2px 12px rgba(0,0,0,.07);
-      --shadow-lg:   0 6px 28px rgba(0,0,0,.10);
+      --card-hover:  #fafbfc;
+      --border:      #e2e6ec;
+      --border-mid:  #d0d7e1;
+      --text:        #111827;
+      --text-sub:    #374151;
+      --text-muted:  #6b7280;
+      --text-faint:  #9ca3af;
+      --input-bg:    #f8fafc;
+      --topbar-bg:   #ffffff;
+      --topbar-bdr:  #e2e6ec;
+    }
+
+    /* ── DARK MODE ─────────────────────────────────────────────────────────── */
+    [data-theme="dark"] {
+      --bg:          #0e1117;
+      --bg-subtle:   #151a23;
+      --card:        #1a2030;
+      --card-hover:  #1f2840;
+      --border:      rgba(255,255,255,.08);
+      --border-mid:  rgba(255,255,255,.13);
+      --text:        #edf2f7;
+      --text-sub:    #cbd5e1;
+      --text-muted:  #8896a9;
+      --text-faint:  #5a6a7e;
+      --input-bg:    #111827;
+      --topbar-bg:   #141b27;
+      --topbar-bdr:  rgba(255,255,255,.07);
+      --green-light: rgba(39,174,96,.12);
+      --shadow:      0 1px 8px rgba(0,0,0,.35);
+      --shadow-md:   0 4px 20px rgba(0,0,0,.45);
+      --shadow-lg:   0 8px 32px rgba(0,0,0,.55);
     }
 
     body {
@@ -38,332 +82,373 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      transition: background .25s, color .25s;
     }
 
     a { text-decoration: none; color: inherit; }
 
-    /* ══ CHARGEMENT ═══════════════════════════════════════════ */
+    /* ══ LOADING ═════════════════════════════════════════════════════════════ */
     #loading-screen {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: var(--green);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      gap: 20px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; gap: 20px;
     }
-    .loading-logo { font-size: 40px; }
+    .loading-logo { font-size: 48px; filter: drop-shadow(0 4px 12px rgba(0,0,0,.3)); }
     .loading-spinner {
       width: 36px; height: 36px;
-      border: 3px solid rgba(255,255,255,.3);
-      border-top-color: #fff;
+      border: 3px solid rgba(255,255,255,.2);
+      border-top-color: var(--yellow);
       border-radius: 50%;
-      animation: spin .8s linear infinite;
+      animation: spin .75s linear infinite;
     }
-    .loading-text { color: rgba(255,255,255,.8); font-size: 14px; }
+    .loading-text {
+      color: rgba(255,255,255,.7);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     #app { display: none; min-height: 100vh; }
 
-    /* ══ SIDEBAR ══════════════════════════════════════════════ */
+    /* ══ SIDEBAR ══════════════════════════════════════════════════════════════ */
     .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: var(--sidebar-w);
-      height: 100vh;
+      position: fixed; top: 0; left: 0;
+      width: var(--sidebar-w); height: 100vh;
       background: var(--green);
-      display: flex;
-      flex-direction: column;
-      z-index: 100;
-      transition: transform .3s;
+      display: flex; flex-direction: column;
+      z-index: 200;
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      box-shadow: 4px 0 24px rgba(0,0,0,.18);
     }
 
+    /* Brand logo area */
     .sidebar-logo {
-      padding: 20px 20px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      padding: 18px 18px 14px;
+      display: flex; align-items: center; gap: 10px;
       border-bottom: 1px solid rgba(255,255,255,.1);
     }
     .sidebar-logo-icon {
-      width: 38px; height: 38px;
+      width: 36px; height: 36px;
       background: var(--yellow);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
       flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
     }
     .sidebar-logo-text {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-      line-height: 1.2;
+      font-size: 14px; font-weight: 700;
+      color: #fff; line-height: 1.25;
     }
     .sidebar-logo-sub {
-      font-size: 10px;
-      color: rgba(255,255,255,.55);
-      text-transform: uppercase;
-      letter-spacing: .05em;
+      font-size: 9px; font-weight: 600;
+      color: rgba(255,255,255,.45);
+      text-transform: uppercase; letter-spacing: .09em;
     }
 
-    /* User card in sidebar */
+    /* User card */
     .sidebar-user {
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-bottom: 1px solid rgba(255,255,255,.1);
-      background: rgba(0,0,0,.1);
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.12);
     }
     .sidebar-avatar {
-      width: 38px; height: 38px;
+      width: 36px; height: 36px;
       background: var(--yellow);
-      color: #1a1a1a;
+      color: var(--yellow-text);
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px;
       flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,.15);
     }
-    .sidebar-user-info { min-width: 0; }
+    .sidebar-user-info { min-width: 0; flex: 1; }
     .sidebar-user-name {
-      color: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      color: #fff; font-size: 13px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .sidebar-user-role {
-      font-size: 10px;
-      color: rgba(255,255,255,.6);
-      text-transform: uppercase;
-      letter-spacing: .05em;
+      font-size: 10px; color: rgba(255,255,255,.5);
+      text-transform: uppercase; letter-spacing: .06em;
     }
 
-    /* Nav items */
+    /* Nav */
     .sidebar-nav {
-      flex: 1;
-      padding: 12px 0;
-      overflow-y: auto;
+      flex: 1; padding: 10px 0;
+      overflow-y: auto; overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.15) transparent;
     }
+    .sidebar-nav::-webkit-scrollbar { width: 4px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
+
     .nav-section-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .1em;
+      font-size: 9.5px; font-weight: 700; letter-spacing: .12em;
       text-transform: uppercase;
-      color: rgba(255,255,255,.4);
-      padding: 12px 20px 6px;
+      color: rgba(255,255,255,.35);
+      padding: 14px 18px 5px;
     }
     .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 20px;
-      color: rgba(255,255,255,.75);
-      font-size: 13px;
-      font-weight: 500;
-      transition: background .15s, color .15s;
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 18px;
+      color: rgba(255,255,255,.68);
+      font-size: 13px; font-weight: 500;
+      transition: background .14s, color .14s;
       border-left: 3px solid transparent;
       cursor: pointer;
     }
-    .nav-item:hover {
-      background: rgba(255,255,255,.08);
-      color: #fff;
-    }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
     .nav-item.active {
-      background: rgba(255,255,255,.12);
+      background: rgba(255,255,255,.11);
       color: #fff;
       border-left-color: var(--yellow);
     }
-    .nav-item i { width: 18px; text-align: center; font-size: 14px; }
+    .nav-item i { width: 17px; text-align: center; font-size: 13px; opacity: .85; }
+    .nav-item.active i { opacity: 1; }
 
     .nav-badge {
       margin-left: auto;
       background: var(--yellow);
-      color: #1a1a1a;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 20px;
+      color: var(--yellow-text);
+      font-size: 10px; font-weight: 700;
+      padding: 1px 7px; border-radius: 20px;
     }
 
     /* Sidebar footer */
     .sidebar-footer {
-      padding: 14px 20px;
-      border-top: 1px solid rgba(255,255,255,.1);
+      padding: 12px 16px;
+      border-top: 1px solid rgba(255,255,255,.08);
     }
     .btn-sidebar-logout {
       width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 14px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.15);
-      border-radius: 8px;
-      color: rgba(255,255,255,.7);
-      font-size: 13px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .2s, color .2s;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 13px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius-sm);
+      color: rgba(255,255,255,.6);
+      font-size: 12.5px; font-weight: 500;
+      font-family: inherit; cursor: pointer;
+      transition: all .18s;
     }
     .btn-sidebar-logout:hover {
-      background: rgba(231,76,60,.25);
-      color: #fff;
-      border-color: rgba(231,76,60,.4);
+      background: rgba(231,76,60,.22);
+      color: #fff; border-color: rgba(231,76,60,.35);
     }
 
-    /* ══ TOPBAR ═══════════════════════════════════════════════ */
+    /* ══ TOPBAR ═══════════════════════════════════════════════════════════════ */
     .topbar {
-      position: fixed;
-      top: 0;
-      left: var(--sidebar-w);
-      right: 0;
+      position: fixed; top: 0;
+      left: var(--sidebar-w); right: 0;
       height: var(--topbar-h);
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 28px;
-      z-index: 99;
-      box-shadow: var(--shadow);
+      background: var(--topbar-bg);
+      border-bottom: 1px solid var(--topbar-bdr);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+      box-shadow: 0 1px 0 var(--topbar-bdr), var(--shadow);
+      transition: background .25s, border-color .25s;
+    }
+
+    /* Accent line top of topbar */
+    .topbar::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--green-mid) 0%, var(--yellow) 60%, var(--green-mid) 100%);
+      opacity: .85;
     }
 
     .topbar-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: flex; align-items: center; gap: 14px; min-width: 0;
     }
-    .topbar-title {
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .topbar-subtitle {
-      font-size: 13px;
+
+    /* Breadcrumb + title block */
+    .topbar-title-block { min-width: 0; }
+    .topbar-breadcrumb {
+      font-size: 11px; font-weight: 500;
       color: var(--text-muted);
+      letter-spacing: .02em;
+      display: flex; align-items: center; gap: 5px;
+      margin-bottom: 1px;
+    }
+    .topbar-breadcrumb i { font-size: 10px; color: var(--green-mid); }
+    .topbar-title {
+      font-size: 16px; font-weight: 700;
+      color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      line-height: 1.2;
     }
 
     .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
     }
-    .topbar-home-btn {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 8px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 500;
+
+    /* Icon buttons in topbar */
+    .topbar-icon-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--card);
       color: var(--text-muted);
-      transition: all .2s;
+      font-size: 14px; cursor: pointer;
+      transition: all .18s; position: relative;
     }
-    .topbar-home-btn:hover {
+    .topbar-icon-btn:hover {
+      border-color: var(--green-mid);
+      color: var(--green-mid);
+      background: var(--green-light);
+    }
+    [data-theme="dark"] .topbar-icon-btn:hover { background: rgba(39,174,96,.15); }
+
+    /* Notification dot */
+    .notif-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--red);
+      border: 1.5px solid var(--topbar-bg);
+      display: none;
+    }
+
+    /* Dark mode toggle */
+    .theme-toggle {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+      font-size: 14px; cursor: pointer;
+      transition: all .18s;
+    }
+    .theme-toggle:hover { border-color: var(--yellow-dark); color: var(--yellow-dark); background: #fdf9cc; }
+    [data-theme="dark"] .theme-toggle:hover { background: rgba(232,216,0,.12); color: var(--yellow); border-color: var(--yellow-dark); }
+
+    /* Divider */
+    .topbar-divider {
+      width: 1px; height: 28px;
+      background: var(--border); margin: 0 4px;
+    }
+
+    /* Site link */
+    .topbar-site-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--card);
+      font-size: 12.5px; font-weight: 600;
+      color: var(--text-muted);
+      transition: all .18s; cursor: pointer;
+    }
+    .topbar-site-btn i { font-size: 12px; color: var(--green-mid); }
+    .topbar-site-btn:hover {
       border-color: var(--green-mid);
       color: var(--green);
       background: var(--green-light);
     }
+    [data-theme="dark"] .topbar-site-btn:hover { background: rgba(39,174,96,.12); color: var(--green-mid); }
 
-    /* ══ MAIN CONTENT ═════════════════════════════════════════ */
+    /* User badge in topbar */
+    .topbar-user {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 10px 5px 5px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--card);
+      cursor: pointer; transition: all .18s;
+    }
+    .topbar-user:hover { border-color: var(--green-mid); background: var(--green-light); }
+    [data-theme="dark"] .topbar-user:hover { background: rgba(39,174,96,.1); }
+    .topbar-user-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--green-mid);
+      color: #fff; font-weight: 700; font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .topbar-user-avatar img { width:100%; height:100%; object-fit:cover; }
+    .topbar-user-name { font-size: 12.5px; font-weight: 600; color: var(--text-sub); max-width: 110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    /* Mobile toggle */
+    .sidebar-toggle {
+      display: none;
+      width: 36px; height: 36px;
+      align-items: center; justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--card);
+      color: var(--text-muted);
+      font-size: 15px; cursor: pointer;
+    }
+
+    /* ══ MAIN CONTENT ═════════════════════════════════════════════════════════*/
     .main-content {
       margin-left: var(--sidebar-w);
       padding-top: var(--topbar-h);
       min-height: 100vh;
     }
-    .page-body {
-      padding: 28px;
-    }
+    .page-body { padding: 24px 28px; }
 
-    /* ══ CARDS & COMPOSANTS COMMUNS ═══════════════════════════ */
+    /* ══ SHARED COMPONENTS ════════════════════════════════════════════════════*/
     .card {
       background: var(--card);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 24px;
+      padding: 22px;
+      border: 1px solid var(--border);
     }
-    .card-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .card-subtitle {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+    .card-title   { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .card-subtitle{ font-size: 13px; color: var(--text-muted); }
 
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 16px;
-      margin-bottom: 28px;
+      gap: 16px; margin-bottom: 28px;
     }
     .stat-card {
       background: var(--card);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
+      border: 1px solid var(--border);
+      padding: 18px 20px;
+      display: flex; align-items: center; gap: 14px;
     }
     .stat-icon {
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
+      width: 46px; height: 46px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px; flex-shrink: 0;
     }
-    .stat-value { font-size: 24px; font-weight: 700; line-height: 1; }
+    .stat-value { font-size: 24px; font-weight: 700; line-height: 1; color: var(--text); }
     .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
 
     .page-placeholder {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 80px 24px;
-      text-align: center;
-      color: var(--text-muted);
-      gap: 16px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 24px; text-align: center;
+      color: var(--text-muted); gap: 16px;
     }
-    .page-placeholder i { font-size: 48px; opacity: .25; }
-    .page-placeholder h3 { font-size: 18px; color: var(--text); opacity: .5; }
+    .page-placeholder i  { font-size: 48px; opacity: .2; }
+    .page-placeholder h3 { font-size: 18px; color: var(--text); opacity: .4; }
     .page-placeholder p  { font-size: 14px; max-width: 320px; }
 
-    /* Mobile sidebar toggle */
-    .sidebar-toggle {
-      display: none;
-      background: none;
-      border: none;
-      font-size: 20px;
-      color: var(--text);
-      cursor: pointer;
-      padding: 4px;
-    }
-
+    /* ══ RESPONSIVE ═══════════════════════════════════════════════════════════*/
     @media (max-width: 900px) {
       .sidebar { transform: translateX(-100%); }
       .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 199; }
+      .sidebar-overlay.open { display: block; }
       .topbar { left: 0; }
       .main-content { margin-left: 0; }
-      .sidebar-toggle { display: block; }
-      .page-body { padding: 20px 16px; }
+      .sidebar-toggle { display: flex; }
+      .page-body { padding: 16px; }
+      .topbar-user-name { display: none; }
+      .topbar-site-btn span { display: none; }
+      .topbar-site-btn { padding: 7px 10px; }
     }
   </style>
   {% block extra_css %}{% endblock %}
@@ -379,19 +464,22 @@
 
 <div id="app">
 
+  <!-- Overlay mobile -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
   <!-- ══ SIDEBAR ══ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div class="sidebar-logo-icon">
         {% if site_settings.logo %}
-          <img src="{{ site_settings.logo.url }}" alt="" style="width:24px;height:24px;object-fit:contain;border-radius:5px;">
+          <img src="{{ site_settings.logo.url }}" alt="" style="width:22px;height:22px;object-fit:contain;border-radius:4px;">
         {% else %}
           🌾
         {% endif %}
       </div>
       <div>
         <div class="sidebar-logo-text">{{ site_settings.nom_site|default:"Makèt Peyizan" }}</div>
-        <div class="sidebar-logo-sub">Dashboard</div>
+        <div class="sidebar-logo-sub">Admin</div>
       </div>
     </div>
 
@@ -418,18 +506,47 @@
   <!-- ══ TOPBAR ══ -->
   <header class="topbar">
     <div class="topbar-left">
-      <button class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+      <button class="sidebar-toggle" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
       </button>
-      <div>
+      <div class="topbar-title-block">
+        <div class="topbar-breadcrumb">
+          <i class="fas fa-circle-dot"></i>
+          <span>{% block page_subtitle %}Dashboard{% endblock %}</span>
+        </div>
         <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
-        <div class="topbar-subtitle">{% block page_subtitle %}{% endblock %}</div>
       </div>
     </div>
+
     <div class="topbar-right">
-      <a href="/" class="topbar-home-btn">
-        <i class="fas fa-store"></i> Accueil
+
+      <!-- Notifications messages contact (superadmin) -->
+      <button class="topbar-icon-btn" id="notif-btn" title="Messages de contact" onclick="window.location='/dashboard/superadmin/config/#contact'" style="display:none">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-dot" id="notif-dot"></span>
+      </button>
+
+      <div class="topbar-divider"></div>
+
+      <!-- Dark mode toggle -->
+      <button class="theme-toggle" id="theme-toggle" title="Basculer le thème" onclick="toggleTheme()">
+        <i class="fas fa-moon" id="theme-icon"></i>
+      </button>
+
+      <div class="topbar-divider"></div>
+
+      <!-- Lien vers le site public -->
+      <a href="/" class="topbar-site-btn">
+        <i class="fas fa-store"></i>
+        <span>Voir le site</span>
       </a>
+
+      <!-- Mini user badge -->
+      <div class="topbar-user" onclick="window.location='/dashboard/superadmin/utilisateurs/'" title="Profil">
+        <div class="topbar-user-avatar" id="tb-avatar">?</div>
+        <span class="topbar-user-name" id="tb-name">...</span>
+      </div>
+
     </div>
   </header>
 
@@ -440,176 +557,212 @@
     </div>
   </main>
 
-</div>
+</div><!-- /app -->
 
 <script src="{% static 'js/geo_selector.js' %}"></script>
 <script>
-  // ── Constantes rôles ──────────────────────────────────────
-  const ROLE_LABELS = {
-    superadmin: 'Super Administrateur',
-    admin:      'Administrateur',
-    producteur: 'Producteur',
-    acheteur:   'Acheteur',
-    collecteur: 'Agent de Collecte',
-  };
+// ── Thème ──────────────────────────────────────────────────────────────────
+(function() {
+  const saved = localStorage.getItem('mp_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  // Update icon immediately to avoid flash
+  const icon = document.getElementById('theme-icon');
+  if (icon) icon.className = saved === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+})();
 
-  const DASHBOARD_URLS = {
-    superadmin: '/dashboard/superadmin/',
-    admin:      '/dashboard/admin/',
-    producteur: '/dashboard/producteur/',
-    acheteur:   '/dashboard/acheteur/',
-    collecteur: '/dashboard/acheteur/',
-  };
+function toggleTheme() {
+  const html    = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next    = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('mp_theme', next);
+  document.getElementById('theme-icon').className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
 
-  // ── Déterminer le rôle effectif ────────────────────────────
-  function effectiveRole(user) {
-    if (user.is_superuser) return 'superadmin';
-    return user.role || 'acheteur';
-  }
+// ── Sidebar mobile ────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebar-overlay');
+  const open = s.classList.toggle('open');
+  o.classList.toggle('open', open);
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
 
-  function getDashboardUrl(user) {
-    return DASHBOARD_URLS[effectiveRole(user)] || '/dashboard/acheteur/';
-  }
+// ── Rôles / dashboards ────────────────────────────────────────────────────
+const ROLE_LABELS = {
+  superadmin: 'Super Administrateur',
+  producteur: 'Producteur',
+  acheteur:   'Acheteur',
+  collecteur: 'Agent de Collecte',
+};
+const DASHBOARD_URLS = {
+  superadmin: '/dashboard/superadmin/',
+  producteur: '/dashboard/producteur/',
+  acheteur:   '/dashboard/acheteur/',
+  collecteur: '/dashboard/acheteur/',
+};
 
-  // ── Guard : producteur en attente → rediriger vers page d'attente ──
-  function mpProducteurGuard(user) {
-    if (user.profil_producteur_statut === 'en_attente') {
-      const exempt = ['/dashboard/producteur/en-attente/', '/dashboard/producteur/profil/'];
-      if (!exempt.includes(window.location.pathname)) {
-        window.location.href = '/dashboard/producteur/en-attente/';
-        return false;
-      }
+function effectiveRole(user) {
+  return user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
+}
+function getDashboardUrl(user) {
+  return DASHBOARD_URLS[effectiveRole(user)] || '/dashboard/acheteur/';
+}
+
+function mpProducteurGuard(user) {
+  if (user.profil_producteur_statut === 'en_attente') {
+    const exempt = ['/dashboard/producteur/en-attente/', '/dashboard/producteur/profil/'];
+    if (!exempt.includes(window.location.pathname)) {
+      window.location.href = '/dashboard/producteur/en-attente/';
+      return false;
     }
-    return true;
   }
+  return true;
+}
 
-  // ── Remplir la sidebar ─────────────────────────────────────
-  function fillSidebarUser(user) {
-    const name      = user.full_name || user.username || '?';
-    const avatarEl  = document.getElementById('sb-avatar');
+// ── Remplir la sidebar + topbar ──────────────────────────────────────────
+function fillSidebarUser(user) {
+  const name = user.full_name || user.username || '?';
+  const init = name.charAt(0).toUpperCase();
+
+  // Sidebar avatar
+  const sbAv = document.getElementById('sb-avatar');
+  if (user.photo) {
+    sbAv.innerHTML = `<img src="${user.photo}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;">`;
+    sbAv.style.background = 'transparent'; sbAv.style.padding = '0';
+  } else {
+    sbAv.textContent = init;
+    sbAv.style.background = ''; sbAv.style.padding = '';
+  }
+  document.getElementById('sb-name').textContent = name;
+  document.getElementById('sb-role').textContent = ROLE_LABELS[effectiveRole(user)] || user.role;
+
+  // Topbar mini badge
+  const tbAv = document.getElementById('tb-avatar');
+  if (tbAv) {
     if (user.photo) {
-      avatarEl.innerHTML = `<img src="${user.photo}" alt="avatar"
-        style="width:38px;height:38px;border-radius:50%;object-fit:cover;display:block;">`;
-      avatarEl.style.background = 'transparent';
-      avatarEl.style.padding    = '0';
+      tbAv.innerHTML = `<img src="${user.photo}" alt="">`;
     } else {
-      avatarEl.textContent       = name.charAt(0).toUpperCase();
-      avatarEl.style.background  = '';
-      avatarEl.style.padding     = '';
+      tbAv.textContent = init;
     }
-    document.getElementById('sb-name').textContent = name;
-    document.getElementById('sb-role').textContent = ROLE_LABELS[effectiveRole(user)] || user.role;
   }
+  const tbName = document.getElementById('tb-name');
+  if (tbName) tbName.textContent = user.first_name || name.split(' ')[0] || name;
 
-  // ── Auth check principal ───────────────────────────────────
-  async function mpAuthCheck(allowedRole) {
-    const token = localStorage.getItem('mp_access');
-    if (!token) { window.location.href = '/connexion/'; return null; }
+  // Notification bell (superadmin seulement)
+  if (user.is_superuser || user.role === 'superadmin') {
+    const notifBtn = document.getElementById('notif-btn');
+    if (notifBtn) notifBtn.style.display = 'flex';
+    // Charger les messages non lus
+    fetch('/api/admin/config/contact/?est_lu=false', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') }
+    }).then(r => r.ok ? r.json() : []).then(msgs => {
+      const dot = document.getElementById('notif-dot');
+      if (dot && msgs.length > 0) dot.style.display = 'block';
+    }).catch(() => {});
+  }
+}
 
-    let user;
-    try {
-      const resp = await fetch('/api/auth/me/', {
-        headers: { 'Authorization': 'Bearer ' + token },
+// ── Auth check ────────────────────────────────────────────────────────────
+async function mpAuthCheck(allowedRole) {
+  const token = localStorage.getItem('mp_access');
+  if (!token) { window.location.href = '/connexion/'; return null; }
+
+  let user;
+  try {
+    const resp = await fetch('/api/auth/me/', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (resp.status === 401) {
+      const refreshed = await tryTokenRefresh();
+      if (!refreshed) { mpClearAndRedirect(); return null; }
+      const resp2 = await fetch('/api/auth/me/', {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') },
       });
-
-      if (resp.status === 401) {
-        // Tenter un refresh
-        const refreshed = await tryTokenRefresh();
-        if (!refreshed) { mpClearAndRedirect(); return null; }
-        // Réessayer
-        const resp2 = await fetch('/api/auth/me/', {
-          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') },
-        });
-        if (!resp2.ok) { mpClearAndRedirect(); return null; }
-        user = await resp2.json();
-      } else if (!resp.ok) {
-        mpClearAndRedirect(); return null;
-      } else {
-        user = await resp.json();
-      }
-    } catch (e) {
+      if (!resp2.ok) { mpClearAndRedirect(); return null; }
+      user = await resp2.json();
+    } else if (!resp.ok) {
       mpClearAndRedirect(); return null;
+    } else {
+      user = await resp.json();
     }
-
-    // Mettre à jour localStorage
-    const stored = {
-      id:                       user.id,
-      username:                 user.username,
-      email:                    user.email,
-      role:                     user.role,
-      is_superuser:             user.is_superuser,
-      full_name:                [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username,
-      first_name:               user.first_name || '',
-      last_name:                user.last_name  || '',
-      telephone:                user.telephone  || '',
-      photo:                    user.photo      || null,
-      date_joined:              user.date_joined || null,
-      profil_producteur_statut: user.profil_producteur?.statut || null,
-    };
-    localStorage.setItem('mp_user', JSON.stringify(stored));
-
-    // Vérifier que l'utilisateur est sur le bon dashboard
-    const role    = effectiveRole(stored);
-    const allowed = allowedRole
-      ? (Array.isArray(allowedRole) ? allowedRole : [allowedRole])
-      : null;
-    if (allowed && !allowed.includes(role)) {
-      window.location.href = getDashboardUrl(stored);
-      return null;
-    }
-
-    // Remplir la sidebar
-    fillSidebarUser(stored);
-
-    // Afficher l'app
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-
-    return stored;
+  } catch {
+    mpClearAndRedirect(); return null;
   }
 
-  async function tryTokenRefresh() {
-    const refresh = localStorage.getItem('mp_refresh');
-    if (!refresh) return false;
+  const stored = {
+    id:                       user.id,
+    username:                 user.username,
+    email:                    user.email,
+    role:                     user.role,
+    is_superuser:             user.is_superuser,
+    full_name:                [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username,
+    first_name:               user.first_name || '',
+    last_name:                user.last_name  || '',
+    telephone:                user.telephone  || '',
+    photo:                    user.photo      || null,
+    date_joined:              user.date_joined || null,
+    profil_producteur_statut: user.profil_producteur?.statut || null,
+  };
+  localStorage.setItem('mp_user', JSON.stringify(stored));
+
+  const role    = effectiveRole(stored);
+  const allowed = allowedRole
+    ? (Array.isArray(allowedRole) ? allowedRole : [allowedRole])
+    : null;
+  if (allowed && !allowed.includes(role)) {
+    window.location.href = getDashboardUrl(stored);
+    return null;
+  }
+
+  fillSidebarUser(stored);
+
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  return stored;
+}
+
+async function tryTokenRefresh() {
+  const refresh = localStorage.getItem('mp_refresh');
+  if (!refresh) return false;
+  try {
+    const resp = await fetch('/api/auth/token/refresh/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    localStorage.setItem('mp_access', data.access);
+    return true;
+  } catch { return false; }
+}
+
+function mpClearAndRedirect() {
+  ['mp_access','mp_refresh','mp_user'].forEach(k => localStorage.removeItem(k));
+  window.location.href = '/connexion/';
+}
+
+async function mpLogout() {
+  const refresh = localStorage.getItem('mp_refresh');
+  const access  = localStorage.getItem('mp_access');
+  if (refresh && access) {
     try {
-      const resp = await fetch('/api/auth/token/refresh/', {
+      await fetch('/api/auth/logout/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + access },
         body: JSON.stringify({ refresh }),
       });
-      if (!resp.ok) return false;
-      const data = await resp.json();
-      localStorage.setItem('mp_access', data.access);
-      return true;
-    } catch { return false; }
+    } catch (_) {}
   }
+  mpClearAndRedirect();
+}
 
-  function mpClearAndRedirect() {
-    localStorage.removeItem('mp_access');
-    localStorage.removeItem('mp_refresh');
-    localStorage.removeItem('mp_user');
-    window.location.href = '/connexion/';
-  }
-
-  async function mpLogout() {
-    const refresh = localStorage.getItem('mp_refresh');
-    const access  = localStorage.getItem('mp_access');
-    if (refresh && access) {
-      try {
-        await fetch('/api/auth/logout/', {
-          method: 'POST',
-          headers: {
-            'Content-Type':  'application/json',
-            'Authorization': 'Bearer ' + access,
-          },
-          body: JSON.stringify({ refresh }),
-        });
-      } catch (_) {}
-    }
-    mpClearAndRedirect();
-  }
-
-  {% block page_script %}{% endblock %}
+{% block page_script %}{% endblock %}
 </script>
 
 </body>

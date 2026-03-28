@@ -1,0 +1,414 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Vouchers — Superadmin{% endblock %}
+{% block sidebar_nav %}{% include 'dashboard/superadmin_sidebar.html' with active='vouchers' %}{% endblock %}
+{% block page_title %}Vouchers{% endblock %}
+{% block page_subtitle %}Programmes de vouchers et codes de réduction{% endblock %}
+
+{% block extra_css %}
+<style>
+  .tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; }
+  .tab-btn { padding:10px 20px; font-size:13px; font-weight:700; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--text-muted); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .18s; }
+  .tab-btn.active { color:var(--green-mid); border-bottom-color:var(--green-mid); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+  .search-box { flex:1; min-width:200px; display:flex; align-items:center; gap:8px; background:var(--card); border:1.5px solid var(--border); border-radius:8px; padding:8px 14px; }
+  .search-box input { border:none; outline:none; background:transparent; font-family:inherit; font-size:13px; color:var(--text); width:100%; }
+  .filter-btn { padding:7px 14px; border-radius:8px; font-size:12px; font-weight:600; border:1.5px solid var(--border); background:var(--card); color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .btn-new { padding:8px 18px; border-radius:8px; font-size:13px; font-weight:700; border:none; cursor:pointer; background:var(--green-mid); color:#fff; font-family:inherit; white-space:nowrap; }
+  .btn-new:hover { opacity:.88; }
+
+  .table-wrap { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { background:var(--bg); padding:11px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); border-bottom:1px solid var(--border); }
+  tbody td { padding:10px 14px; font-size:13px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:#fafafa; }
+  .empty-state { text-align:center; padding:48px; color:var(--text-muted); font-size:13px; }
+  .badge { display:inline-block; padding:2px 9px; border-radius:12px; font-size:11px; font-weight:700; }
+  .badge-actif   { background:#e8f8ee; color:#1a6b2f; }
+  .badge-utilise { background:#eaf4fb; color:#2980b9; }
+  .badge-expire  { background:#f0f0f0; color:#555; }
+  .badge-annule  { background:#fde8e8; color:#e74c3c; }
+  .badge-suspendu { background:#fff4e6; color:#e67e22; }
+  .action-btn { padding:5px 10px; border-radius:6px; font-size:11px; font-weight:700; border:none; cursor:pointer; font-family:inherit; }
+
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:600; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
+  .modal-overlay.open { opacity:1; pointer-events:auto; }
+  .modal-box { background:var(--card); border-radius:14px; padding:28px 32px; width:500px; max-width:96vw; box-shadow:0 12px 48px rgba(0,0,0,.18); max-height:90vh; overflow-y:auto; }
+  .modal-box h3 { font-size:16px; font-weight:700; margin-bottom:20px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .form-grid .full { grid-column:1/-1; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
+  .field input, .field select, .field textarea { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; }
+  .field input:focus, .field select:focus { border-color:var(--green-mid); }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+  .btn-cancel { padding:9px 18px; border-radius:8px; font-size:13px; font-weight:700; border:1.5px solid var(--border); background:var(--bg); color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .btn-save { padding:9px 22px; border-radius:8px; font-size:13px; font-weight:700; border:none; cursor:pointer; background:var(--green-mid); color:#fff; font-family:inherit; }
+
+  .prog-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px; border-left:4px solid var(--green-mid); margin-bottom:12px; display:flex; align-items:center; gap:16px; }
+  .prog-card.inactive { border-left-color:var(--border); opacity:.7; }
+  .prog-info { flex:1; }
+  .prog-nom { font-size:14px; font-weight:700; }
+  .prog-meta { font-size:12px; color:var(--text-muted); margin-top:3px; }
+  .prog-budget { text-align:right; }
+  .prog-budget .val { font-size:18px; font-weight:700; color:var(--green-mid); }
+  .prog-budget .lbl { font-size:11px; color:var(--text-muted); }
+
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:500; color:#fff; box-shadow:0 4px 20px rgba(0,0,0,.15); animation:slideUp .25s ease; }
+  .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="tc"></div>
+
+<!-- Modal programme -->
+<div class="modal-overlay" id="prog-modal">
+  <div class="modal-box">
+    <h3 id="prog-modal-title">Nouveau programme</h3>
+    <form id="prog-form" onsubmit="submitProg(event)">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Nom du programme *</label>
+          <input type="text" id="p-nom" required placeholder="Ex: Programme WFP 2026">
+        </div>
+        <div class="field">
+          <label>Type *</label>
+          <select id="p-type" required>
+            <option value="aide_alimentaire">Aide alimentaire</option>
+            <option value="subvention">Subvention</option>
+            <option value="promotion">Promotion commerciale</option>
+            <option value="partenariat">Partenariat</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Budget total (HTG)</label>
+          <input type="number" id="p-budget" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Date début</label>
+          <input type="date" id="p-debut">
+        </div>
+        <div class="field">
+          <label>Date fin</label>
+          <input type="date" id="p-fin">
+        </div>
+        <div class="field full">
+          <label>Description</label>
+          <textarea id="p-description" rows="2" style="resize:vertical"></textarea>
+        </div>
+        <div class="field">
+          <label>Contact — Nom</label>
+          <input type="text" id="p-contact-nom" placeholder="Responsable">
+        </div>
+        <div class="field">
+          <label>Contact — Email</label>
+          <input type="email" id="p-contact-email">
+        </div>
+        <div class="field">
+          <label>Contact — Tél</label>
+          <input type="text" id="p-contact-tel">
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="p-active" checked> Programme actif
+          </label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeProgModal()">Annuler</button>
+        <button type="submit" class="btn-save" id="prog-submit-btn"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal voucher -->
+<div class="modal-overlay" id="voucher-modal">
+  <div class="modal-box">
+    <h3>Nouveau voucher</h3>
+    <form id="voucher-form" onsubmit="submitVoucher(event)">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Programme *</label>
+          <select id="v-prog" required></select>
+        </div>
+        <div class="field">
+          <label>Type de valeur *</label>
+          <select id="v-type">
+            <option value="montant_fixe">Montant fixe (HTG)</option>
+            <option value="pourcentage">Pourcentage (%)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Valeur *</label>
+          <input type="number" id="v-valeur" required min="1" placeholder="Ex: 500">
+        </div>
+        <div class="field">
+          <label>Montant min commande (HTG)</label>
+          <input type="number" id="v-min-cmd" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Date expiration</label>
+          <input type="date" id="v-expiration">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeVoucherModal()">Annuler</button>
+        <button type="submit" class="btn-save"><i class="fas fa-plus"></i> Créer le voucher</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('programmes',this)">Programmes</button>
+  <button class="tab-btn" onclick="switchTab('vouchers',this)">Codes Vouchers</button>
+</div>
+
+<!-- Onglet Programmes -->
+<div class="tab-panel active" id="tab-programmes">
+  <div class="toolbar">
+    <button class="btn-new" onclick="openProgCreate()"><i class="fas fa-plus"></i> Nouveau programme</button>
+  </div>
+  <div id="prog-loading" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+  <div id="prog-list"></div>
+  <div id="prog-empty" class="empty-state" style="display:none">Aucun programme.</div>
+</div>
+
+<!-- Onglet Vouchers -->
+<div class="tab-panel" id="tab-vouchers">
+  <div class="toolbar">
+    <div class="search-box">
+      <i class="fas fa-search" style="color:var(--text-muted)"></i>
+      <input type="text" id="v-search" placeholder="Code, bénéficiaire..." oninput="debouncedVoucher()">
+    </div>
+    <select id="v-statut" class="filter-btn" style="appearance:none;padding-right:24px" onchange="loadVouchers()">
+      <option value="">Tous les statuts</option>
+      <option value="actif">Actif</option>
+      <option value="utilise">Utilisé</option>
+      <option value="expire">Expiré</option>
+      <option value="annule">Annulé</option>
+    </select>
+    <button class="btn-new" onclick="openVoucherCreate()"><i class="fas fa-plus"></i> Nouveau voucher</button>
+  </div>
+  <div class="table-wrap">
+    <div class="empty-state" id="v-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+    <table id="v-tbl" style="display:none">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Programme</th>
+          <th>Bénéficiaire</th>
+          <th>Valeur</th>
+          <th>Statut</th>
+          <th>Expiration</th>
+          <th>Utilisé le</th>
+        </tr>
+      </thead>
+      <tbody id="v-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="v-empty" style="display:none">Aucun voucher trouvé.</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_script %}
+const H = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access'), 'Content-Type': 'application/json' };
+let _progEditId = null, _vDebounce, _programmes = [];
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+  document.getElementById('tc').appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'programmes') loadProgrammes();
+  else loadVouchers();
+}
+
+function fdate(iso) { if (!iso) return '—'; return new Date(iso).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'}); }
+function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
+
+// ── Programmes ───────────────────────────────────────────────────────────────
+async function loadProgrammes() {
+  document.getElementById('prog-loading').style.display = 'block';
+  document.getElementById('prog-list').innerHTML = '';
+  document.getElementById('prog-empty').style.display = 'none';
+  const r = await fetch('/api/admin/vouchers/programmes/', { headers: H });
+  document.getElementById('prog-loading').style.display = 'none';
+  if (!r.ok) return;
+  _programmes = await r.json();
+  if (!_programmes.length) { document.getElementById('prog-empty').style.display = 'block'; return; }
+  const list = document.getElementById('prog-list');
+  list.innerHTML = '';
+  // Mettre à jour aussi le select du modal voucher
+  const vsel = document.getElementById('v-prog');
+  vsel.innerHTML = '<option value="">-- Sélectionner --</option>';
+  _programmes.forEach(p => {
+    vsel.innerHTML += `<option value="${p.id}">${p.nom} (${p.code_programme})</option>`;
+    list.innerHTML += `
+      <div class="prog-card ${p.is_active?'':'inactive'}">
+        <div class="prog-info">
+          <div class="prog-nom"><i class="fas fa-ticket-alt" style="color:var(--green-mid);margin-right:6px"></i>${p.nom}
+            <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:8px">${p.code_programme}</span>
+          </div>
+          <div class="prog-meta">${p.type_label} · ${p.nb_vouchers} voucher(s) · ${p.date_debut?fdate(p.date_debut):'N/A'} → ${p.date_fin?fdate(p.date_fin):'N/A'}</div>
+          <div class="prog-meta" style="margin-top:4px">Contact: ${p.contact_nom||'—'} ${p.contact_email?'· '+p.contact_email:''}</div>
+        </div>
+        <div class="prog-budget">
+          <div class="val">${fmt(p.budget_restant)}</div>
+          <div class="lbl">HTG restant</div>
+          <div style="font-size:11px;color:var(--text-muted)">${fmt(p.budget_utilise)} / ${fmt(p.budget_total)} utilisé</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="action-btn" style="background:var(--bg);border:1px solid var(--border);color:var(--text-muted)" onclick="openProgEdit(${p.id})"><i class="fas fa-edit"></i> Modifier</button>
+          <button class="action-btn" style="background:${p.is_active?'#fde8e8':'#e8f8ee'};color:${p.is_active?'#e74c3c':'#27ae60'}" onclick="toggleProg(${p.id},${p.is_active})">${p.is_active?'Désactiver':'Activer'}</button>
+        </div>
+      </div>`;
+  });
+}
+
+function openProgCreate() {
+  _progEditId = null;
+  document.getElementById('prog-modal-title').textContent = 'Nouveau programme';
+  document.getElementById('prog-submit-btn').innerHTML = '<i class="fas fa-plus"></i> Créer';
+  ['p-nom','p-description','p-contact-nom','p-contact-email','p-contact-tel'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('p-budget').value = '0';
+  document.getElementById('p-debut').value = '';
+  document.getElementById('p-fin').value = '';
+  document.getElementById('p-active').checked = true;
+  document.getElementById('prog-modal').classList.add('open');
+}
+
+async function openProgEdit(id) {
+  _progEditId = id;
+  const r = await fetch(`/api/admin/vouchers/programmes/${id}/`, { headers: H });
+  if (!r.ok) return;
+  const p = await r.json();
+  document.getElementById('prog-modal-title').textContent = 'Modifier programme';
+  document.getElementById('prog-submit-btn').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+  document.getElementById('p-nom').value          = p.nom;
+  document.getElementById('p-type').value         = p.type_programme;
+  document.getElementById('p-budget').value       = p.budget_total;
+  document.getElementById('p-debut').value        = p.date_debut||'';
+  document.getElementById('p-fin').value          = p.date_fin||'';
+  document.getElementById('p-description').value  = p.description;
+  document.getElementById('p-contact-nom').value  = p.contact_nom;
+  document.getElementById('p-contact-email').value = p.contact_email;
+  document.getElementById('p-contact-tel').value  = p.contact_tel;
+  document.getElementById('p-active').checked     = p.is_active;
+  document.getElementById('prog-modal').classList.add('open');
+}
+
+function closeProgModal() { document.getElementById('prog-modal').classList.remove('open'); _progEditId = null; }
+
+async function submitProg(e) {
+  e.preventDefault();
+  const btn = document.getElementById('prog-submit-btn'); btn.disabled = true;
+  const body = {
+    nom:           document.getElementById('p-nom').value,
+    type_programme: document.getElementById('p-type').value,
+    budget_total:  document.getElementById('p-budget').value,
+    date_debut:    document.getElementById('p-debut').value||null,
+    date_fin:      document.getElementById('p-fin').value||null,
+    description:   document.getElementById('p-description').value,
+    contact_nom:   document.getElementById('p-contact-nom').value,
+    contact_email: document.getElementById('p-contact-email').value,
+    contact_tel:   document.getElementById('p-contact-tel').value,
+    is_active:     document.getElementById('p-active').checked,
+  };
+  const url    = _progEditId ? `/api/admin/vouchers/programmes/${_progEditId}/` : '/api/admin/vouchers/programmes/';
+  const method = _progEditId ? 'PATCH' : 'POST';
+  const r = await fetch(url, { method, headers: H, body: JSON.stringify(body) });
+  btn.disabled = false;
+  if (r.ok) { showToast(_progEditId?'Programme mis à jour !':'Programme créé !'); closeProgModal(); loadProgrammes(); }
+  else showToast('Erreur', 'error');
+}
+
+async function toggleProg(id, isActive) {
+  const r = await fetch(`/api/admin/vouchers/programmes/${id}/`, {
+    method:'PATCH', headers:H, body: JSON.stringify({ is_active: !isActive })
+  });
+  if (r.ok) { showToast(`Programme ${isActive?'désactivé':'activé'}`); loadProgrammes(); }
+  else showToast('Erreur', 'error');
+}
+
+// ── Vouchers ─────────────────────────────────────────────────────────────────
+async function loadVouchers() {
+  const search = document.getElementById('v-search').value.trim();
+  const statut = document.getElementById('v-statut').value;
+  let url = '/api/admin/vouchers/?';
+  if (search) url += 'search=' + encodeURIComponent(search) + '&';
+  if (statut) url += 'statut=' + statut + '&';
+
+  document.getElementById('v-loading').style.display = 'block';
+  document.getElementById('v-tbl').style.display = 'none';
+  document.getElementById('v-empty').style.display = 'none';
+
+  const r = await fetch(url, { headers: H });
+  document.getElementById('v-loading').style.display = 'none';
+  if (!r.ok) return;
+  const data = await r.json();
+  if (!data.length) { document.getElementById('v-empty').style.display = 'block'; return; }
+
+  const tbody = document.getElementById('v-tbody');
+  tbody.innerHTML = '';
+  data.forEach(v => {
+    tbody.innerHTML += `
+      <tr>
+        <td><strong style="font-family:monospace;font-size:14px">${v.code}</strong></td>
+        <td style="font-size:12px;color:var(--text-muted)">${v.programme_nom}</td>
+        <td>${v.beneficiaire_nom}</td>
+        <td><strong>${v.type_valeur==='pourcentage'?v.valeur+'%':fmt(v.valeur)+' HTG'}</strong></td>
+        <td><span class="badge badge-${v.statut}">${v.statut_label}</span></td>
+        <td style="font-size:12px;color:var(--text-muted)">${fdate(v.date_expiration)}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${v.date_utilisation?fdate(v.date_utilisation):'—'}</td>
+      </tr>`;
+  });
+  document.getElementById('v-tbl').style.display = 'table';
+}
+
+function openVoucherCreate() {
+  if (!_programmes.length) { showToast('Créez d\'abord un programme', 'error'); return; }
+  document.getElementById('v-valeur').value = '';
+  document.getElementById('v-min-cmd').value = '';
+  document.getElementById('v-expiration').value = '';
+  document.getElementById('voucher-modal').classList.add('open');
+}
+
+function closeVoucherModal() { document.getElementById('voucher-modal').classList.remove('open'); }
+
+async function submitVoucher(e) {
+  e.preventDefault();
+  const body = {
+    programme_id:        document.getElementById('v-prog').value,
+    type_valeur:         document.getElementById('v-type').value,
+    valeur:              document.getElementById('v-valeur').value,
+    montant_commande_min: document.getElementById('v-min-cmd').value||0,
+    date_expiration:     document.getElementById('v-expiration').value||null,
+  };
+  const r = await fetch('/api/admin/vouchers/', { method:'POST', headers:H, body:JSON.stringify(body) });
+  if (r.ok) {
+    const d = await r.json();
+    showToast(`Voucher créé : ${d.code}`);
+    closeVoucherModal();
+    loadVouchers();
+  } else showToast('Erreur', 'error');
+}
+
+function debouncedVoucher() { clearTimeout(_vDebounce); _vDebounce = setTimeout(loadVouchers, 350); }
+
+mpAuthCheck('superadmin').then(u => { if (u && u.is_superuser) loadProgrammes(); });
+{% endblock %}

@@ -14,3 +14,5 @@ python-decouple
 django-filter
 gunicorn
 whitenoise
+reportlab>=4.0.0
+openpyxl>=3.1.0

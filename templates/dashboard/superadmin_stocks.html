@@ -128,6 +128,9 @@
     <i class="fas fa-exclamation-triangle"></i> Alertes
     <span id="badge-alertes" style="background:#e74c3c;color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px;display:none"></span>
   </button>
+  <button class="tab-btn" onclick="switchTab('mouvements', this)">
+    <i class="fas fa-exchange-alt"></i> Mouvements
+  </button>
 </div>
 
 <!-- Tab Lots -->
@@ -179,6 +182,45 @@
   <div class="alerte-card" id="alertes-list" style="display:none"></div>
   <div class="empty-state" id="alertes-empty" style="display:none"><i class="fas fa-check-circle" style="color:#27ae60;margin-right:6px"></i> Aucune alerte.</div>
 </div>
+
+<!-- Tab Mouvements -->
+<div class="tab-panel" id="tab-mouvements">
+  <div class="toolbar">
+    <div class="search-box">
+      <i class="fas fa-search" style="color:var(--text-muted)"></i>
+      <input type="text" id="mvt-search" placeholder="Produit, lot, motif..." oninput="debouncedMvt()">
+    </div>
+    <select id="mvt-type" class="filter-btn" style="appearance:none;padding-right:24px" onchange="loadMouvements()">
+      <option value="">Tous les types</option>
+      <option value="entree">Entrée</option>
+      <option value="sortie_vente">Sortie vente</option>
+      <option value="sortie_collecte">Sortie collecte</option>
+      <option value="ajust_pos">Ajustement +</option>
+      <option value="ajust_neg">Ajustement —</option>
+      <option value="perte">Perte</option>
+      <option value="retour">Retour</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <div class="empty-state" id="mvt-loading" style="display:none"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+    <table id="mvt-tbl" style="display:none">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Produit</th>
+          <th>Lot</th>
+          <th>Type</th>
+          <th>Qté</th>
+          <th>Avant → Après</th>
+          <th>Motif</th>
+          <th>Par</th>
+        </tr>
+      </thead>
+      <tbody id="mvt-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="mvt-empty" style="display:none">Aucun mouvement.</div>
+  </div>
+</div>
 {% endblock %}
 
 {% block page_script %}
@@ -221,6 +263,49 @@ function switchTab(tab, btn) {
   btn.classList.add('active');
   document.getElementById('tab-' + tab).classList.add('active');
   if (tab === 'alertes') loadAlertes();
+  else if (tab === 'mouvements') loadMouvements();
+}
+
+let _mvtDebounce;
+function debouncedMvt() { clearTimeout(_mvtDebounce); _mvtDebounce = setTimeout(loadMouvements, 350); }
+
+const MVT_COLORS = { entree:'#27ae60', sortie_vente:'#e74c3c', sortie_collecte:'#e67e22', ajust_pos:'#3498db', ajust_neg:'#e74c3c', perte:'#c0392b', retour:'#9b59b6', transfert:'#1abc9c' };
+
+async function loadMouvements() {
+  const search = document.getElementById('mvt-search').value.trim();
+  const type   = document.getElementById('mvt-type').value;
+  let url = '/api/admin/stocks/mouvements/?';
+  if (search) url += 'search=' + encodeURIComponent(search) + '&';
+  if (type)   url += 'type=' + type + '&';
+
+  document.getElementById('mvt-loading').style.display = 'block';
+  document.getElementById('mvt-tbl').style.display = 'none';
+  document.getElementById('mvt-empty').style.display = 'none';
+
+  const r = await fetch(url, { headers: H });
+  document.getElementById('mvt-loading').style.display = 'none';
+  if (!r.ok) { document.getElementById('mvt-empty').style.display = 'block'; return; }
+  const data = await r.json();
+  if (!data.length) { document.getElementById('mvt-empty').style.display = 'block'; return; }
+
+  function fdatetime(iso) { return new Date(iso).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  const tbody = document.getElementById('mvt-tbody');
+  tbody.innerHTML = '';
+  data.forEach(m => {
+    const c = MVT_COLORS[m.type_mouvement]||'#95a5a6';
+    tbody.innerHTML += `
+      <tr>
+        <td style="font-size:12px;color:var(--text-muted)">${fdatetime(m.created_at)}</td>
+        <td style="font-weight:600">${m.produit_nom}</td>
+        <td style="font-size:12px;color:var(--text-muted);font-family:monospace">${m.lot_numero}</td>
+        <td><span style="background:${c}22;color:${c};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">${m.type_label}</span></td>
+        <td><strong style="color:${c}">${m.quantite > 0 ? '+':'-'}${Math.abs(m.quantite)}</strong></td>
+        <td style="font-size:12px;color:var(--text-muted)">${m.stock_avant} → ${m.stock_apres}</td>
+        <td style="font-size:12px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.motif||'—'}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${m.effectue_par}</td>
+      </tr>`;
+  });
+  document.getElementById('mvt-tbl').style.display = 'table';
 }
 
 async function loadProduitOptions(selectedId) {

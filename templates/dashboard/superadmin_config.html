@@ -1,0 +1,775 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Configuration du site — Superadmin{% endblock %}
+{% block sidebar_nav %}{% include 'dashboard/superadmin_sidebar.html' with active='config' %}{% endblock %}
+{% block page_title %}Configuration du site{% endblock %}
+{% block page_subtitle %}Paramètres, FAQ et messages de contact{% endblock %}
+
+{% block extra_css %}
+<style>
+  .tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:24px; }
+  .tab-btn { padding:10px 22px; font-size:13px; font-weight:700; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--text-muted); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .18s; }
+  .tab-btn.active { color:var(--green-mid); border-bottom-color:var(--green-mid); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* Settings form */
+  .settings-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-bottom:20px; }
+  .settings-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .settings-header h3 { font-size:14px; font-weight:700; }
+  .settings-header i { color:var(--green-mid); font-size:16px; }
+  .settings-body { padding:20px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .form-grid .full { grid-column:1/-1; }
+  .form-grid .third { grid-column:span 1; }
+  @media(max-width:700px) { .form-grid { grid-template-columns:1fr; } .form-grid .full, .form-grid .third { grid-column:1; } }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
+  .field input, .field select, .field textarea { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--green-mid); }
+  .field textarea { resize:vertical; min-height:72px; }
+  .field small { font-size:11px; color:var(--text-muted); }
+  .field .img-preview { max-height:60px; border-radius:6px; margin-top:6px; }
+  .checkbox-row { display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; }
+  .checkbox-row input { width:16px; height:16px; }
+  .save-bar { position:sticky; bottom:0; background:var(--card); border-top:1px solid var(--border); padding:14px 20px; display:flex; justify-content:flex-end; gap:10px; }
+  .btn-save { padding:10px 24px; border-radius:8px; font-size:13px; font-weight:700; border:none; cursor:pointer; background:var(--green-mid); color:#fff; font-family:inherit; }
+  .btn-save:hover { opacity:.88; }
+  .btn-save:disabled { opacity:.6; cursor:not-allowed; }
+
+  /* FAQ */
+  .faq-grid { display:grid; grid-template-columns:260px 1fr; gap:20px; }
+  @media(max-width:800px) { .faq-grid { grid-template-columns:1fr; } }
+  .faq-cats { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  .faq-cats-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .faq-cats-header h4 { font-size:13px; font-weight:700; }
+  .faq-cat-item { padding:10px 16px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:space-between; font-size:13px; transition:background .15s; }
+  .faq-cat-item:last-child { border-bottom:none; }
+  .faq-cat-item:hover, .faq-cat-item.active { background:var(--green-light); color:var(--green-mid); }
+  .faq-cat-item .cat-cnt { font-size:11px; color:var(--text-muted); }
+  .faq-items-panel { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  .faq-items-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .faq-items-header h4 { font-size:13px; font-weight:700; }
+  .faq-item-row { padding:14px 16px; border-bottom:1px solid var(--border); }
+  .faq-item-row:last-child { border-bottom:none; }
+  .faq-item-q { font-size:13px; font-weight:600; margin-bottom:4px; }
+  .faq-item-r { font-size:12px; color:var(--text-muted); }
+  .faq-actions { display:flex; gap:6px; margin-top:8px; }
+  .btn-xs { padding:3px 10px; border-radius:5px; font-size:11px; font-weight:700; border:none; cursor:pointer; font-family:inherit; }
+  .empty-panel { padding:32px; text-align:center; color:var(--text-muted); font-size:13px; }
+
+  /* Messages contact */
+  .msg-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 20px; margin-bottom:10px; border-left:4px solid var(--border); cursor:pointer; transition:border-color .18s; }
+  .msg-card.non-lu { border-left-color:var(--orange); }
+  .msg-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.1); }
+  .msg-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .msg-nom { font-size:14px; font-weight:700; }
+  .msg-date { font-size:11px; color:var(--text-muted); }
+  .msg-sujet { font-size:13px; font-weight:600; margin-bottom:4px; }
+  .msg-preview { font-size:12px; color:var(--text-muted); }
+  .msg-full { display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:13px; line-height:1.6; }
+  .msg-card.open .msg-full { display:block; }
+  .badge-lu  { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; background:#e8f8ee; color:#1a6b2f; }
+  .badge-non-lu { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; background:#fff4e6; color:#e67e22; }
+
+  /* Modal FAQ */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:600; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
+  .modal-overlay.open { opacity:1; pointer-events:auto; }
+  .modal-box { background:var(--card); border-radius:14px; padding:28px 32px; width:520px; max-width:96vw; box-shadow:0 12px 48px rgba(0,0,0,.18); max-height:90vh; overflow-y:auto; }
+  .modal-box h3 { font-size:16px; font-weight:700; margin-bottom:20px; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+  .btn-cancel { padding:9px 18px; border-radius:8px; font-size:13px; font-weight:700; border:1.5px solid var(--border); background:var(--bg); color:var(--text-muted); cursor:pointer; font-family:inherit; }
+
+  .toolbar-msg { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+  .filter-btn { padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; border:1.5px solid var(--border); background:var(--card); color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all .18s; }
+  .filter-btn.active { background:var(--green-mid); color:#fff; border-color:var(--green-mid); }
+
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:500; color:#fff; box-shadow:0 4px 20px rgba(0,0,0,.15); animation:slideUp .25s ease; }
+  .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="tc"></div>
+
+<!-- Modal FAQ Catégorie -->
+<div class="modal-overlay" id="faqcat-modal">
+  <div class="modal-box">
+    <h3 id="faqcat-modal-title">Nouvelle catégorie FAQ</h3>
+    <form id="faqcat-form" onsubmit="submitFaqCat(event)">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field">
+          <label>Titre *</label>
+          <input type="text" id="fc-titre" required placeholder="Ex: Livraison et collecte">
+        </div>
+        <div class="field">
+          <label>Icône Font Awesome</label>
+          <input type="text" id="fc-icone" placeholder="fas fa-question-circle">
+        </div>
+        <div class="field">
+          <label>Ordre</label>
+          <input type="number" id="fc-ordre" value="0" min="0">
+        </div>
+        <div class="field">
+          <label class="checkbox-row"><input type="checkbox" id="fc-active" checked> Catégorie active</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeFaqCatModal()">Annuler</button>
+        <button type="submit" class="btn-save" id="faqcat-submit"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal FAQ Item -->
+<div class="modal-overlay" id="faqitem-modal">
+  <div class="modal-box">
+    <h3 id="faqitem-modal-title">Nouvelle question</h3>
+    <form id="faqitem-form" onsubmit="submitFaqItem(event)">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field">
+          <label>Catégorie *</label>
+          <select id="fi-cat" required></select>
+        </div>
+        <div class="field">
+          <label>Question *</label>
+          <input type="text" id="fi-question" required placeholder="Ex: Comment passer une commande ?">
+        </div>
+        <div class="field">
+          <label>Réponse *</label>
+          <textarea id="fi-reponse" rows="4" required placeholder="Réponse complète..."></textarea>
+        </div>
+        <div class="field">
+          <label>Ordre</label>
+          <input type="number" id="fi-ordre" value="0" min="0">
+        </div>
+        <div class="field">
+          <label class="checkbox-row"><input type="checkbox" id="fi-active" checked> Question active</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeFaqItemModal()">Annuler</button>
+        <button type="submit" class="btn-save" id="faqitem-submit"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="tabs" id="config-tabs">
+  <button class="tab-btn active" onclick="switchTab('settings',this)"><i class="fas fa-cog"></i> Paramètres</button>
+  <button class="tab-btn" onclick="switchTab('faq',this)"><i class="fas fa-question-circle"></i> FAQ</button>
+  <button class="tab-btn" onclick="switchTab('contact',this)"><i class="fas fa-envelope"></i> Messages de contact <span id="tab-contact-badge" style="display:none;background:#e74c3c;color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></button>
+</div>
+
+<!-- ═══ ONGLET PARAMÈTRES ══════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="tab-settings">
+  <div id="settings-loading" style="text-align:center;padding:40px;color:var(--text-muted)"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+  <form id="settings-form" onsubmit="saveSettings(event)" style="display:none">
+
+    <!-- Identité -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-store"></i><h3>Identité du site</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>Nom du site</label>
+            <input type="text" id="s-nom-site" placeholder="Makèt Peyizan">
+          </div>
+          <div class="field">
+            <label>Slogan</label>
+            <input type="text" id="s-slogan" placeholder="Marketplace Agricole Haïtienne">
+          </div>
+          <div class="field">
+            <label>Logo</label>
+            <input type="file" id="s-logo" accept="image/*">
+            <img id="s-logo-preview" class="img-preview" style="display:none">
+          </div>
+          <div class="field">
+            <label>Favicon</label>
+            <input type="file" id="s-favicon" accept="image/*,image/x-icon">
+            <img id="s-favicon-preview" class="img-preview" style="display:none">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-home"></i><h3>Page d'accueil — Hero</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Texte du badge</label>
+            <input type="text" id="s-hero-badge" placeholder="Marketplace Agricole Haïtienne">
+          </div>
+          <div class="field">
+            <label>Titre ligne 1</label>
+            <input type="text" id="s-hero-t1" placeholder="Sòti nan jaden">
+          </div>
+          <div class="field">
+            <label>Titre ligne 2</label>
+            <input type="text" id="s-hero-t2" placeholder="rive lakay ou">
+          </div>
+          <div class="field full">
+            <label>Sous-titre</label>
+            <textarea id="s-hero-sub" rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- À propos -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-info-circle"></i><h3>Page À propos</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Titre</label>
+            <input type="text" id="s-ap-titre">
+          </div>
+          <div class="field full">
+            <label>Présentation générale</label>
+            <textarea id="s-ap-contenu" rows="4"></textarea>
+          </div>
+          <div class="field">
+            <label>Notre mission</label>
+            <textarea id="s-ap-mission" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <label>Notre vision</label>
+            <textarea id="s-ap-vision" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <label>Année de fondation</label>
+            <input type="number" id="s-ap-annee" placeholder="2025" min="2000" max="2100">
+          </div>
+          <div class="field">
+            <label>Image À propos</label>
+            <input type="file" id="s-ap-image" accept="image/*">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-phone"></i><h3>Coordonnées &amp; Contact</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>Email de contact</label>
+            <input type="email" id="s-email">
+          </div>
+          <div class="field">
+            <label>Téléphone</label>
+            <input type="text" id="s-telephone">
+          </div>
+          <div class="field">
+            <label>WhatsApp</label>
+            <input type="text" id="s-whatsapp" placeholder="+509 ...">
+          </div>
+          <div class="field">
+            <label>Horaires</label>
+            <input type="text" id="s-horaires" placeholder="Lun–Ven 8h–17h">
+          </div>
+          <div class="field full">
+            <label>Adresse physique</label>
+            <textarea id="s-adresse" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Réseaux sociaux -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-share-alt"></i><h3>Réseaux sociaux</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field">
+            <label><i class="fab fa-facebook" style="color:#3b5998"></i> Facebook URL</label>
+            <input type="url" id="s-fb">
+          </div>
+          <div class="field">
+            <label><i class="fab fa-instagram" style="color:#e1306c"></i> Instagram URL</label>
+            <input type="url" id="s-ig">
+          </div>
+          <div class="field">
+            <label><i class="fab fa-twitter" style="color:#1da1f2"></i> Twitter / X URL</label>
+            <input type="url" id="s-tw">
+          </div>
+          <div class="field">
+            <label><i class="fab fa-youtube" style="color:#ff0000"></i> YouTube URL</label>
+            <input type="url" id="s-yt">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pages d'authentification -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-lock"></i><h3>Pages Connexion &amp; Inscription</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>Image page Connexion</label>
+            <input type="file" id="s-login-img" accept="image/*">
+            <small>Panneau gauche de la page de connexion</small>
+          </div>
+          <div class="field">
+            <label>Image page Inscription</label>
+            <input type="file" id="s-register-img" accept="image/*">
+            <small>Panneau gauche de la page d'inscription</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer & SEO -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-file-alt"></i><h3>Footer &amp; SEO</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Texte copyright</label>
+            <input type="text" id="s-copyright">
+          </div>
+          <div class="field full">
+            <label>Meta description (SEO)</label>
+            <textarea id="s-meta" rows="2"></textarea>
+            <small>160 caractères max recommandé</small>
+          </div>
+          <div class="field">
+            <label>Google Analytics ID</label>
+            <input type="text" id="s-ga" placeholder="G-XXXXXXXXXX">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maintenance -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-tools" style="color:var(--orange)"></i><h3>Maintenance</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label class="checkbox-row">
+              <input type="checkbox" id="s-maintenance"> Mode maintenance (affiche une page d'avertissement aux visiteurs)
+            </label>
+          </div>
+          <div class="field full">
+            <label>Message de maintenance</label>
+            <textarea id="s-maintenance-msg" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="save-bar">
+      <button type="submit" class="btn-save" id="save-btn"><i class="fas fa-save"></i> Enregistrer tous les paramètres</button>
+    </div>
+  </form>
+</div>
+
+<!-- ═══ ONGLET FAQ ══════════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-faq">
+  <div class="faq-grid">
+    <!-- Catégories -->
+    <div>
+      <div class="faq-cats">
+        <div class="faq-cats-header">
+          <h4>Catégories</h4>
+          <button class="btn-xs" style="background:var(--green-mid);color:#fff" onclick="openFaqCatCreate()"><i class="fas fa-plus"></i> Ajouter</button>
+        </div>
+        <div id="faq-cats-list">
+          <div class="empty-panel"><i class="fas fa-spinner fa-spin"></i></div>
+        </div>
+      </div>
+    </div>
+    <!-- Questions -->
+    <div>
+      <div class="faq-items-panel">
+        <div class="faq-items-header">
+          <h4 id="faq-items-title">Sélectionner une catégorie</h4>
+          <button class="btn-xs" style="background:var(--green-mid);color:#fff" onclick="openFaqItemCreate()" id="btn-add-item" style="display:none"><i class="fas fa-plus"></i> Ajouter une question</button>
+        </div>
+        <div id="faq-items-list">
+          <div class="empty-panel">Sélectionnez une catégorie pour voir ses questions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ONGLET CONTACT ══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-contact">
+  <div class="toolbar-msg">
+    <button class="filter-btn active" id="f-tous" onclick="filterMsgs('',this)">Tous</button>
+    <button class="filter-btn" id="f-non-lu" onclick="filterMsgs('false',this)">Non lus</button>
+    <button class="filter-btn" id="f-lu" onclick="filterMsgs('true',this)">Lus</button>
+  </div>
+  <div id="msgs-loading" style="text-align:center;padding:40px;color:var(--text-muted)"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+  <div id="msgs-list"></div>
+  <div id="msgs-empty" class="empty-panel" style="display:none">Aucun message trouvé.</div>
+</div>
+
+{% endblock %}
+
+{% block page_script %}
+const H = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access'), 'Content-Type': 'application/json' };
+let _faqCatId = null, _faqCatEditId = null, _faqItemEditId = null, _faqCats = [];
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+  document.getElementById('tc').appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+
+// Navigate via hash
+function checkHash() {
+  const hash = window.location.hash;
+  if (hash === '#faq') {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    document.getElementById('tab-faq').classList.add('active');
+    loadFaqCats();
+  } else if (hash === '#contact') {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn')[2].classList.add('active');
+    document.getElementById('tab-contact').classList.add('active');
+    loadMsgs('');
+  }
+}
+window.addEventListener('hashchange', checkHash);
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  history.pushState(null, '', '#' + name);
+  if (name === 'settings') loadSettings();
+  else if (name === 'faq') loadFaqCats();
+  else loadMsgs('');
+}
+
+// ═══ SETTINGS ════════════════════════════════════════════════════════════════
+async function loadSettings() {
+  document.getElementById('settings-loading').style.display = 'block';
+  document.getElementById('settings-form').style.display = 'none';
+  const r = await fetch('/api/admin/config/site/', { headers: H });
+  document.getElementById('settings-loading').style.display = 'none';
+  if (!r.ok) return;
+  const s = await r.json();
+
+  // Remplir les champs
+  document.getElementById('s-nom-site').value   = s.nom_site||'';
+  document.getElementById('s-slogan').value     = s.slogan||'';
+  document.getElementById('s-hero-badge').value = s.hero_badge_texte||'';
+  document.getElementById('s-hero-t1').value    = s.hero_titre_ligne1||'';
+  document.getElementById('s-hero-t2').value    = s.hero_titre_ligne2||'';
+  document.getElementById('s-hero-sub').value   = s.hero_sous_titre||'';
+  document.getElementById('s-ap-titre').value   = s.a_propos_titre||'';
+  document.getElementById('s-ap-contenu').value = s.a_propos_contenu||'';
+  document.getElementById('s-ap-mission').value = s.a_propos_mission||'';
+  document.getElementById('s-ap-vision').value  = s.a_propos_vision||'';
+  document.getElementById('s-ap-annee').value   = s.annee_fondation||'';
+  document.getElementById('s-email').value      = s.email_contact||'';
+  document.getElementById('s-telephone').value  = s.telephone||'';
+  document.getElementById('s-whatsapp').value   = s.whatsapp||'';
+  document.getElementById('s-horaires').value   = s.horaires||'';
+  document.getElementById('s-adresse').value    = s.adresse||'';
+  document.getElementById('s-fb').value         = s.facebook_url||'';
+  document.getElementById('s-ig').value         = s.instagram_url||'';
+  document.getElementById('s-tw').value         = s.twitter_url||'';
+  document.getElementById('s-yt').value         = s.youtube_url||'';
+  document.getElementById('s-copyright').value  = s.copyright_texte||'';
+  document.getElementById('s-meta').value       = s.meta_description||'';
+  document.getElementById('s-ga').value         = s.google_analytics_id||'';
+  document.getElementById('s-maintenance').checked     = s.mode_maintenance;
+  document.getElementById('s-maintenance-msg').value   = s.message_maintenance||'';
+
+  if (s.logo)    { const p = document.getElementById('s-logo-preview');    p.src = s.logo;    p.style.display='block'; }
+  if (s.favicon) { const p = document.getElementById('s-favicon-preview'); p.src = s.favicon; p.style.display='block'; }
+
+  document.getElementById('settings-form').style.display = 'block';
+}
+
+async function saveSettings(e) {
+  e.preventDefault();
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+
+  // Champs texte
+  const textData = {
+    nom_site:          document.getElementById('s-nom-site').value,
+    slogan:            document.getElementById('s-slogan').value,
+    hero_badge_texte:  document.getElementById('s-hero-badge').value,
+    hero_titre_ligne1: document.getElementById('s-hero-t1').value,
+    hero_titre_ligne2: document.getElementById('s-hero-t2').value,
+    hero_sous_titre:   document.getElementById('s-hero-sub').value,
+    a_propos_titre:    document.getElementById('s-ap-titre').value,
+    a_propos_contenu:  document.getElementById('s-ap-contenu').value,
+    a_propos_mission:  document.getElementById('s-ap-mission').value,
+    a_propos_vision:   document.getElementById('s-ap-vision').value,
+    annee_fondation:   document.getElementById('s-ap-annee').value,
+    email_contact:     document.getElementById('s-email').value,
+    telephone:         document.getElementById('s-telephone').value,
+    whatsapp:          document.getElementById('s-whatsapp').value,
+    horaires:          document.getElementById('s-horaires').value,
+    adresse:           document.getElementById('s-adresse').value,
+    facebook_url:      document.getElementById('s-fb').value,
+    instagram_url:     document.getElementById('s-ig').value,
+    twitter_url:       document.getElementById('s-tw').value,
+    youtube_url:       document.getElementById('s-yt').value,
+    copyright_texte:   document.getElementById('s-copyright').value,
+    meta_description:  document.getElementById('s-meta').value,
+    google_analytics_id: document.getElementById('s-ga').value,
+    mode_maintenance:  document.getElementById('s-maintenance').checked,
+    message_maintenance: document.getElementById('s-maintenance-msg').value,
+  };
+
+  // Vérifier si des fichiers sont présents
+  const imageFields = ['s-logo', 's-favicon', 's-login-img', 's-register-img', 's-ap-image'];
+  const hasFiles = imageFields.some(id => document.getElementById(id).files.length > 0);
+
+  let r;
+  if (hasFiles) {
+    const fd = new FormData();
+    Object.entries(textData).forEach(([k,v]) => fd.append(k, v));
+    const fieldMap = { 's-logo':'logo', 's-favicon':'favicon', 's-login-img':'login_image', 's-register-img':'register_image', 's-ap-image':'a_propos_image' };
+    imageFields.forEach(id => {
+      if (document.getElementById(id).files.length > 0)
+        fd.append(fieldMap[id], document.getElementById(id).files[0]);
+    });
+    r = await fetch('/api/admin/config/site/', {
+      method:'PATCH',
+      headers:{ 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') },
+      body: fd
+    });
+  } else {
+    r = await fetch('/api/admin/config/site/', { method:'PATCH', headers:H, body:JSON.stringify(textData) });
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-save"></i> Enregistrer tous les paramètres';
+  if (r.ok) { showToast('Paramètres enregistrés !'); loadSettings(); }
+  else showToast('Erreur lors de la sauvegarde', 'error');
+}
+
+// ═══ FAQ ══════════════════════════════════════════════════════════════════════
+async function loadFaqCats() {
+  const r = await fetch('/api/admin/config/faq/categories/', { headers:H });
+  if (!r.ok) return;
+  _faqCats = await r.json();
+
+  // Mettre à jour le select items modal
+  const sel = document.getElementById('fi-cat');
+  sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+  _faqCats.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.titre}</option>`);
+
+  const list = document.getElementById('faq-cats-list');
+  if (!_faqCats.length) { list.innerHTML = '<div class="empty-panel">Aucune catégorie.</div>'; return; }
+  list.innerHTML = '';
+  _faqCats.forEach(c => {
+    list.innerHTML += `
+      <div class="faq-cat-item ${_faqCatId===c.id?'active':''}" onclick="selectFaqCat(${c.id},'${c.titre.replace(/'/g,"\\'")}')">
+        <span><i class="${c.icone||'fas fa-folder'}" style="margin-right:6px;color:var(--green-mid)"></i>${c.titre}</span>
+        <span class="cat-cnt">${c.nb_items}</span>
+      </div>`;
+  });
+}
+
+function selectFaqCat(id, titre) {
+  _faqCatId = id;
+  document.getElementById('faq-items-title').textContent = titre;
+  document.getElementById('btn-add-item').style.display = 'inline-block';
+  document.querySelectorAll('.faq-cat-item').forEach(el => {
+    el.classList.toggle('active', el.textContent.trim().startsWith(titre));
+  });
+  loadFaqItems(id);
+}
+
+async function loadFaqItems(catId) {
+  const r = await fetch(`/api/admin/config/faq/items/?categorie_id=${catId}`, { headers:H });
+  if (!r.ok) return;
+  const items = await r.json();
+  const list = document.getElementById('faq-items-list');
+  if (!items.length) { list.innerHTML = '<div class="empty-panel">Aucune question dans cette catégorie.</div>'; return; }
+  list.innerHTML = '';
+  items.forEach(item => {
+    list.innerHTML += `
+      <div class="faq-item-row" id="faqitem-${item.id}">
+        <div class="faq-item-q">${item.is_active?'':'<span style="opacity:.5">[Inactive] </span>'}${item.question}</div>
+        <div class="faq-item-r">${item.reponse.substring(0,120)}${item.reponse.length>120?'…':''}</div>
+        <div class="faq-actions">
+          <button class="btn-xs" style="background:var(--bg);border:1px solid var(--border);color:var(--text-muted)" onclick="openFaqItemEdit(${item.id})"><i class="fas fa-edit"></i> Modifier</button>
+          <button class="btn-xs" style="background:${item.is_active?'#fde8e8':'#e8f8ee'};color:${item.is_active?'#e74c3c':'#27ae60'}" onclick="toggleFaqItem(${item.id},${item.is_active})">${item.is_active?'Désactiver':'Activer'}</button>
+          <button class="btn-xs" style="background:#fde8e8;color:#e74c3c" onclick="deleteFaqItem(${item.id})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`;
+  });
+}
+
+// Modals FAQ Cat
+function openFaqCatCreate() {
+  _faqCatEditId = null;
+  document.getElementById('faqcat-modal-title').textContent = 'Nouvelle catégorie FAQ';
+  document.getElementById('faqcat-submit').innerHTML = '<i class="fas fa-plus"></i> Créer';
+  document.getElementById('fc-titre').value = '';
+  document.getElementById('fc-icone').value = 'fas fa-question-circle';
+  document.getElementById('fc-ordre').value = '0';
+  document.getElementById('fc-active').checked = true;
+  document.getElementById('faqcat-modal').classList.add('open');
+}
+
+async function openFaqCatEdit(id) {
+  _faqCatEditId = id;
+  const cat = _faqCats.find(c => c.id === id); if (!cat) return;
+  document.getElementById('faqcat-modal-title').textContent = 'Modifier catégorie FAQ';
+  document.getElementById('faqcat-submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+  document.getElementById('fc-titre').value = cat.titre;
+  document.getElementById('fc-icone').value = cat.icone;
+  document.getElementById('fc-ordre').value = cat.ordre;
+  document.getElementById('fc-active').checked = cat.is_active;
+  document.getElementById('faqcat-modal').classList.add('open');
+}
+
+function closeFaqCatModal() { document.getElementById('faqcat-modal').classList.remove('open'); _faqCatEditId = null; }
+
+async function submitFaqCat(e) {
+  e.preventDefault();
+  const btn = document.getElementById('faqcat-submit'); btn.disabled = true;
+  const body = { titre:document.getElementById('fc-titre').value, icone:document.getElementById('fc-icone').value, ordre:document.getElementById('fc-ordre').value, is_active:document.getElementById('fc-active').checked };
+  const url    = _faqCatEditId ? `/api/admin/config/faq/categories/${_faqCatEditId}/` : '/api/admin/config/faq/categories/';
+  const method = _faqCatEditId ? 'PATCH' : 'POST';
+  const r = await fetch(url, { method, headers:H, body:JSON.stringify(body) });
+  btn.disabled = false;
+  if (r.ok) { showToast(_faqCatEditId?'Catégorie mise à jour !':'Catégorie créée !'); closeFaqCatModal(); loadFaqCats(); }
+  else showToast('Erreur', 'error');
+}
+
+// Modals FAQ Item
+function openFaqItemCreate() {
+  _faqItemEditId = null;
+  document.getElementById('faqitem-modal-title').textContent = 'Nouvelle question';
+  document.getElementById('faqitem-submit').innerHTML = '<i class="fas fa-plus"></i> Créer';
+  document.getElementById('fi-question').value = '';
+  document.getElementById('fi-reponse').value = '';
+  document.getElementById('fi-ordre').value = '0';
+  document.getElementById('fi-active').checked = true;
+  if (_faqCatId) document.getElementById('fi-cat').value = _faqCatId;
+  document.getElementById('faqitem-modal').classList.add('open');
+}
+
+async function openFaqItemEdit(id) {
+  _faqItemEditId = id;
+  const r = await fetch(`/api/admin/config/faq/items/?categorie_id=${_faqCatId}`, { headers:H });
+  const items = await r.json();
+  const item = items.find(x => x.id === id); if (!item) return;
+  document.getElementById('faqitem-modal-title').textContent = 'Modifier question';
+  document.getElementById('faqitem-submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+  document.getElementById('fi-cat').value      = item.categorie_id;
+  document.getElementById('fi-question').value = item.question;
+  document.getElementById('fi-reponse').value  = item.reponse;
+  document.getElementById('fi-ordre').value    = item.ordre;
+  document.getElementById('fi-active').checked = item.is_active;
+  document.getElementById('faqitem-modal').classList.add('open');
+}
+
+function closeFaqItemModal() { document.getElementById('faqitem-modal').classList.remove('open'); _faqItemEditId = null; }
+
+async function submitFaqItem(e) {
+  e.preventDefault();
+  const btn = document.getElementById('faqitem-submit'); btn.disabled = true;
+  const body = { categorie_id:document.getElementById('fi-cat').value, question:document.getElementById('fi-question').value, reponse:document.getElementById('fi-reponse').value, ordre:document.getElementById('fi-ordre').value, is_active:document.getElementById('fi-active').checked };
+  const url    = _faqItemEditId ? `/api/admin/config/faq/items/${_faqItemEditId}/` : '/api/admin/config/faq/items/';
+  const method = _faqItemEditId ? 'PATCH' : 'POST';
+  const r = await fetch(url, { method, headers:H, body:JSON.stringify(body) });
+  btn.disabled = false;
+  if (r.ok) { showToast(_faqItemEditId?'Question mise à jour !':'Question créée !'); closeFaqItemModal(); if (_faqCatId) loadFaqItems(_faqCatId); }
+  else showToast('Erreur', 'error');
+}
+
+async function toggleFaqItem(id, isActive) {
+  const r = await fetch(`/api/admin/config/faq/items/${id}/`, { method:'PATCH', headers:H, body:JSON.stringify({is_active:!isActive}) });
+  if (r.ok) { showToast('Question mise à jour'); if (_faqCatId) loadFaqItems(_faqCatId); }
+}
+
+async function deleteFaqItem(id) {
+  if (!confirm('Supprimer cette question ?')) return;
+  const r = await fetch(`/api/admin/config/faq/items/${id}/`, { method:'DELETE', headers:H });
+  if (r.ok) { showToast('Question supprimée'); if (_faqCatId) loadFaqItems(_faqCatId); }
+}
+
+// ═══ MESSAGES CONTACT ════════════════════════════════════════════════════════
+let _msgFilter = '';
+function filterMsgs(val, btn) {
+  _msgFilter = val;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadMsgs(val);
+}
+
+async function loadMsgs(est_lu) {
+  let url = '/api/admin/config/contact/?';
+  if (est_lu !== '') url += 'est_lu=' + est_lu;
+  document.getElementById('msgs-loading').style.display = 'block';
+  document.getElementById('msgs-list').innerHTML = '';
+  document.getElementById('msgs-empty').style.display = 'none';
+  const r = await fetch(url, { headers:H });
+  document.getElementById('msgs-loading').style.display = 'none';
+  if (!r.ok) return;
+  const data = await r.json();
+
+  // Badge badge
+  const nonLus = data.filter(m => !m.est_lu).length;
+  const tabBadge = document.getElementById('tab-contact-badge');
+  if (nonLus > 0) { tabBadge.textContent = nonLus; tabBadge.style.display='inline'; }
+  else tabBadge.style.display = 'none';
+  const sbBadge = document.getElementById('sb-badge-msgs');
+  if (sbBadge && nonLus > 0) { sbBadge.textContent = nonLus; sbBadge.style.display = 'inline'; }
+
+  if (!data.length) { document.getElementById('msgs-empty').style.display = 'block'; return; }
+  const list = document.getElementById('msgs-list');
+  list.innerHTML = '';
+  data.forEach(m => {
+    list.innerHTML += `
+      <div class="msg-card ${m.est_lu?'':'non-lu'}" id="msg-${m.id}" onclick="toggleMsg(${m.id},${m.est_lu},this)">
+        <div class="msg-card-header">
+          <div>
+            <span class="msg-nom">${m.nom}</span>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:8px">${m.email} ${m.telephone?'· '+m.telephone:''}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="${m.est_lu?'badge-lu':'badge-non-lu'}">${m.est_lu?'Lu':'Non lu'}</span>
+            <span class="msg-date">${new Date(m.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</span>
+          </div>
+        </div>
+        <div class="msg-sujet">${m.sujet}</div>
+        <div class="msg-preview">${m.message.substring(0,120)}${m.message.length>120?'…':''}</div>
+        <div class="msg-full">${m.message.replace(/\n/g,'<br>')}</div>
+      </div>`;
+  });
+}
+
+async function toggleMsg(id, estLu, card) {
+  card.classList.toggle('open');
+  if (!estLu) {
+    await fetch(`/api/admin/config/contact/${id}/`, { method:'PATCH', headers:H, body:JSON.stringify({est_lu:true}) });
+    card.classList.remove('non-lu');
+    const badge = card.querySelector('.badge-non-lu');
+    if (badge) { badge.className = 'badge-lu'; badge.textContent = 'Lu'; }
+  }
+}
+
+mpAuthCheck('superadmin').then(u => {
+  if (!u || !u.is_superuser) return;
+  checkHash();
+  if (!window.location.hash) loadSettings();
+});
+{% endblock %}

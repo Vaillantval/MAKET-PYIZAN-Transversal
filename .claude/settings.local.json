@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/c/Users/wind/Desktop/TRANSVERSAL/MAKET-PEYIZAN-026/MP_web_2026/**)",
+      "Bash(python manage.py check --settings=config.settings.development)",
+      "Bash(python -c \"from apps.analytics.report_generators import PDFReportGenerator, CSVReportGenerator, ReportDataGenerator; print\\(''OK''\\)\")",
+      "Bash(python -c \"from reportlab.graphics.charts.barcharts import VerticalBarChart, HorizontalBarChart; from reportlab.graphics.charts.piecharts import Pie; print\\(''reportlab OK''\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(find /c/Users/wind/Desktop/TRANSVERSAL/MAKET-PEYIZAN-026/MP_web_2026/maket_peyizan/templates/dashboard -type f -name *.html)",
+      "Bash(find /c/Users/wind/Desktop/TRANSVERSAL/MAKET-PEYIZAN-026/MP_web_2026/maket_peyizan -type f -name *haiti* -o -name *geo*)",
+      "Bash(xargs cat:*)",
+      "Bash(grep -n \"export\\\\|Export\\\\|download\\\\|Download\" /c/Users/wind/Desktop/TRANSVERSAL/MAKET-PEYIZAN-026/MP_web_2026/maket_peyizan/templates/dashboard/*.html)",
+      "Bash(ls templates/dashboard/producteur_*.html)",
+      "Bash(python manage.py check --deploy)",
+      "Bash(python manage.py check)",
+      "Bash(grep -E \"\\\\.\\(py|html\\)$\")",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

@@ -86,10 +86,57 @@
     color: var(--text-muted);
     font-size: 13px;
   }
+
+  .action-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .action-bar .spacer { flex: 1; }
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    background: var(--green-mid);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity .18s;
+    font-family: inherit;
+  }
+  .btn-export:hover { opacity: .87; color: #fff; }
+  .btn-export.secondary {
+    background: var(--card);
+    color: var(--text-muted);
+    border: 1.5px solid var(--border);
+  }
+  .btn-export.secondary:hover { border-color: var(--green-mid); color: var(--green-mid); }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Barre d'actions rapides -->
+<div class="action-bar">
+  <span style="font-size:13px;color:var(--text-muted);">
+    <i class="fas fa-calendar-alt" style="margin-right:5px"></i>
+    <span id="today-label"></span>
+  </span>
+  <div class="spacer"></div>
+  <a href="/analytics/dashboard/" class="btn-export secondary">
+    <i class="fas fa-chart-bar"></i> Analytiques BI
+  </a>
+  <a href="/dashboard/superadmin/rapport/" class="btn-export">
+    <i class="fas fa-file-download"></i> Exporter le Rapport
+  </a>
+</div>
+
 <!-- KPIs -->
 <div class="kpi-grid" id="kpi-grid">
   <div class="kpi-card"><span class="kpi-label">Utilisateurs</span><span class="kpi-value" id="k-users">—</span><span class="kpi-sub" id="k-users-sub"></span></div>
@@ -154,6 +201,9 @@ const H = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
 function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
 function fdate(iso) { return new Date(iso).toLocaleDateString('fr-FR', {day:'2-digit',month:'short'}); }
 
+// Date du jour dans la barre d'actions
+document.getElementById('today-label').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
 async function loadStats() {
   const r = await fetch('/api/admin/stats/', { headers: H });
   if (!r.ok) return;
@@ -177,6 +227,12 @@ async function loadStats() {
   if (bpy && s.paiements_a_verifier > 0) { bpy.textContent = s.paiements_a_verifier; bpy.style.display = 'inline'; }
   const bst = document.getElementById('sb-badge-stock');
   if (bst && s.alertes_stock > 0) { bst.textContent = s.alertes_stock; bst.style.display = 'inline'; }
+
+  // Badge messages contact non lus
+  fetch('/api/admin/config/contact/?est_lu=false', { headers: H }).then(r => r.ok ? r.json() : []).then(msgs => {
+    const bm = document.getElementById('sb-badge-msgs');
+    if (bm && msgs.length > 0) { bm.textContent = msgs.length; bm.style.display = 'inline'; }
+  });
 }
 
 async function loadCommandes() {

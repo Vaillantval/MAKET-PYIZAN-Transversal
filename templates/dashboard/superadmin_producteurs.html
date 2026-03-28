@@ -127,27 +127,15 @@
         <div class="section-label"><i class="fas fa-tractor" style="margin-right:5px"></i>Profil Producteur</div>
         <div class="field">
           <label>Département *</label>
-          <select id="f-departement">
-            <option value="">-- Choisir --</option>
-            <option value="ouest">Ouest</option>
-            <option value="artibonite">Artibonite</option>
-            <option value="nord">Nord</option>
-            <option value="nord_est">Nord-Est</option>
-            <option value="nord_ouest">Nord-Ouest</option>
-            <option value="sud">Sud</option>
-            <option value="sud_est">Sud-Est</option>
-            <option value="centre">Centre</option>
-            <option value="grand_anse">Grand-Anse</option>
-            <option value="nippes">Nippes</option>
-          </select>
+          <select id="f-departement"></select>
         </div>
         <div class="field">
           <label>Commune *</label>
-          <input type="text" id="f-commune" placeholder="Ex: Croix-des-Bouquets">
+          <select id="f-commune"></select>
         </div>
         <div class="field">
-          <label>Localité</label>
-          <input type="text" id="f-localite" placeholder="Section, quartier...">
+          <label>Section Communale</label>
+          <select id="f-localite"></select>
         </div>
         <div class="field">
           <label>Superficie (ha)</label>
@@ -231,6 +219,14 @@
 {% block page_script %}
 const H = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access'), 'Content-Type': 'application/json' };
 let _filter = '', _debounce, _allData = [], _currentId = null;
+
+// Cascade géographique pour le formulaire producteur
+const _geoProd = new GeoSelector({
+  deptEl:    document.getElementById('f-departement'),
+  communeEl: document.getElementById('f-commune'),
+  sectionEl: document.getElementById('f-localite'),
+  baseUrl:   '/api/geo',
+});
 
 function showToast(msg, type='success') {
   const t = document.createElement('div'); t.className = `toast ${type}`;
@@ -376,10 +372,11 @@ function openCreate() {
   document.getElementById('modal-title').textContent = 'Nouveau producteur';
   document.getElementById('prod-submit-btn').innerHTML = '<i class="fas fa-plus"></i> Créer';
   ['f-username','f-first_name','f-last_name','f-email','f-telephone','f-password','f-password2',
-   'f-departement','f-commune','f-localite','f-superficie','f-adresse','f-description','f-num_id','f-note_admin'].forEach(id => {
+   'f-superficie','f-adresse','f-description','f-num_id','f-note_admin'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  _geoProd.reset();
   document.getElementById('f-statut').value = 'en_attente';
   document.getElementById('username-wrap').style.display = 'flex';
   document.getElementById('password-wrap').style.display = 'flex';
@@ -407,9 +404,6 @@ async function openEdit(id) {
   document.getElementById('f-last_name').value    = p.last_name;
   document.getElementById('f-email').value        = p.email;
   document.getElementById('f-telephone').value    = p.telephone;
-  document.getElementById('f-departement').value  = p.departement;
-  document.getElementById('f-commune').value      = p.commune;
-  document.getElementById('f-localite').value     = p.localite;
   document.getElementById('f-superficie').value   = p.superficie_ha || '';
   document.getElementById('f-adresse').value      = p.adresse_complete;
   document.getElementById('f-description').value  = p.description;
@@ -417,6 +411,7 @@ async function openEdit(id) {
   document.getElementById('f-statut').value       = p.statut;
   document.getElementById('f-note_admin').value   = p.note_admin;
   document.getElementById('f-password').value     = '';
+  await _geoProd.prefill({ deptSlug: p.departement, communeNom: p.commune, sectionNom: p.localite });
 }
 
 function closeProdModal() {
@@ -438,15 +433,19 @@ async function submitProd(e) {
   }
 
   let url, method, body;
+  const geoVals = {
+    departement: _geoProd.dept.value,
+    commune:     _geoProd.commune.value,
+    localite:    _geoProd.section ? _geoProd.section.value : '',
+  };
+
   if (_editProdId) {
     body = {
       first_name:       document.getElementById('f-first_name').value,
       last_name:        document.getElementById('f-last_name').value,
       email:            document.getElementById('f-email').value,
       telephone:        document.getElementById('f-telephone').value,
-      departement:      document.getElementById('f-departement').value,
-      commune:          document.getElementById('f-commune').value,
-      localite:         document.getElementById('f-localite').value,
+      ...geoVals,
       superficie_ha:    document.getElementById('f-superficie').value || null,
       adresse_complete: document.getElementById('f-adresse').value,
       description:      document.getElementById('f-description').value,
@@ -464,9 +463,7 @@ async function submitProd(e) {
       email:            document.getElementById('f-email').value,
       telephone:        document.getElementById('f-telephone').value,
       password:         pwd,
-      departement:      document.getElementById('f-departement').value,
-      commune:          document.getElementById('f-commune').value,
-      localite:         document.getElementById('f-localite').value,
+      ...geoVals,
       superficie_ha:    document.getElementById('f-superficie').value || null,
       adresse_complete: document.getElementById('f-adresse').value,
       description:      document.getElementById('f-description').value,

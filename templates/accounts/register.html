@@ -824,9 +824,10 @@
         localStorage.setItem('mp_refresh', data.refresh);
         localStorage.setItem('mp_user',    JSON.stringify(data.user));
         document.getElementById('alertSuccess').classList.add('show');
-        const redirect = data.user.role === 'producteur'
-          ? '/inscription/en-attente/'
-          : '/';
+        const role = data.user.role;
+        let redirect = '/'; // acheteur → accueil
+        if (role === 'producteur')                              redirect = '/inscription/en-attente/';
+        else if (data.user.is_superuser || role === 'superadmin') redirect = '/dashboard/superadmin/';
         setTimeout(() => { window.location.href = redirect; }, 1200);
       } else {
         let msg = 'Une erreur est survenue.';

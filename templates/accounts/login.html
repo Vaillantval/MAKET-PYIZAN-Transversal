@@ -550,7 +550,12 @@
         localStorage.setItem('mp_user',    JSON.stringify(data.user));
         document.getElementById('alertSuccess').classList.add('show');
         document.getElementById('alertError').classList.remove('show');
-        setTimeout(() => { window.location.href = '/'; }, 900);
+        const role = data.user.role;
+        let dest = '/';
+        if (data.user.is_superuser || role === 'superadmin') dest = '/dashboard/superadmin/';
+        else if (role === 'producteur') dest = '/dashboard/producteur/';
+        // acheteur → reste sur l'accueil, son but est d'acheter
+        setTimeout(() => { window.location.href = dest; }, 900);
       } else {
         const msg = data.non_field_errors?.[0] || data.detail || 'Identifiants incorrects.';
         showError(msg);

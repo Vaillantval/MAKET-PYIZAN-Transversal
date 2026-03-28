@@ -32,7 +32,6 @@ def _get_firebase_app():
 ROLE_TOPICS = {
     'acheteur':    'role_acheteur',
     'producteur':  'role_producteur',
-    'admin':       'role_admin',
     'superadmin':  'role_superadmin',
     'collecteur':  'role_collecteur',
 }

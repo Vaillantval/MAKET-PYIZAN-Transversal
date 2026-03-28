@@ -1,6 +1,15 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Commande, CommandeDetail, HistoriqueStatutCommande
+from .models import Commande, CommandeDetail, HistoriqueStatutCommande, PanierItem
+
+
+@admin.register(PanierItem)
+class PanierItemAdmin(admin.ModelAdmin):
+    list_display  = ('user', 'produit', 'quantite', 'sous_total', 'updated_at')
+    list_filter   = ('produit__categorie',)
+    search_fields = ('user__email', 'user__first_name', 'produit__nom')
+    readonly_fields = ('created_at', 'updated_at')
+    ordering      = ('-updated_at',)
 
 
 class CommandeDetailInline(admin.TabularInline):

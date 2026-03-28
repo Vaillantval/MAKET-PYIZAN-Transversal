@@ -18,7 +18,7 @@ class CustomUserAdmin(UserAdmin):
 
     def role_badge(self, obj):
         colors = {
-            'superadmin': '#e74c3c', 'admin': '#e67e22',
+            'superadmin': '#e74c3c',
             'producteur': '#27ae60', 'acheteur': '#2980b9', 'collecteur': '#8e44ad',
         }
         color = colors.get(obj.role, '#95a5a6')

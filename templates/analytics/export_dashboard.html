@@ -1,0 +1,172 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Exporter le Rapport{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+  .export-wrapper { padding: 20px; max-width: 1100px; }
+  .export-wrapper h1 { font-size: 22px; color: #2c3e50; margin-bottom: 4px; }
+  .export-wrapper .subtitle { color: #7f8c8d; font-size: 13px; margin-bottom: 24px; }
+  .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .export-grid { grid-template-columns: 1fr; } }
+  .exp-card { background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .exp-card h2 { font-size: 16px; color: #2c3e50; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #ecf0f1; }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #2c3e50; }
+  .form-group input[type="date"] { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; color: #2c3e50; box-sizing: border-box; }
+  .form-group small { display: block; margin-top: 4px; font-size: 11px; color: #95a5a6; }
+  .radio-group { display: flex; flex-direction: column; gap: 10px; }
+  .radio-option { display: flex; align-items: flex-start; cursor: pointer; padding: 12px; border: 2px solid #ecf0f1; border-radius: 8px; transition: border-color .2s; }
+  .radio-option:has(input:checked) { border-color: #27ae60; background: #f0faf3; }
+  .radio-option input[type="radio"] { margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; accent-color: #27ae60; }
+  .radio-label { display: flex; flex-direction: column; gap: 2px; }
+  .radio-label strong { font-size: 14px; color: #2c3e50; }
+  .radio-label small { font-size: 12px; color: #7f8c8d; }
+  .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: none; }
+  .btn-primary { background: #27ae60; color: #fff; }
+  .btn-primary:hover { background: #219150; }
+  .btn-secondary { background: #ecf0f1; color: #2c3e50; }
+  .btn-secondary:hover { background: #dde1e5; }
+  .info-section { margin-bottom: 20px; }
+  .info-section:last-child { margin-bottom: 0; }
+  .info-section h3 { font-size: 14px; font-weight: 600; color: #27ae60; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .info-section p { font-size: 13px; color: #555; margin: 0 0 4px; }
+  .info-section ul { margin: 4px 0 0 20px; padding: 0; }
+  .info-section li { font-size: 12px; color: #7f8c8d; margin: 2px 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="export-wrapper">
+  <h1>Exporter le Rapport du Dashboard</h1>
+  <p class="subtitle">Téléchargez les données du dashboard au format de votre choix</p>
+
+  <div class="export-grid">
+    <div class="exp-card">
+      <h2>Paramètres d'Export</h2>
+        <form method="post" action="{% url 'analytics:export' %}" class="export-form" enctype="multipart/form-data">
+          {% csrf_token %}
+
+          <div class="form-group">
+            <label for="start_date">Date de début</label>
+            <input 
+              type="date" 
+              id="start_date" 
+              name="start_date" 
+              value="{{ default_start|date:'Y-m-d' }}"
+              required
+            >
+            <small class="text-muted">Par défaut: 30 jours avant aujourd'hui</small>
+          </div>
+
+          <div class="form-group">
+            <label for="end_date">Date de fin</label>
+            <input 
+              type="date" 
+              id="end_date" 
+              name="end_date" 
+              value="{{ today|date:'Y-m-d' }}"
+              required
+            >
+            <small class="text-muted">Par défaut: Aujourd'hui</small>
+          </div>
+
+          <div class="form-group">
+            <label>Format d'export</label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input 
+                  type="radio" 
+                  name="format" 
+                  value="pdf" 
+                  checked
+                  id="format_pdf"
+                >
+                <span class="radio-label">
+                  <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                  <strong>PDF</strong>
+                  <small>Rapport professionnel avec graphes</small>
+                </span>
+              </label>
+
+              <label class="radio-option">
+                <input 
+                  type="radio" 
+                  name="format" 
+                  value="csv"
+                  id="format_csv"
+                >
+                <span class="radio-label">
+                  <i class="fas fa-file-csv" style="color: #27ae60;"></i>
+                  <strong>CSV</strong>
+                  <small>Données brutes au format CSV</small>
+                </span>
+              </label>
+
+              <label class="radio-option">
+                <input 
+                  type="radio" 
+                  name="format" 
+                  value="xlsx"
+                  id="format_xlsx"
+                >
+                <span class="radio-label">
+                  <i class="fas fa-file-excel" style="color: #2ecc71;"></i>
+                  <strong>Excel</strong>
+                  <small>Classeur avec plusieurs feuilles</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-download"></i> Télécharger le Rapport
+            </button>
+            <a href="{% url 'analytics:dashboard' %}" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Retour
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="exp-card" style="position:sticky; top:80px; align-self:start;">
+      <h2>À propos des formats</h2>
+      <div class="info-section">
+        <h3><i class="fas fa-file-pdf" style="color:#e74c3c;"></i> PDF</h3>
+        <p>Format idéal pour :</p>
+        <ul>
+          <li>Impression professionnelle</li>
+          <li>Rapports avec tableaux</li>
+          <li>Partage par email</li>
+          <li>Archivage long terme</li>
+        </ul>
+      </div>
+      <div class="info-section">
+        <h3><i class="fas fa-file-csv" style="color:#27ae60;"></i> CSV</h3>
+        <p>Format idéal pour :</p>
+        <ul>
+          <li>Données brutes</li>
+          <li>Import dans d'autres outils</li>
+          <li>Analyse statistique</li>
+          <li>Traitement avec scripts</li>
+        </ul>
+      </div>
+      <div class="info-section">
+        <h3><i class="fas fa-file-excel" style="color:#2ecc71;"></i> Excel</h3>
+        <p>Format idéal pour :</p>
+        <ul>
+          <li>Manipulation des données</li>
+          <li>Calculs et formules</li>
+          <li>Graphes interactifs</li>
+          <li>Présentations aux stakeholders</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

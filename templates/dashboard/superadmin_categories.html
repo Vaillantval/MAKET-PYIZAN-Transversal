@@ -1,0 +1,229 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Catégories — Superadmin{% endblock %}
+{% block sidebar_nav %}{% include 'dashboard/superadmin_sidebar.html' with active='categories' %}{% endblock %}
+{% block page_title %}Catégories{% endblock %}
+{% block page_subtitle %}Gestion des catégories du catalogue produits{% endblock %}
+
+{% block extra_css %}
+<style>
+  .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
+  .btn-new { padding:8px 18px; border-radius:8px; font-size:13px; font-weight:700; border:none; cursor:pointer; background:var(--green-mid); color:#fff; font-family:inherit; }
+  .btn-new:hover { opacity:.88; }
+
+  .table-wrap { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { background:var(--bg); padding:11px 16px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); border-bottom:1px solid var(--border); }
+  tbody td { padding:11px 16px; font-size:13px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:#fafafa; }
+  .empty-state { text-align:center; padding:48px; color:var(--text-muted); font-size:13px; }
+  .action-btn { padding:5px 12px; border-radius:6px; font-size:11px; font-weight:700; border:none; cursor:pointer; font-family:inherit; }
+  .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .dot-green { background:#27ae60; } .dot-red { background:#e74c3c; }
+  .cat-icon { width:32px; height:32px; border-radius:8px; background:var(--green-light); display:inline-flex; align-items:center; justify-content:center; color:var(--green-mid); font-size:14px; }
+  .sub-cat { padding-left:28px; color:var(--text-muted); font-style:italic; }
+
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:600; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
+  .modal-overlay.open { opacity:1; pointer-events:auto; }
+  .modal-box { background:var(--card); border-radius:14px; padding:28px 32px; width:460px; max-width:96vw; box-shadow:0 12px 48px rgba(0,0,0,.18); }
+  .modal-box h3 { font-size:16px; font-weight:700; margin-bottom:20px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .form-grid .full { grid-column:1/-1; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
+  .field input, .field select { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; }
+  .field input:focus, .field select:focus { border-color:var(--green-mid); }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+  .btn-cancel { padding:9px 18px; border-radius:8px; font-size:13px; font-weight:700; border:1.5px solid var(--border); background:var(--bg); color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .btn-save { padding:9px 22px; border-radius:8px; font-size:13px; font-weight:700; border:none; cursor:pointer; background:var(--green-mid); color:#fff; font-family:inherit; }
+
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:500; color:#fff; box-shadow:0 4px 20px rgba(0,0,0,.15); animation:slideUp .25s ease; }
+  .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="tc"></div>
+
+<!-- Modal catégorie -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal-box">
+    <h3 id="modal-title">Nouvelle catégorie</h3>
+    <form id="cat-form" onsubmit="submitCat(event)">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Nom *</label>
+          <input type="text" id="f-nom" required placeholder="Ex: Légumes">
+        </div>
+        <div class="field">
+          <label>Icône Font Awesome</label>
+          <input type="text" id="f-icone" placeholder="fas fa-leaf">
+        </div>
+        <div class="field">
+          <label>Ordre</label>
+          <input type="number" id="f-ordre" value="0" min="0">
+        </div>
+        <div class="field full">
+          <label>Catégorie parente</label>
+          <select id="f-parent">
+            <option value="">— Aucune (catégorie principale) —</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="f-is-active" checked> Active (visible dans le catalogue)
+          </label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
+        <button type="submit" class="btn-save" id="submit-btn"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn-new" onclick="openCreate()"><i class="fas fa-plus"></i> Nouvelle catégorie</button>
+</div>
+
+<div class="table-wrap">
+  <div class="empty-state" id="tbl-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+  <table id="tbl" style="display:none">
+    <thead>
+      <tr>
+        <th>Icône</th>
+        <th>Nom</th>
+        <th>Parente</th>
+        <th>Produits</th>
+        <th>Ordre</th>
+        <th>Statut</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-state" id="tbl-empty" style="display:none">Aucune catégorie.</div>
+</div>
+{% endblock %}
+
+{% block page_script %}
+const H = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access'), 'Content-Type': 'application/json' };
+let _editId = null, _allCats = [];
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+  document.getElementById('tc').appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+
+async function load() {
+  document.getElementById('tbl-loading').style.display = 'block';
+  document.getElementById('tbl').style.display = 'none';
+  document.getElementById('tbl-empty').style.display = 'none';
+
+  const r = await fetch('/api/admin/categories/', { headers: H });
+  document.getElementById('tbl-loading').style.display = 'none';
+  if (!r.ok) { document.getElementById('tbl-empty').style.display = 'block'; return; }
+  _allCats = await r.json();
+  if (!_allCats.length) { document.getElementById('tbl-empty').style.display = 'block'; return; }
+
+  // Mettre à jour le select parent dans le modal
+  const sel = document.getElementById('f-parent');
+  const prevVal = sel.value;
+  sel.innerHTML = '<option value="">— Aucune (catégorie principale) —</option>';
+  _allCats.filter(c => !c.parent_id).forEach(c => {
+    sel.innerHTML += `<option value="${c.id}">${c.nom}</option>`;
+  });
+  if (prevVal) sel.value = prevVal;
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  _allCats.forEach(c => {
+    const isSubCat = !!c.parent_id;
+    tbody.innerHTML += `
+      <tr id="row-${c.id}">
+        <td><div class="cat-icon"><i class="${c.icone||'fas fa-leaf'}"></i></div></td>
+        <td class="${isSubCat?'sub-cat':''}"><strong>${isSubCat?'↳ ':''}</strong>${c.nom}</td>
+        <td style="color:var(--text-muted)">${c.parent_nom||'—'}</td>
+        <td><strong>${c.nb_produits}</strong></td>
+        <td>${c.ordre}</td>
+        <td><span class="status-dot ${c.is_active?'dot-green':'dot-red'}"></span>${c.is_active?'Active':'Inactive'}</td>
+        <td style="display:flex;gap:6px">
+          <button class="action-btn" style="background:var(--bg);border:1px solid var(--border);color:var(--text-muted)" onclick="openEdit(${c.id})"><i class="fas fa-edit"></i></button>
+          <button class="action-btn" style="background:${c.is_active?'#fde8e8':'#e8f8ee'};color:${c.is_active?'#e74c3c':'#27ae60'}" onclick="toggleActive(${c.id}, ${c.is_active})">${c.is_active?'Désactiver':'Activer'}</button>
+          ${c.nb_produits===0?`<button class="action-btn" style="background:#fde8e8;color:#e74c3c" onclick="deleteCat(${c.id},'${c.nom}')"><i class="fas fa-trash"></i></button>`:''}
+        </td>
+      </tr>`;
+  });
+  document.getElementById('tbl').style.display = 'table';
+}
+
+function openCreate() {
+  _editId = null;
+  document.getElementById('modal-title').textContent = 'Nouvelle catégorie';
+  document.getElementById('submit-btn').innerHTML = '<i class="fas fa-plus"></i> Créer';
+  document.getElementById('f-nom').value = '';
+  document.getElementById('f-icone').value = 'fas fa-leaf';
+  document.getElementById('f-ordre').value = '0';
+  document.getElementById('f-parent').value = '';
+  document.getElementById('f-is-active').checked = true;
+  document.getElementById('cat-modal').classList.add('open');
+}
+
+async function openEdit(id) {
+  _editId = id;
+  const r = await fetch(`/api/admin/categories/${id}/`, { headers: H });
+  if (!r.ok) { showToast('Erreur', 'error'); return; }
+  const c = await r.json();
+  document.getElementById('modal-title').textContent = 'Modifier catégorie';
+  document.getElementById('submit-btn').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+  document.getElementById('f-nom').value    = c.nom;
+  document.getElementById('f-icone').value  = c.icone||'';
+  document.getElementById('f-ordre').value  = c.ordre;
+  document.getElementById('f-parent').value = c.parent_id||'';
+  document.getElementById('f-is-active').checked = c.is_active;
+  document.getElementById('cat-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('cat-modal').classList.remove('open'); _editId = null; }
+
+async function submitCat(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  const body = {
+    nom:       document.getElementById('f-nom').value,
+    icone:     document.getElementById('f-icone').value,
+    ordre:     document.getElementById('f-ordre').value,
+    parent_id: document.getElementById('f-parent').value || null,
+    is_active: document.getElementById('f-is-active').checked,
+  };
+  let url = '/api/admin/categories/', method = 'POST';
+  if (_editId) { url = `/api/admin/categories/${_editId}/`; method = 'PATCH'; }
+  const r = await fetch(url, { method, headers: H, body: JSON.stringify(body) });
+  btn.disabled = false;
+  if (r.ok) { showToast(_editId ? 'Catégorie mise à jour !' : 'Catégorie créée !'); closeModal(); load(); }
+  else { showToast('Erreur', 'error'); }
+}
+
+async function toggleActive(id, isActive) {
+  const r = await fetch(`/api/admin/categories/${id}/`, {
+    method:'PATCH', headers:H, body: JSON.stringify({ is_active: !isActive })
+  });
+  if (r.ok) { showToast(`Catégorie ${isActive?'désactivée':'activée'}`); load(); }
+  else showToast('Erreur', 'error');
+}
+
+async function deleteCat(id, nom) {
+  if (!confirm(`Supprimer la catégorie "${nom}" ?`)) return;
+  const r = await fetch(`/api/admin/categories/${id}/`, { method:'DELETE', headers:H });
+  if (r.ok) { showToast('Catégorie supprimée'); load(); }
+  else { const d = await r.json(); showToast(d.detail||'Erreur', 'error'); }
+}
+
+mpAuthCheck('superadmin').then(u => { if (u && u.is_superuser) load(); });
+{% endblock %}

@@ -1,7 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
 from django.db.models import Count, Q
 from apps.catalog.models import Produit, Categorie
 from apps.accounts.models import Producteur
+
+
+def health_check(request):
+    """GET /health/ — utilisé par Railway pour vérifier que l'app est vivante."""
+    return JsonResponse({'status': 'ok'})
 
 
 def home(request):
@@ -156,7 +162,8 @@ def dashboard_producteur_en_attente(request):
 
 
 def dashboard_admin(request):
-    return render(request, 'dashboard/admin.html')
+    from django.shortcuts import redirect
+    return redirect('/dashboard/superadmin/')
 
 
 def dashboard_superadmin(request):
@@ -182,6 +189,205 @@ def dashboard_superadmin_stocks(request):
 
 def dashboard_superadmin_collectes(request):
     return render(request, 'dashboard/superadmin_collectes.html')
+
+def dashboard_superadmin_acheteurs(request):
+    return render(request, 'dashboard/superadmin_acheteurs.html')
+
+def dashboard_superadmin_adresses(request):
+    return render(request, 'dashboard/superadmin_adresses.html')
+
+def dashboard_superadmin_categories(request):
+    return render(request, 'dashboard/superadmin_categories.html')
+
+def dashboard_superadmin_vouchers(request):
+    return render(request, 'dashboard/superadmin_vouchers.html')
+
+def dashboard_superadmin_zones(request):
+    return render(request, 'dashboard/superadmin_zones.html')
+
+def dashboard_superadmin_config(request):
+    return render(request, 'dashboard/superadmin_config.html')
+
+def dashboard_superadmin_profil(request):
+    return render(request, 'dashboard/superadmin_profil.html')
+
+def dashboard_superadmin_rapport(request):
+    if request.method == 'POST':
+        return _handle_superadmin_export(request)
+    from django.utils import timezone
+    from datetime import timedelta
+    today = timezone.now().date()
+    return render(request, 'dashboard/superadmin_rapport.html', {
+        'default_start': today - timedelta(days=30),
+        'default_end': today,
+        'today': today,
+    })
+
+def _handle_superadmin_export(request):
+    """Handle export POST from superadmin dashboard — requires valid JWT for superadmin role."""
+    from django.http import HttpResponse, HttpResponseForbidden
+    from datetime import datetime
+    from django.utils import timezone
+
+    user = _jwt_user_from_post(request)
+    if user is None or not (user.is_staff or getattr(user, 'role', '') == 'superadmin'):
+        return HttpResponseForbidden('Accès refusé.')
+
+    export_format = request.POST.get('format', 'pdf')
+    start_date_str = request.POST.get('start_date')
+    end_date_str   = request.POST.get('end_date')
+
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date   = datetime.strptime(end_date_str,   '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        today = timezone.now().date()
+        from datetime import timedelta
+        start_date = today - timedelta(days=30)
+        end_date   = today
+
+    from apps.analytics.report_generators import ReportDataGenerator
+    gen = ReportDataGenerator(start_date, end_date)
+    report_data = {
+        'kpis':              gen.get_kpis(),
+        'daily_sales':       gen.get_daily_sales(),
+        'monthly_sales':     gen.get_monthly_sales(),
+        'orders_by_status':  gen.get_orders_by_status(),
+        'payments_by_type':  gen.get_payments_by_type(),
+        'top_products':      gen.get_top_products(),
+        'top_producers':     gen.get_top_producers(),
+        'top_buyers':        gen.get_top_buyers(),
+        'sales_by_category': list(gen.get_sales_by_category()),
+    }
+
+    fname_base = f"rapport_maket_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+
+    if export_format == 'csv':
+        from apps.analytics.views import ExportDashboardView
+        view = ExportDashboardView()
+        return view._export_csv(report_data, start_date, end_date)
+    elif export_format == 'xlsx':
+        from apps.analytics.views import ExportDashboardView
+        view = ExportDashboardView()
+        return view._export_xlsx(report_data, start_date, end_date)
+    else:
+        from apps.analytics.report_generators import PDFReportGenerator
+        try:
+            pdf_gen = PDFReportGenerator(report_data)
+            buf = pdf_gen.generate()
+            response = HttpResponse(buf.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{fname_base}.pdf"'
+            return response
+        except Exception as e:
+            from django.http import HttpResponseServerError
+            return HttpResponseServerError(f'Erreur PDF: {e}')
+
+
+def dashboard_producteur_rapport(request):
+    if request.method == 'POST':
+        return _handle_producteur_export(request)
+    from django.utils import timezone
+    from datetime import timedelta
+    today = timezone.now().date()
+    return render(request, 'dashboard/producteur_rapport.html', {
+        'default_start': today - timedelta(days=30),
+        'default_end': today,
+        'today': today,
+    })
+
+def _handle_producteur_export(request):
+    """Handle export POST from producteur dashboard — requires valid JWT for producteur role."""
+    from django.http import HttpResponse, HttpResponseForbidden, HttpResponseServerError
+    from datetime import datetime
+    from django.utils import timezone
+
+    user = _jwt_user_from_post(request)
+    if user is None:
+        return HttpResponseForbidden('Accès refusé.')
+
+    try:
+        from apps.accounts.models import Producteur
+        producteur = Producteur.objects.get(user=user)
+    except Exception:
+        return HttpResponseForbidden('Compte producteur introuvable.')
+
+    export_format = request.POST.get('format', 'pdf')
+    start_date_str = request.POST.get('start_date')
+    end_date_str   = request.POST.get('end_date')
+
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date   = datetime.strptime(end_date_str,   '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        today = timezone.now().date()
+        from datetime import timedelta
+        start_date = today - timedelta(days=30)
+        end_date   = today
+
+    from apps.analytics.report_generators import ProducteurReportDataGenerator
+    gen = ProducteurReportDataGenerator(producteur, start_date, end_date)
+    report_data = {
+        'kpis':           gen.get_kpis(),
+        'monthly_sales':  gen.get_revenue_by_month(),
+        'orders_by_status': gen.get_orders_by_status(),
+        'top_products':   gen.get_top_products(),
+        'stock_actuel':   gen.get_stock_actuel(),
+        'recent_orders':  gen.get_recent_orders(),
+        'producteur':     producteur,
+    }
+
+    fname_base = f"rapport_producteur_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+
+    if export_format == 'csv':
+        from io import StringIO
+        import csv
+        buf = StringIO()
+        w = csv.writer(buf)
+        kpis = report_data['kpis']
+        w.writerow(['RAPPORT MAKÈT PEYIZAN — PRODUCTEUR'])
+        w.writerow([f"Producteur: {producteur.user.get_full_name()}"])
+        w.writerow([f"Période: {kpis.get('periode_debut','')} au {kpis.get('periode_fin','')}"])
+        w.writerow([])
+        w.writerow(['KPIs'])
+        for k, v in kpis.items():
+            w.writerow([k, v])
+        w.writerow([])
+        w.writerow(['CA Mensuel', 'Date', 'CA (HTG)'])
+        for row in report_data['monthly_sales']:
+            w.writerow([row.get('mois',''), row.get('ca', 0)])
+        w.writerow([])
+        w.writerow(['Top Produits', 'Produit', 'Quantité', 'CA'])
+        for row in report_data['top_products']:
+            w.writerow([row.get('produit__nom',''), row.get('total_vendu',0), row.get('ca',0)])
+        from django.http import HttpResponse
+        response = HttpResponse('\ufeff' + buf.getvalue(), content_type='text/csv; charset=utf-8-sig')
+        response['Content-Disposition'] = f'attachment; filename="{fname_base}.csv"'
+        return response
+    else:
+        from apps.analytics.report_generators import ProducteurPDFReportGenerator
+        try:
+            pdf_gen = ProducteurPDFReportGenerator(report_data)
+            buf = pdf_gen.generate()
+            response = HttpResponse(buf.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{fname_base}.pdf"'
+            return response
+        except Exception as e:
+            return HttpResponseServerError(f'Erreur PDF: {e}')
+
+
+def _jwt_user_from_post(request):
+    """Decode JWT token from POST field '_jwt' and return the corresponding user, or None."""
+    token_str = request.POST.get('_jwt', '').strip()
+    if not token_str:
+        return None
+    try:
+        from rest_framework_simplejwt.tokens import AccessToken
+        token = AccessToken(token_str)
+        user_id = token['user_id']
+        from apps.accounts.models import CustomUser
+        return CustomUser.objects.get(pk=user_id, is_active=True)
+    except Exception:
+        return None
 
 
 # ── Pages catalogue public ──────────────────────────────────────────────────

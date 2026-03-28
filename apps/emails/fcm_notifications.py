@@ -31,7 +31,6 @@ def push_nouvelle_commande_admin(commande):
         "total":           str(commande.total),
         "methode":         commande.methode_paiement,
     }
-    send_to_topic('admin',      title, body, data)
     send_to_topic('superadmin', title, body, data)
 
 
@@ -81,7 +80,6 @@ def push_collecte_confirmee_admin(participation):
         "producteur":       producteur_nom,
         "quantite_prevue":  str(participation.quantite_prevue),
     }
-    send_to_topic('admin',      title, body, data)
     send_to_topic('superadmin', title, body, data)
 
 
@@ -108,7 +106,6 @@ def push_alerte_stock_admin(alerte):
         "quantite":         str(alerte.quantite_actuelle),
         "seuil":            str(alerte.seuil_alerte),
     }
-    send_to_topic('admin',      title, body, data)
     send_to_topic('superadmin', title, body, data)
 
 

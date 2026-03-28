@@ -1,0 +1,512 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   JAZZMIN CUSTOMIZATION — Makèt Peyizan
+   Couleurs du site: Vert (#1a6b2f), Jaune (#e8d800), Blanc, Noir
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Brand colors */
+  --mp-green:       #1a6b2f;
+  --mp-green-dark:  #145525;
+  --mp-green-mid:   #27ae60;
+  --mp-green-light: #e8f8ee;
+  --mp-yellow:      #e8d800;
+  --mp-yellow-dark: #c9bb00;
+  --mp-yellow-text: #4a3c00;
+  --mp-red:         #e74c3c;
+  --mp-orange:      #e67e22;
+  --mp-blue:        #2980b9;
+  --mp-purple:      #8e44ad;
+}
+
+/* ── LIGHT MODE ──────────────────────────────────────────────────────────────── */
+
+/* Navbar */
+.navbar-success {
+  background: linear-gradient(135deg, var(--mp-green) 0%, var(--mp-green-dark) 100%) !important;
+  border-bottom: 3px solid var(--mp-yellow) !important;
+  box-shadow: 0 2px 8px rgba(26, 107, 47, 0.15);
+}
+
+.navbar-success .navbar-brand {
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.5px;
+}
+
+.navbar-success .navbar-text,
+.navbar-success .nav-link {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.navbar-success .nav-link:hover {
+  color: var(--mp-yellow) !important;
+  transition: color 0.2s ease;
+}
+
+.navbar-success .nav-link.active {
+  color: var(--mp-yellow) !important;
+  background: rgba(232, 216, 0, 0.1) !important;
+  border-radius: 5px;
+}
+
+/* Sidebar */
+.sidebar-dark-success {
+  background: linear-gradient(180deg, var(--mp-green-dark) 0%, #0f3d1f 100%) !important;
+  border-right: 3px solid var(--mp-yellow);
+}
+
+.sidebar-dark-success .nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.2s ease;
+}
+
+.sidebar-dark-success .nav-link:hover {
+  background-color: rgba(232, 216, 0, 0.1) !important;
+  color: var(--mp-yellow) !important;
+  padding-left: 1.5rem;
+}
+
+.sidebar-dark-success .nav-link.active {
+  background: linear-gradient(90deg, var(--mp-green) 0%, rgba(39, 174, 96, 0.2) 100%) !important;
+  color: var(--mp-yellow) !important;
+  border-left: 4px solid var(--mp-yellow) !important;
+  padding-left: calc(1rem - 4px) !important;
+  font-weight: 600;
+}
+
+.sidebar-dark-success .brand-link {
+  background: var(--mp-green-dark) !important;
+  color: #ffffff !important;
+  border-bottom: 2px solid var(--mp-yellow) !important;
+}
+
+.sidebar-dark-success .nav-sidebar {
+  background: var(--mp-green-dark) !important;
+}
+
+/* Sidebar menu text */
+.sidebar-dark-success .nav-link > span,
+.sidebar-dark-success .nav-text {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ── DARK MODE ───────────────────────────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  .navbar-success {
+    background: linear-gradient(135deg, var(--mp-green-dark) 0%, #0a2d15 100%) !important;
+    border-bottom: 3px solid var(--mp-yellow) !important;
+  }
+
+  .sidebar-dark-success {
+    background: linear-gradient(180deg, #0a2d15 0%, #051a0c 100%) !important;
+    border-right: 3px solid var(--mp-yellow);
+  }
+}
+
+/* ── BUTTONS & LINKS ──────────────────────────────────────────────────────────── */
+
+.btn-success {
+  background-color: var(--mp-green) !important;
+  border-color: var(--mp-green) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-success:hover {
+  background-color: var(--mp-green-dark) !important;
+  border-color: var(--mp-green-dark) !important;
+  box-shadow: 0 4px 12px rgba(26, 107, 47, 0.25);
+  transform: translateY(-2px);
+}
+
+.btn-outline-success {
+  color: var(--mp-green) !important;
+  border-color: var(--mp-green) !important;
+}
+
+.btn-outline-success:hover {
+  background-color: var(--mp-green) !important;
+  border-color: var(--mp-green) !important;
+  color: #ffffff !important;
+}
+
+/* Primary buttons (often used for actions) */
+.btn-primary {
+  background-color: var(--mp-green) !important;
+  border-color: var(--mp-green) !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--mp-green-dark) !important;
+  border-color: var(--mp-green-dark) !important;
+}
+
+/* Warning buttons (yellow theme) */
+.btn-warning {
+  background-color: var(--mp-yellow) !important;
+  border-color: var(--mp-yellow-dark) !important;
+  color: var(--mp-yellow-text) !important;
+  font-weight: 600;
+}
+
+.btn-warning:hover {
+  background-color: var(--mp-yellow-dark) !important;
+  border-color: var(--mp-yellow-dark) !important;
+  color: var(--mp-yellow-text) !important;
+}
+
+/* Links */
+a,
+.nav-link,
+.breadcrumb-item a {
+  color: var(--mp-green) !important;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover,
+.nav-link:hover,
+.breadcrumb-item a:hover {
+  color: var(--mp-yellow) !important;
+}
+
+/* ── BADGES ──────────────────────────────────────────────────────────────────── */
+
+.badge-success {
+  background-color: var(--mp-green) !important;
+  color: #ffffff !important;
+}
+
+.badge-warning {
+  background-color: var(--mp-yellow) !important;
+  color: var(--mp-yellow-text) !important;
+  font-weight: 600;
+}
+
+.badge-danger {
+  background-color: var(--mp-red) !important;
+  color: #ffffff !important;
+}
+
+.badge-info {
+  background-color: var(--mp-blue) !important;
+  color: #ffffff !important;
+}
+
+.badge-primary {
+  background-color: var(--mp-green) !important;
+  color: #ffffff !important;
+}
+
+/* ── ALERTS ──────────────────────────────────────────────────────────────────── */
+
+.alert-success {
+  background-color: var(--mp-green-light) !important;
+  border-color: var(--mp-green) !important;
+  color: var(--mp-green-dark) !important;
+}
+
+.alert-warning {
+  background-color: #fffbf0 !important;
+  border-color: var(--mp-yellow-dark) !important;
+  color: var(--mp-yellow-text) !important;
+}
+
+.alert-danger {
+  background-color: #fdf0ed !important;
+  border-color: var(--mp-red) !important;
+  color: #8b2520 !important;
+}
+
+.alert-info {
+  background-color: #eef5fa !important;
+  border-color: var(--mp-blue) !important;
+  color: #1a4d7a !important;
+}
+
+/* ── PAGINATION ──────────────────────────────────────────────────────────────── */
+
+.pagination .page-link {
+  color: var(--mp-green) !important;
+  border-color: #ddd !important;
+  transition: all 0.2s ease;
+}
+
+.pagination .page-link:hover {
+  background-color: var(--mp-green-light) !important;
+  border-color: var(--mp-green) !important;
+  color: var(--mp-green-dark) !important;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--mp-green) !important;
+  border-color: var(--mp-green) !important;
+  color: #ffffff !important;
+}
+
+/* ── CARDS & CONTENT ──────────────────────────────────────────────────────────── */
+
+.card {
+  border-left: 4px solid var(--mp-green-light);
+  border-top: 1px solid #e2e6ec;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(26, 107, 47, 0.08);
+  border-left-color: var(--mp-green);
+}
+
+.card-header {
+  background: linear-gradient(90deg, var(--mp-green-light) 0%, #f0f3f7 100%);
+  border-bottom: 2px solid var(--mp-green);
+  color: var(--mp-green-dark);
+  font-weight: 600;
+}
+
+/* ── FORM ELEMENTS ───────────────────────────────────────────────────────────── */
+
+.form-control:focus {
+  border-color: var(--mp-green) !important;
+  box-shadow: 0 0 0 0.2rem rgba(26, 107, 47, 0.25) !important;
+}
+
+.form-check-input:checked {
+  background-color: var(--mp-green) !important;
+  border-color: var(--mp-green) !important;
+}
+
+.form-check-input:focus {
+  border-color: var(--mp-green) !important;
+  box-shadow: 0 0 0 0.2rem rgba(26, 107, 47, 0.25) !important;
+}
+
+.input-group-text {
+  background-color: var(--mp-green-light);
+  border-color: var(--mp-green);
+  color: var(--mp-green-dark);
+}
+
+/* ── TABLES ──────────────────────────────────────────────────────────────────── */
+
+.table thead th {
+  background: linear-gradient(135deg, var(--mp-green) 0%, var(--mp-green-mid) 100%);
+  color: #ffffff !important;
+  border-color: var(--mp-green-dark) !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.table tbody tr:hover {
+  background-color: var(--mp-green-light);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(232, 248, 238, 0.3);
+}
+
+/* ── BREADCRUMB ──────────────────────────────────────────────────────────────── */
+
+.breadcrumb {
+  background-color: var(--mp-green-light);
+  border-radius: 5px;
+  padding: 0.75rem 1rem;
+}
+
+.breadcrumb-item {
+  color: var(--mp-green-dark) !important;
+}
+
+.breadcrumb-item.active {
+  color: var(--mp-green) !important;
+  font-weight: 600;
+}
+
+/* ── ADMIN CHANGE FORM TOOLBAR ───────────────────────────────────────────────── */
+
+.submit-row {
+  background-color: var(--mp-green-light) !important;
+  padding: 1rem;
+  border-radius: 5px;
+  margin-top: 1.5rem;
+}
+
+.submit-row input[type="submit"] {
+  background-color: var(--mp-green) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submit-row input[type="submit"]:hover {
+  background-color: var(--mp-green-dark) !important;
+  box-shadow: 0 4px 12px rgba(26, 107, 47, 0.25);
+  transform: translateY(-2px);
+}
+
+.submit-row a {
+  color: var(--mp-green-dark) !important;
+  text-decoration: underline;
+}
+
+.submit-row a:hover {
+  color: var(--mp-green) !important;
+}
+
+/* Delete link (always red) */
+.submit-row a.deletelink {
+  color: var(--mp-red) !important;
+}
+
+.submit-row a.deletelink:hover {
+  color: #c13828 !important;
+}
+
+/* ── DJANGO ADMIN SPECIFIC ───────────────────────────────────────────────────── */
+
+/* Related object lookup (foreign key popups) */
+.vForeignKeyRawIdAdminField + a[class*="lookup"],
+.related-lookup {
+  background-color: var(--mp-green) !important;
+  color: #ffffff !important;
+  padding: 0.25rem 0.75rem;
+  border-radius: 3px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.related-lookup:hover {
+  background-color: var(--mp-green-dark) !important;
+}
+
+/* Fieldset styling */
+fieldset {
+  border: 1px solid var(--mp-green);
+  border-radius: 5px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+fieldset h2 {
+  color: var(--mp-green-dark);
+  border-bottom: 2px solid var(--mp-yellow);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+/* ── DARK MODE ADJUSTMENTS ───────────────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    background-color: #1a2030;
+    border-color: rgba(39, 174, 96, 0.3);
+    color: #edf2f7;
+  }
+
+  .card-header {
+    background: rgba(26, 107, 47, 0.15);
+    border-bottom-color: var(--mp-green-mid);
+    color: var(--mp-green-light);
+  }
+
+  .table {
+    color: #edf2f7;
+  }
+
+  .table tbody tr:hover {
+    background-color: rgba(39, 174, 96, 0.1);
+  }
+
+  .breadcrumb {
+    background-color: rgba(39, 174, 96, 0.1);
+    color: #edf2f7;
+  }
+
+  .submit-row {
+    background-color: rgba(39, 174, 96, 0.1) !important;
+  }
+
+  fieldset {
+    border-color: var(--mp-green-mid);
+    background-color: rgba(26, 107, 47, 0.1);
+  }
+
+  fieldset h2 {
+    color: var(--mp-green-light);
+    border-bottom-color: var(--mp-yellow);
+  }
+}
+
+/* ── HOVER EFFECTS & TRANSITIONS ──────────────────────────────────────────────── */
+
+.admin-action-checkbox:checked + label::before {
+  background-color: var(--mp-green) !important;
+  border-color: var(--mp-green) !important;
+}
+
+/* Status indicators and colored elements */
+.success {
+  color: var(--mp-green) !important;
+}
+
+.warning {
+  color: var(--mp-yellow-dark) !important;
+}
+
+.error {
+  color: var(--mp-red) !important;
+}
+
+.info {
+  color: var(--mp-blue) !important;
+}
+
+/* ── JAZZMIN SPECIFIC ENHANCEMENTS ───────────────────────────────────────────── */
+
+.jazzmin-logo {
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ffffff;
+}
+
+/* Top menu links in navbar */
+.jazzmin-menu-item {
+  transition: all 0.2s ease;
+}
+
+.jazzmin-menu-item a:hover {
+  color: var(--mp-yellow) !important;
+}
+
+/* Admin site header */
+.site-header {
+  background: linear-gradient(135deg, var(--mp-green) 0%, var(--mp-green-dark) 100%);
+  color: #ffffff;
+  padding: 1.5rem;
+  border-bottom: 3px solid var(--mp-yellow);
+}
+
+.site-header h1 {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.site-header h1 a {
+  color: #ffffff;
+}
+
+.site-header h1 a:hover {
+  color: var(--mp-yellow);
+}

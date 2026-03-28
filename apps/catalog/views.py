@@ -2,8 +2,114 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
 
 from apps.catalog.models import Produit, Categorie
+
+
+# ── Pagination ────────────────────────────────────────────────────────────────
+
+class CataloguePagination(PageNumberPagination):
+    page_size            = 20
+    page_size_query_param = 'page_size'
+    max_page_size        = 100
+
+
+# ── API publique : listing catalogue ─────────────────────────────────────────
+
+class CataloguePublicListView(APIView):
+    """
+    GET /api/products/
+    Listing public des produits actifs avec filtres et pagination.
+
+    Query params :
+      ?search=        — recherche dans nom, variété, description
+      ?categorie=     — slug de catégorie
+      ?departement=   — département du producteur
+      ?prix_min=      — prix unitaire minimum
+      ?prix_max=      — prix unitaire maximum
+      ?producteur_id= — id du producteur
+      ?featured=1     — uniquement les produits mis en avant
+      ?page=          — numéro de page (défaut 1)
+      ?page_size=     — taille de page (défaut 20, max 100)
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        qs = Produit.objects.filter(
+            is_active=True, statut='actif'
+        ).select_related(
+            'producteur__user', 'categorie'
+        ).order_by('-is_featured', '-created_at')
+
+        # ── Filtres ──────────────────────────────────────────────────────────
+        search = request.query_params.get('search', '').strip()
+        if search:
+            qs = qs.filter(
+                Q(nom__icontains=search) |
+                Q(variete__icontains=search) |
+                Q(description__icontains=search) |
+                Q(origine__icontains=search)
+            )
+
+        categorie_slug = request.query_params.get('categorie', '').strip()
+        if categorie_slug:
+            qs = qs.filter(categorie__slug=categorie_slug)
+
+        departement = request.query_params.get('departement', '').strip()
+        if departement:
+            qs = qs.filter(producteur__departement__iexact=departement)
+
+        producteur_id = request.query_params.get('producteur_id', '').strip()
+        if producteur_id:
+            qs = qs.filter(producteur_id=producteur_id)
+
+        prix_min = request.query_params.get('prix_min', '').strip()
+        if prix_min:
+            qs = qs.filter(prix_unitaire__gte=prix_min)
+
+        prix_max = request.query_params.get('prix_max', '').strip()
+        if prix_max:
+            qs = qs.filter(prix_unitaire__lte=prix_max)
+
+        if request.query_params.get('featured') == '1':
+            qs = qs.filter(is_featured=True)
+
+        # ── Pagination ───────────────────────────────────────────────────────
+        paginator = CataloguePagination()
+        page = paginator.paginate_queryset(qs, request)
+
+        data = [_serialize_produit_public(p) for p in page]
+        return paginator.get_paginated_response(data)
+
+
+def _serialize_produit_public(p):
+    """Sérialisation légère pour le listing (pas le détail complet)."""
+    return {
+        'id':                    p.pk,
+        'nom':                   p.nom,
+        'slug':                  p.slug,
+        'variete':               p.variete,
+        'prix_unitaire':         str(p.prix_unitaire),
+        'prix_gros':             str(p.prix_gros) if p.prix_gros else None,
+        'unite_vente':           p.unite_vente,
+        'unite_vente_label':     p.get_unite_vente_display(),
+        'quantite_min_commande': p.quantite_min_commande,
+        'stock_reel':            p.stock_reel,
+        'is_featured':           p.is_featured,
+        'image_principale':      p.image_principale.url if p.image_principale else None,
+        'categorie': {
+            'nom':  p.categorie.nom,
+            'slug': p.categorie.slug,
+        },
+        'producteur': {
+            'id':          p.producteur.pk,
+            'nom':         p.producteur.user.get_full_name(),
+            'commune':     p.producteur.commune,
+            'departement': p.producteur.departement,
+        },
+    }
 
 
 # ── API publique : détail d'un produit ───────────────────────────────────────

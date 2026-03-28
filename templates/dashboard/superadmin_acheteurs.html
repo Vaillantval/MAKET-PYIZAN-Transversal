@@ -1,0 +1,225 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Acheteurs — Superadmin{% endblock %}
+{% block sidebar_nav %}{% include 'dashboard/superadmin_sidebar.html' with active='acheteurs' %}{% endblock %}
+{% block page_title %}Acheteurs{% endblock %}
+{% block page_subtitle %}Gestion de tous les profils acheteurs{% endblock %}
+
+{% block extra_css %}
+<style>
+  .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
+  .search-box { flex:1; min-width:200px; display:flex; align-items:center; gap:8px; background:var(--card); border:1.5px solid var(--border); border-radius:8px; padding:8px 14px; }
+  .search-box input { border:none; outline:none; background:transparent; font-family:inherit; font-size:13px; color:var(--text); width:100%; }
+  .filter-btn { padding:7px 14px; border-radius:8px; font-size:12px; font-weight:600; border:1.5px solid var(--border); background:var(--card); color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all .18s; }
+  .filter-btn.active, .filter-btn:hover { border-color:var(--green-mid); color:var(--green-mid); }
+
+  .table-wrap { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { background:var(--bg); padding:11px 16px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); border-bottom:1px solid var(--border); }
+  tbody td { padding:12px 16px; font-size:13px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:#fafafa; }
+  .empty-state { text-align:center; padding:48px; color:var(--text-muted); font-size:13px; }
+  .badge { display:inline-block; padding:2px 9px; border-radius:12px; font-size:11px; font-weight:700; }
+  .badge-particulier { background:#f0f0f0; color:#555; }
+  .badge-grossiste   { background:#eaf4fb; color:#2980b9; }
+  .badge-detaillant  { background:#e8f8ee; color:#1a6b2f; }
+  .badge-cooperative { background:#f5e6ff; color:#8e44ad; }
+  .badge-institution { background:#fff4e6; color:#e67e22; }
+  .badge-restaurant  { background:#fde8e8; color:#e74c3c; }
+  .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .dot-green { background:#27ae60; } .dot-red { background:#e74c3c; }
+  .user-avatar { width:34px; height:34px; border-radius:50%; background:var(--blue); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:14px; flex-shrink:0; }
+
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:600; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
+  .modal-overlay.open { opacity:1; pointer-events:auto; }
+  .modal-box { background:var(--card); border-radius:14px; padding:28px 32px; width:500px; max-width:96vw; box-shadow:0 12px 48px rgba(0,0,0,.18); max-height:90vh; overflow-y:auto; }
+  .modal-box h3 { font-size:16px; font-weight:700; margin-bottom:20px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .form-grid .full { grid-column:1/-1; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
+  .field input, .field select, .field textarea { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; }
+  .field input:focus, .field select:focus { border-color:var(--green-mid); }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+  .btn-cancel { padding:9px 18px; border-radius:8px; font-size:13px; font-weight:700; border:1.5px solid var(--border); background:var(--bg); color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .btn-save { padding:9px 22px; border-radius:8px; font-size:13px; font-weight:700; border:none; cursor:pointer; background:var(--green-mid); color:#fff; font-family:inherit; }
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+  .detail-item { font-size:13px; }
+  .detail-item .lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
+
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:500; color:#fff; box-shadow:0 4px 20px rgba(0,0,0,.15); animation:slideUp .25s ease; }
+  .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="tc"></div>
+
+<!-- Modal détail acheteur -->
+<div class="modal-overlay" id="acheteur-modal">
+  <div class="modal-box">
+    <h3 id="modal-title">Profil acheteur</h3>
+    <div id="modal-detail"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeModal()">Fermer</button>
+      <button type="button" class="btn-save" id="btn-toggle-actif" onclick="toggleActif()"></button>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-box">
+    <i class="fas fa-search" style="color:var(--text-muted)"></i>
+    <input type="text" id="search-input" placeholder="Nom, email, organisation..." oninput="debouncedSearch()">
+  </div>
+  <select id="type-filter" class="filter-btn" style="appearance:none;padding-right:24px" onchange="load()">
+    <option value="">Tous les types</option>
+    <option value="particulier">Particulier</option>
+    <option value="grossiste">Grossiste</option>
+    <option value="detaillant">Détaillant</option>
+    <option value="cooperative">Coopérative</option>
+    <option value="institution">Institution / ONG</option>
+    <option value="restaurant">Restaurant / Hôtel</option>
+  </select>
+</div>
+
+<div class="table-wrap">
+  <div class="empty-state" id="tbl-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+  <table id="tbl" style="display:none">
+    <thead>
+      <tr>
+        <th>Acheteur</th>
+        <th>Type</th>
+        <th>Organisation</th>
+        <th>Département</th>
+        <th>Commandes</th>
+        <th>Total dépensé</th>
+        <th>Statut</th>
+        <th>Inscrit le</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-state" id="tbl-empty" style="display:none">Aucun acheteur trouvé.</div>
+</div>
+{% endblock %}
+
+{% block page_script %}
+const H = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access'), 'Content-Type': 'application/json' };
+let _debounce, _editId = null;
+
+const TYPE_BADGES = {
+  particulier:'badge-particulier', grossiste:'badge-grossiste', detaillant:'badge-detaillant',
+  cooperative:'badge-cooperative', institution:'badge-institution', restaurant:'badge-restaurant',
+};
+const TYPE_LABELS = {
+  particulier:'Particulier', grossiste:'Grossiste', detaillant:'Détaillant',
+  cooperative:'Coopérative', institution:'Institution / ONG', restaurant:'Restaurant / Hôtel',
+};
+
+function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
+function fdate(iso) { return new Date(iso).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'}); }
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+  document.getElementById('tc').appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+
+async function load() {
+  const search = document.getElementById('search-input').value.trim();
+  const type   = document.getElementById('type-filter').value;
+  let url = '/api/admin/acheteurs/?';
+  if (search) url += 'search=' + encodeURIComponent(search) + '&';
+  if (type)   url += 'type=' + type + '&';
+
+  document.getElementById('tbl-loading').style.display = 'block';
+  document.getElementById('tbl').style.display = 'none';
+  document.getElementById('tbl-empty').style.display = 'none';
+
+  const r = await fetch(url, { headers: H });
+  document.getElementById('tbl-loading').style.display = 'none';
+  if (!r.ok) { document.getElementById('tbl-empty').style.display = 'block'; return; }
+  const data = await r.json();
+  if (!data.length) { document.getElementById('tbl-empty').style.display = 'block'; return; }
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  data.forEach(a => {
+    const initiale = (a.full_name || a.email).charAt(0).toUpperCase();
+    tbody.innerHTML += `
+      <tr id="row-${a.id}">
+        <td style="display:flex;align-items:center;gap:10px">
+          <div class="user-avatar">${initiale}</div>
+          <div><div style="font-weight:600">${a.full_name}</div><div style="font-size:11px;color:var(--text-muted)">${a.email}</div></div>
+        </td>
+        <td><span class="badge ${TYPE_BADGES[a.type_acheteur]||'badge-particulier'}">${a.type_label}</span></td>
+        <td style="color:var(--text-muted)">${a.nom_organisation||'—'}</td>
+        <td style="color:var(--text-muted)">${a.departement||'—'}</td>
+        <td><strong>${a.total_commandes}</strong></td>
+        <td style="font-weight:600">${fmt(a.total_depense)} HTG</td>
+        <td><span class="status-dot ${a.is_active?'dot-green':'dot-red'}"></span>${a.is_active?'Actif':'Inactif'}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${fdate(a.created_at)}</td>
+        <td>
+          <button class="action-btn" style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid var(--border);background:var(--bg);cursor:pointer" onclick="openDetail(${a.id})">
+            <i class="fas fa-eye"></i> Détail
+          </button>
+        </td>
+      </tr>`;
+  });
+  document.getElementById('tbl').style.display = 'table';
+}
+
+let _currentActif = null;
+async function openDetail(id) {
+  _editId = id;
+  const r = await fetch(`/api/admin/acheteurs/${id}/`, { headers: H });
+  if (!r.ok) { showToast('Erreur', 'error'); return; }
+  const a = await r.json();
+  _currentActif = a.is_active;
+
+  document.getElementById('modal-detail').innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-item"><div class="lbl">Nom complet</div>${a.full_name}</div>
+      <div class="detail-item"><div class="lbl">Email</div>${a.email}</div>
+      <div class="detail-item"><div class="lbl">Téléphone</div>${a.telephone||'—'}</div>
+      <div class="detail-item"><div class="lbl">Type</div>${TYPE_LABELS[a.type_acheteur]||a.type_acheteur}</div>
+      <div class="detail-item"><div class="lbl">Organisation</div>${a.nom_organisation||'—'}</div>
+      <div class="detail-item"><div class="lbl">Département</div>${a.departement||'—'}</div>
+      <div class="detail-item"><div class="lbl">Total commandes</div><strong>${a.total_commandes}</strong></div>
+      <div class="detail-item"><div class="lbl">Total dépensé</div><strong>${Number(a.total_depense).toLocaleString('fr-FR')} HTG</strong></div>
+    </div>`;
+
+  const btn = document.getElementById('btn-toggle-actif');
+  btn.textContent = a.is_active ? 'Désactiver le compte' : 'Activer le compte';
+  btn.style.background = a.is_active ? '#e74c3c' : 'var(--green-mid)';
+  document.getElementById('acheteur-modal').classList.add('open');
+}
+
+async function toggleActif() {
+  if (!_editId) return;
+  const r = await fetch(`/api/admin/acheteurs/${_editId}/`, {
+    method:'PATCH', headers:H,
+    body: JSON.stringify({ is_active: !_currentActif })
+  });
+  if (r.ok) {
+    showToast('Compte mis à jour !');
+    closeModal();
+    load();
+  } else {
+    showToast('Erreur', 'error');
+  }
+}
+
+function closeModal() {
+  document.getElementById('acheteur-modal').classList.remove('open');
+  _editId = null;
+}
+
+function debouncedSearch() { clearTimeout(_debounce); _debounce = setTimeout(load, 350); }
+
+mpAuthCheck('superadmin').then(u => { if (u && u.is_superuser) load(); });
+{% endblock %}
