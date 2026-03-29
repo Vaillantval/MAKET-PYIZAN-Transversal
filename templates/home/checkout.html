@@ -350,7 +350,16 @@
                     <!-- Libellé (nouvelle seulement) -->
                     <div class="form-group full" id="f-libelle-group" style="display:none">
                       <label class="form-label">Libellé <span class="req">*</span></label>
-                      <input id="f-libelle" class="f-input" type="text" placeholder="Ex : Domicile, Bureau…" maxlength="100">
+                      <select id="f-libelle" class="f-input">
+                        <option value="Domicile">Domicile</option>
+                        <option value="Bureau">Bureau</option>
+                        <option value="Marché">Marché</option>
+                        <option value="Exploitation agricole">Exploitation agricole</option>
+                        <option value="Point de collecte">Point de collecte</option>
+                        <option value="Boutique / Dépôt">Boutique / Dépôt</option>
+                        <option value="Famille">Famille</option>
+                        <option value="Autre">Autre</option>
+                      </select>
                     </div>
 
                     <!-- Nom complet -->
@@ -429,7 +438,7 @@
                 <label class="pm-option" id="pm-moncash" onclick="selectPayment('moncash',this)">
                   <input type="radio" name="pm" value="moncash">
                   <div class="pm-icon-wrap" style="background:#fff8f0;padding:4px">
-                    <img src="/media/logo/moncash.jfif" alt="MonCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
+                    <img src="{% static 'img/moncash.png' %}" alt="MonCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
                   </div>
                   <div>
                     <div class="pm-name">MonCash</div>
@@ -464,7 +473,7 @@
                 <div class="pm-option pm-disabled">
                   <input type="radio" name="pm" value="natcash" disabled>
                   <div class="pm-icon-wrap" style="background:#f5fbff;padding:4px">
-                    <img src="/media/logo/natcash.jfif" alt="NatCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
+                    <img src="{% static 'img/natcash.png' %}" alt="NatCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
                   </div>
                   <div>
                     <div class="pm-name">NatCash</div>
@@ -489,7 +498,7 @@
               <!-- Extra info boxes -->
               <div class="pm-extra pm-extra-moncash" id="pm-extra-moncash">
                 <div class="pm-extra-title">
-                  <img src="/media/logo/moncash.jfif" alt="MonCash" style="width:22px;height:22px;object-fit:contain;border-radius:4px;vertical-align:middle">
+                  <img src="{% static 'img/moncash.png' %}" alt="MonCash" style="width:22px;height:22px;object-fit:contain;border-radius:4px;vertical-align:middle">
                   Paiement via MonCash
                 </div>
                 <p>Vous allez être redirigé vers la plateforme MonCash de Digicel pour effectuer votre paiement en toute sécurité.</p>
@@ -747,6 +756,21 @@
     document.getElementById('f-save-group').style.display    = isNew ? '' : 'none';
     document.getElementById('form-mode-title').textContent =
       isNew ? 'Sauvegarder une nouvelle adresse' : 'Indiquer une autre adresse de livraison';
+
+    if (isNew) {
+      document.getElementById('f-libelle').value = 'Domicile';
+      // Pré-remplir le nom du destinataire avec le nom du compte
+      const nomEl = document.getElementById('f-nom');
+      if (nomEl && !nomEl.value.trim()) {
+        try {
+          const u = JSON.parse(localStorage.getItem('mp_user') || '{}');
+          const fn = (u.first_name || '').trim();
+          const ln = (u.last_name  || '').trim();
+          const nom = fn && ln ? fn + ' ' + ln : fn || ln || u.username || '';
+          if (nom) nomEl.value = nom;
+        } catch (_) {}
+      }
+    }
 
     document.getElementById('btn-autre').classList.toggle('active', mode==='autre');
     document.getElementById('btn-nouvelle').classList.toggle('active', mode==='nouvelle');

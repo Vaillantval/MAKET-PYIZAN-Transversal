@@ -584,6 +584,25 @@
       color: white;
     }
 
+    .categorie-icon--img {
+      background: transparent;
+      overflow: hidden;
+      padding: 0;
+    }
+    .categorie-icon--img img {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 50%;
+      display: block;
+      transition: opacity .25s, transform .25s;
+    }
+    .categorie-card:hover .categorie-icon--img img,
+    .categorie-card.active .categorie-icon--img img {
+      opacity: .85;
+      transform: scale(1.08);
+    }
+
     .categorie-nom {
       font-weight: 700;
       font-size: 14px;
@@ -1712,13 +1731,15 @@
         {% for cat in categories %}
         <a href="/?categorie={{ cat.slug }}#catalogue"
            class="categorie-card {% if categorie_active == cat.slug %}active{% endif %}">
-          <div class="categorie-icon">
-            {% if cat.icone %}
-              <i class="{{ cat.icone }}"></i>
-            {% else %}
-              🌿
-            {% endif %}
+          {% if cat.image %}
+          <div class="categorie-icon categorie-icon--img">
+            <img src="{{ cat.image.url }}" alt="{{ cat.nom }}">
           </div>
+          {% else %}
+          <div class="categorie-icon">
+            {% if cat.icone %}<i class="{{ cat.icone }}"></i>{% else %}🌿{% endif %}
+          </div>
+          {% endif %}
           <div class="categorie-nom">{{ cat.nom }}</div>
           <div class="categorie-count">{{ cat.nb }} produit{{ cat.nb|pluralize }}</div>
         </a>

@@ -172,7 +172,16 @@
           <div class="form-row">
             <div class="form-group">
               <label for="f-libelle">Libellé <span class="req">*</span></label>
-              <input type="text" id="f-libelle" class="ds-input" placeholder="Ex : Domicile, Bureau…">
+              <select id="f-libelle" class="ds-input ds-select">
+                <option value="Domicile">Domicile</option>
+                <option value="Bureau">Bureau</option>
+                <option value="Marché">Marché</option>
+                <option value="Exploitation agricole">Exploitation agricole</option>
+                <option value="Point de collecte">Point de collecte</option>
+                <option value="Boutique / Dépôt">Boutique / Dépôt</option>
+                <option value="Famille">Famille</option>
+                <option value="Autre">Autre</option>
+              </select>
             </div>
             <div class="form-group">
               <label for="f-type">Type <span class="req">*</span></label>
@@ -270,13 +279,39 @@
   async function openModal(addr = null) {
     editingId = addr ? addr.id : null;
     document.getElementById('modal-title').textContent = addr ? 'Modifier l\'adresse' : 'Nouvelle adresse';
-    document.getElementById('f-libelle').value   = addr?.libelle      || '';
-    document.getElementById('f-type').value      = addr?.type_adresse || 'livraison';
-    document.getElementById('f-nom').value       = addr?.nom_complet  || '';
-    document.getElementById('f-tel').value       = addr?.telephone    || '';
-    document.getElementById('f-rue').value       = addr?.rue          || '';
-    document.getElementById('f-details').value   = addr?.details      || '';
-    document.getElementById('f-default').checked = addr?.is_default   || false;
+
+    if (addr) {
+      // Mode édition : restaurer la valeur ou ajouter une option temporaire si libellé custom
+      const sel = document.getElementById('f-libelle');
+      let found = false;
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === addr.libelle) { sel.value = addr.libelle; found = true; break; }
+      }
+      if (!found) {
+        const opt = new Option(addr.libelle, addr.libelle, true, true);
+        sel.insertBefore(opt, sel.firstChild);
+      }
+      document.getElementById('f-nom').value       = addr.nom_complet  || '';
+      document.getElementById('f-default').checked = addr.is_default   || false;
+    } else {
+      // Mode création : valeurs par défaut
+      document.getElementById('f-libelle').value = 'Domicile';
+      // Pré-remplir le nom avec celui du compte connecté
+      let userNom = '';
+      try {
+        const u = JSON.parse(localStorage.getItem('mp_user') || '{}');
+        const fn = (u.first_name || '').trim();
+        const ln = (u.last_name  || '').trim();
+        userNom = fn && ln ? fn + ' ' + ln : fn || ln || u.username || '';
+      } catch (_) {}
+      document.getElementById('f-nom').value       = userNom;
+      document.getElementById('f-default').checked = true;
+    }
+
+    document.getElementById('f-type').value    = addr?.type_adresse || 'livraison';
+    document.getElementById('f-tel').value     = addr?.telephone    || '';
+    document.getElementById('f-rue').value     = addr?.rue          || '';
+    document.getElementById('f-details').value = addr?.details      || '';
     document.getElementById('form-error').style.display = 'none';
     document.getElementById('modal-overlay').classList.add('open');
 
