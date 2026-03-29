@@ -1,6 +1,7 @@
 from .base import *
 from decouple import config as env
 import dj_database_url
+import os
 
 DEBUG = False
 
@@ -11,6 +12,21 @@ DATABASES = {
 # Domaines autorisés — mettre l'URL Railway + domaine custom si applicable
 # Ex : ALLOWED_HOSTS=maket-peyizan.up.railway.app,maketpeyizan.ht
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', default='localhost').split(',')
+
+# Ajout automatique des domaines Railway injectés par la plateforme
+# (nécessaire pour que le healthcheck GET /health/ ne soit pas bloqué par Django)
+_RAILWAY_SAFE_HOSTS = [
+    '0.0.0.0',
+    'healthcheck.railway.app',
+]
+for _h in _RAILWAY_SAFE_HOSTS:
+    if _h not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_h)
+
+for _var in ('RAILWAY_PUBLIC_DOMAIN', 'RAILWAY_PRIVATE_DOMAIN', 'RAILWAY_STATIC_URL'):
+    _domain = os.environ.get(_var, '').strip()
+    if _domain and _domain not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_domain)
 
 # Nécessaire pour les requêtes POST (admin Django, formulaires dashboard)
 _raw_origins = env('CSRF_TRUSTED_ORIGINS', default='')
