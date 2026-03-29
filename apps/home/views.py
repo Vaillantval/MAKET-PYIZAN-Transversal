@@ -2,7 +2,6 @@ import json
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Q
 from apps.catalog.models import Produit, Categorie
 from apps.accounts.models import Producteur
@@ -14,60 +13,37 @@ def health_check(request):
 
 
 def faq_publique(request):
-    """FAQ publique accessible sans authentification."""
+    """Page FAQ publique — rendu serveur."""
     from apps.home.models import FAQCategorie
-    cats = FAQCategorie.objects.filter(is_active=True).prefetch_related(
+    categories = FAQCategorie.objects.filter(is_active=True).prefetch_related(
         'items'
     ).order_by('ordre')
-    data = [
-        {
-            'categorie': c.titre,
-            'items': [
-                {'question': i.question, 'reponse': i.reponse}
-                for i in c.items.filter(is_active=True)
-            ]
-        }
-        for c in cats
-    ]
-    return JsonResponse({'success': True, 'data': data})
+    return render(request, 'core/faq.html', {'categories': categories})
 
 
-@csrf_exempt
 def contact_public(request):
-    """Formulaire de contact public."""
-    if request.method != 'POST':
-        return JsonResponse(
-            {'success': False, 'error': 'Méthode POST requise.'},
-            status=405
-        )
-
-    try:
-        data = json.loads(request.body)
-    except Exception:
-        data = request.POST
-
-    nom     = data.get('nom', '').strip()
-    email   = data.get('email', '').strip()
-    message = data.get('message', '').strip()
-
-    if not nom or not email or not message:
-        return JsonResponse(
-            {'success': False, 'error': 'Nom, email et message sont requis.'},
-            status=400
-        )
-
+    """Page et formulaire de contact public."""
     from apps.home.models import ContactMessage
-    ContactMessage.objects.create(
-        nom=nom,
-        email=email,
-        sujet=data.get('sujet', ''),
-        message=message,
-    )
+    from django.contrib import messages as dj_messages
 
-    return JsonResponse({
-        'success': True,
-        'data': {'message': 'Message envoyé. Nous vous répondrons bientôt.'}
-    }, status=201)
+    if request.method == 'POST':
+        nom     = request.POST.get('nom', '').strip()
+        email   = request.POST.get('email', '').strip()
+        sujet   = request.POST.get('sujet', '').strip()
+        message = request.POST.get('message', '').strip()
+
+        if not nom or not email or not message:
+            dj_messages.error(request, 'Veuillez remplir tous les champs obligatoires.')
+        else:
+            ContactMessage.objects.create(
+                nom=nom,
+                email=email,
+                sujet=sujet,
+                message=message,
+            )
+            dj_messages.success(request, 'Votre message a été envoyé. Nous vous répondrons bientôt.')
+
+    return render(request, 'core/contact.html')
 
 
 def home(request):
