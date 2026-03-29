@@ -368,71 +368,7 @@
 </head>
 <body>
 
-<!-- ══ NAVBAR ══ -->
-<nav class="navbar">
-  <div class="container navbar-inner">
-    <a href="/" class="navbar-logo">
-      <div class="navbar-logo-icon">
-        {% if site_settings.logo %}
-          <img src="{{ site_settings.logo.url }}" alt="" style="width:26px;height:26px;object-fit:contain;border-radius:50%;">
-        {% else %}
-          🌾
-        {% endif %}
-      </div>
-      <div class="navbar-logo-text">
-        {{ site_settings.nom_site|default:"Makèt Peyizan" }}
-        <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
-      </div>
-    </a>
-
-    <div class="navbar-search">
-      <form method="GET" action="/#catalogue">
-        <input type="text" name="q" placeholder="Chercher haricot, maïs, légumes...">
-        <button type="submit"><i class="fas fa-search"></i></button>
-      </form>
-    </div>
-
-    <div class="navbar-actions">
-      <!-- Panier + dropdown -->
-      <div class="cart-dd-wrap" id="cart-dd-wrap">
-        <a href="{% url 'home:panier' %}" class="btn-panier" id="btn-panier-nav">
-          <i class="fas fa-shopping-basket"></i> Panier
-          <span class="panier-badge {% if nb_panier == 0 %}hidden{% endif %}" id="nav-panier-badge">{{ nb_panier }}</span>
-        </a>
-        <div class="cart-dd" id="cart-dd">
-          <div class="cart-dd-loading"><i class="fas fa-spinner fa-spin"></i> Chargement…</div>
-        </div>
-      </div>
-
-      <!-- État non connecté -->
-      <div id="nav-guest" style="display:flex;align-items:center;gap:10px">
-        <a href="{% url 'home:login' %}" class="btn-nav btn-nav-outline">
-          <i class="fas fa-sign-in-alt"></i> Connexion
-        </a>
-        <a href="{% url 'home:register' %}" class="btn-nav btn-nav-primary">
-          <i class="fas fa-user-plus"></i> S'inscrire
-        </a>
-      </div>
-
-      <!-- État connecté -->
-      <div id="nav-user" style="display:none;align-items:center;gap:10px">
-        <a id="nav-dashboard-link" href="/dashboard/" class="btn-nav btn-nav-outline">
-          <i class="fas fa-th-large"></i> <span id="nav-dashboard-label">Mon espace</span>
-        </a>
-        <div class="user-menu">
-          <div class="user-avatar" id="nav-avatar">?</div>
-          <div>
-            <div class="user-name" id="nav-fullname"></div>
-            <span class="user-role-badge" id="nav-role-badge"></span>
-          </div>
-        </div>
-        <button class="btn-logout" onclick="mpLogout()">
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-</nav>
+{% include 'partials/navbar.html' %}
 
 <!-- ══ BREADCRUMB ══ -->
 <div class="breadcrumb">
@@ -834,43 +770,6 @@
       btnCmd.innerHTML = '<i class="fas fa-bolt"></i> Commander maintenant';
     }
   }
-
-  // ── Auth navbar ───────────────────────────────────────────────────────────
-  const ROLE_LABELS = { superadmin:'Super Admin', admin:'Admin', producteur:'Producteur', acheteur:'Acheteur', collecteur:'Collecteur' };
-  const ROLE_COLORS = { superadmin:'#e74c3c', admin:'#e67e22', producteur:'#27ae60', acheteur:'#2980b9', collecteur:'#8e44ad' };
-
-  function getDashboardUrl(user) {
-    if (user.is_superuser || user.role === 'superadmin') return '/dashboard/superadmin/';
-    if (user.role === 'producteur') return '/dashboard/producteur/';
-    return '/dashboard/acheteur/';
-  }
-
-  (function initNavbar() {
-    const raw = localStorage.getItem('mp_user');
-    if (!raw) return;
-    let user;
-    try { user = JSON.parse(raw); } catch { return; }
-
-    document.getElementById('nav-guest').style.display = 'none';
-    const navUser = document.getElementById('nav-user');
-    navUser.style.display = 'flex';
-
-    const name = user.full_name || user.username || '?';
-    document.getElementById('nav-avatar').textContent   = name.charAt(0).toUpperCase();
-    document.getElementById('nav-fullname').textContent = name;
-
-    const role  = user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
-    const badge = document.getElementById('nav-role-badge');
-    badge.textContent      = ROLE_LABELS[role] || role;
-    badge.style.background = (ROLE_COLORS[role] || '#555') + '22';
-    badge.style.color      = ROLE_COLORS[role] || '#555';
-    badge.style.border     = '1px solid ' + (ROLE_COLORS[role] || '#555') + '44';
-
-    const dashLink  = document.getElementById('nav-dashboard-link');
-    const dashLabel = document.getElementById('nav-dashboard-label');
-    dashLink.href         = getDashboardUrl(user);
-    dashLabel.textContent = user.role === 'producteur' ? 'Mon espace' : 'Mon espace';
-  })();
 
   async function mpLogout() {
     const refresh = localStorage.getItem('mp_refresh');

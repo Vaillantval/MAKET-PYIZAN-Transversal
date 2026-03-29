@@ -1,51 +1,241 @@
 {% load static %}
+
+{# ── CSS : nouvelles pièces seulement (burger + drawer) ──────────── #}
+<style>
+  .navbar { position:sticky; top:0; z-index:920; background:var(--vert-fonce,#1a6b2f); box-shadow:0 2px 16px rgba(0,0,0,.15); }
+  .navbar-inner { display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .navbar-logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .navbar-logo-icon { width:38px; height:38px; background:var(--jaune,#e8d800); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .navbar-logo-text { font-family:'Playfair Display',serif; font-size:18px; font-weight:900; color:#fff; line-height:1.1; }
+  .navbar-logo-text span { display:block; font-size:11px; font-weight:400; opacity:.7; font-family:'DM Sans',sans-serif; }
+  .navbar-actions { display:flex; align-items:center; gap:10px; }
+
+  /* Panier */
+  .nb-btn-panier { position:relative; display:flex; align-items:center; gap:7px; padding:9px 16px; border-radius:50px; font-size:13px; font-weight:600; background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.4); color:#fff; cursor:pointer; text-decoration:none; font-family:'DM Sans',sans-serif; transition:background .2s; }
+  .nb-btn-panier:hover { background:rgba(255,255,255,.25); }
+  .nb-panier-badge { position:absolute; top:-5px; right:-5px; background:var(--jaune,#e8d800); color:#1a1a1a; font-size:10px; font-weight:800; min-width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+  .nb-panier-badge[hidden], .nb-panier-badge.hidden { display:none !important; }
+
+  /* Connexion / Mon espace */
+  .btn-nav { padding:9px 18px; border-radius:50px; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; border:none; font-family:'DM Sans',sans-serif; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+  .btn-nav-primary { background:var(--jaune,#e8d800); color:#1a1a1a; }
+  .btn-nav-primary:hover { background:#d4c800; transform:translateY(-1px); }
+
+  /* Burger */
+  .btn-burger { display:flex; align-items:center; justify-content:center; width:40px; height:40px; background:rgba(255,255,255,.13); border:1.5px solid rgba(255,255,255,.3); border-radius:10px; color:#fff; font-size:16px; cursor:pointer; flex-shrink:0; transition:background .2s; }
+  .btn-burger:hover { background:rgba(255,255,255,.22); }
+
+  /* Overlay */
+  .nav-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:915; opacity:0; pointer-events:none; transition:opacity .28s; }
+  .nav-drawer-overlay.open { opacity:1; pointer-events:all; }
+
+  /* Drawer */
+  .nav-drawer { position:fixed; top:0; right:0; width:300px; max-width:88vw; height:100%; background:#fff; z-index:916; display:flex; flex-direction:column; transform:translateX(100%); transition:transform .28s cubic-bezier(.4,0,.2,1); box-shadow:-8px 0 40px rgba(0,0,0,.18); overflow-y:auto; }
+  .nav-drawer.open { transform:translateX(0); }
+
+  .nav-drawer-head { background:var(--vert-fonce,#1a6b2f); padding:20px 20px 18px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .nav-drawer-logo { display:flex; align-items:center; gap:10px; color:#fff; text-decoration:none; }
+  .nav-drawer-logo-icon { width:36px; height:36px; background:var(--jaune,#e8d800); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+  .nav-drawer-logo-text { font-family:'Playfair Display',serif; font-size:15px; font-weight:900; line-height:1.2; }
+  .nav-drawer-logo-text span { display:block; font-family:'DM Sans',sans-serif; font-size:10px; font-weight:400; opacity:.7; }
+  .btn-drawer-close { width:32px; height:32px; background:rgba(255,255,255,.15); border:none; border-radius:8px; color:#fff; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .15s; }
+  .btn-drawer-close:hover { background:rgba(255,255,255,.28); }
+
+  .nav-drawer-nav { padding:12px 0; border-bottom:1px solid #eee; flex-shrink:0; }
+  .nav-drawer-link { display:flex; align-items:center; gap:14px; padding:13px 22px; color:#1a1a1a; font-size:14px; font-weight:500; text-decoration:none; transition:background .15s,color .15s; }
+  .nav-drawer-link:hover { background:var(--vert-menthe,#e8f8ee); color:var(--vert-fonce,#1a6b2f); }
+  .nav-drawer-link i { width:18px; text-align:center; color:var(--vert-vif,#27ae60); font-size:15px; }
+
+  .drawer-auth { padding:18px 22px; flex-shrink:0; }
+  .drawer-auth-guest { display:flex; flex-direction:column; gap:10px; }
+  .btn-drawer-inscrit { display:flex; align-items:center; justify-content:center; gap:8px; padding:13px 20px; background:var(--vert-vif,#27ae60); color:#fff; border-radius:50px; font-size:14px; font-weight:700; text-decoration:none; transition:background .2s; }
+  .btn-drawer-inscrit:hover { background:var(--vert-fonce,#1a6b2f); }
+  .btn-drawer-connexion { display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 20px; background:transparent; border:1.5px solid var(--vert-vif,#27ae60); color:var(--vert-vif,#27ae60); border-radius:50px; font-size:14px; font-weight:600; text-decoration:none; transition:all .2s; }
+  .btn-drawer-connexion:hover { background:var(--vert-menthe,#e8f8ee); }
+
+  .drawer-auth-user { display:none; }
+  .drawer-user-info { display:flex; align-items:center; gap:12px; padding:14px 0 16px; border-bottom:1px solid #eee; margin-bottom:14px; }
+  .drawer-avatar { width:46px; height:46px; background:var(--vert-vif,#27ae60); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex-shrink:0; }
+  .drawer-user-name { font-size:14px; font-weight:700; color:#1a1a1a; }
+  .drawer-user-role { font-size:11px; color:#555; margin-top:2px; }
+  .btn-drawer-espace { display:flex; align-items:center; justify-content:center; gap:8px; padding:13px 20px; background:var(--jaune,#e8d800); color:#1a1a1a; border-radius:50px; font-size:14px; font-weight:700; text-decoration:none; margin-bottom:10px; transition:background .2s; }
+  .btn-drawer-espace:hover { background:#d4c800; }
+  .btn-drawer-logout { display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 20px; background:transparent; border:1.5px solid #e74c3c; color:#e74c3c; border-radius:50px; font-size:13px; font-weight:600; cursor:pointer; width:100%; font-family:'DM Sans',sans-serif; transition:all .2s; }
+  .btn-drawer-logout:hover { background:#fde8e8; }
+</style>
+
+{# ── Navbar HTML ─────────────────────────────────────────────────── #}
 <nav class="navbar">
   <div class="container">
     <div class="navbar-inner">
 
       <a href="/" class="navbar-logo">
-        {% if site_settings.logo %}
-          <img src="{{ site_settings.logo.url }}"
-               alt="{{ site_settings.nom_site }}"
-               style="height:38px; object-fit:contain;">
-        {% else %}
-          <div class="navbar-logo-icon">🌾</div>
-        {% endif %}
+        <div class="navbar-logo-icon">
+          {% if site_settings.logo %}
+            <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.nom_site }}" style="width:26px;height:26px;object-fit:contain;border-radius:50%;">
+          {% else %}
+            🌾
+          {% endif %}
+        </div>
         <div class="navbar-logo-text">
           {{ site_settings.nom_site|default:"Makèt Peyizan" }}
           <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
         </div>
       </a>
 
-      <div class="navbar-search">
-        <form method="GET" action="/#catalogue">
-          <input
-            type="text"
-            name="q"
-            placeholder="Chercher haricot, maïs, légumes..."
-            value="{{ recherche|default:'' }}"
-          >
-          <button type="submit">
-            <i class="fas fa-search"></i>
-          </button>
-        </form>
-      </div>
-
       <div class="navbar-actions">
-        <a href="/" class="btn-nav btn-nav-outline">
-          <i class="fas fa-store"></i> Catalogue
-        </a>
-        <a href="{% url 'core:contact' %}" class="btn-nav btn-nav-outline">
-          <i class="fas fa-envelope"></i> Contact
-        </a>
-        <a href="{% url 'home:login' %}" class="btn-nav btn-nav-outline">
-          <i class="fas fa-sign-in-alt"></i> Connexion
-        </a>
-        <a href="{% url 'home:register' %}" class="btn-nav btn-nav-primary">
-          <i class="fas fa-user-plus"></i> S'inscrire
-        </a>
-      </div>
 
+        <!-- Panier -->
+        <a href="{% url 'home:panier' %}" class="nb-btn-panier">
+          <i class="fas fa-shopping-basket"></i> Panier
+          {% with count=nb_panier|default:0 %}
+            <span class="nb-panier-badge{% if count == 0 %} hidden{% endif %}" id="nav-panier-badge">{{ count }}</span>
+          {% endwith %}
+        </a>
+
+        <!-- Connexion (guest) / Mon espace (connecté) — toujours visible -->
+        <div id="nav-guest" style="display:flex;align-items:center">
+          <a href="{% url 'home:login' %}" class="btn-nav btn-nav-primary">
+            <i class="fas fa-sign-in-alt"></i> Connexion
+          </a>
+        </div>
+        <div id="nav-user" style="display:none;align-items:center">
+          <a id="nav-dashboard-link" href="/dashboard/" class="btn-nav btn-nav-primary">
+            <i class="fas fa-th-large"></i> Mon espace
+          </a>
+        </div>
+
+        <!-- Burger -->
+        <button class="btn-burger" onclick="openNavDrawer()" aria-label="Menu">
+          <i class="fas fa-bars"></i>
+        </button>
+
+      </div>
     </div>
   </div>
 </nav>
+
+{# ── Drawer ──────────────────────────────────────────────────────── #}
+<div class="nav-drawer-overlay" id="nav-drawer-overlay" onclick="closeNavDrawer()"></div>
+
+<aside class="nav-drawer" id="nav-drawer" role="dialog" aria-label="Menu navigation">
+
+  <div class="nav-drawer-head">
+    <a href="/" class="nav-drawer-logo">
+      <div class="nav-drawer-logo-icon">
+        {% if site_settings.logo %}
+          <img src="{{ site_settings.logo.url }}" alt="" style="width:24px;height:24px;object-fit:contain;border-radius:50%;">
+        {% else %}
+          🌾
+        {% endif %}
+      </div>
+      <div class="nav-drawer-logo-text">
+        {{ site_settings.nom_site|default:"Makèt Peyizan" }}
+        <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
+      </div>
+    </a>
+    <button class="btn-drawer-close" onclick="closeNavDrawer()"><i class="fas fa-times"></i></button>
+  </div>
+
+  <nav class="nav-drawer-nav">
+    <a href="/" class="nav-drawer-link"><i class="fas fa-home"></i> Accueil</a>
+    <a href="/#catalogue" class="nav-drawer-link" onclick="closeNavDrawer()"><i class="fas fa-store"></i> Catalogue</a>
+    <a href="{% url 'core:apropos' %}" class="nav-drawer-link"><i class="fas fa-info-circle"></i> À propos</a>
+    <a href="{% url 'core:faq' %}" class="nav-drawer-link"><i class="fas fa-question-circle"></i> FAQ</a>
+    <a href="{% url 'core:contact' %}" class="nav-drawer-link"><i class="fas fa-envelope"></i> Contact</a>
+  </nav>
+
+  <div class="drawer-auth">
+    <!-- Guest -->
+    <div class="drawer-auth-guest" id="drawer-guest">
+      <a href="{% url 'home:register' %}" class="btn-drawer-inscrit">
+        <i class="fas fa-user-plus"></i> S'inscrire gratuitement
+      </a>
+      <a href="{% url 'home:login' %}" class="btn-drawer-connexion">
+        <i class="fas fa-sign-in-alt"></i> Se connecter
+      </a>
+    </div>
+    <!-- Connecté -->
+    <div class="drawer-auth-user" id="drawer-user">
+      <div class="drawer-user-info">
+        <div class="drawer-avatar" id="drawer-avatar">?</div>
+        <div>
+          <div class="drawer-user-name" id="drawer-fullname">—</div>
+          <div class="drawer-user-role" id="drawer-role">—</div>
+        </div>
+      </div>
+      <a id="drawer-espace-link" href="/dashboard/" class="btn-drawer-espace">
+        <i class="fas fa-th-large"></i> Mon espace
+      </a>
+      <button class="btn-drawer-logout" onclick="_navbarLogout()">
+        <i class="fas fa-sign-out-alt"></i> Se déconnecter
+      </button>
+    </div>
+  </div>
+
+</aside>
+
+{# ── JS ──────────────────────────────────────────────────────────── #}
+<script>
+  /* Éviter les redéclarations si index.html a déjà défini ces constantes */
+  if (!window._NAVBAR_ROLES) {
+    window._NAVBAR_ROLES = true;
+    window.ROLE_LABELS = { superadmin:'Super Admin', admin:'Admin', producteur:'Producteur', acheteur:'Acheteur', collecteur:'Collecteur' };
+    window.ROLE_COLORS = { superadmin:'#e74c3c', admin:'#e67e22', producteur:'#27ae60', acheteur:'#2980b9', collecteur:'#8e44ad' };
+  }
+
+  function _navDashboardUrl(user) {
+    if (user.is_superuser || user.role === 'superadmin') return '/dashboard/superadmin/';
+    if (user.role === 'producteur') return '/dashboard/producteur/';
+    return '/dashboard/acheteur/';
+  }
+
+  function openNavDrawer() {
+    document.getElementById('nav-drawer').classList.add('open');
+    document.getElementById('nav-drawer-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeNavDrawer() {
+    document.getElementById('nav-drawer').classList.remove('open');
+    document.getElementById('nav-drawer-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeNavDrawer(); });
+
+  /* Logout : délègue à mpLogout() si elle existe sur la page, sinon logout simple */
+  function _navbarLogout() {
+    if (typeof mpLogout === 'function') { mpLogout(); return; }
+    ['mp_user','mp_access','mp_refresh'].forEach(function(k){ localStorage.removeItem(k); });
+    document.cookie = 'mp_jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    window.location.href = '/';
+  }
+
+  /* initNavbar — lit localStorage ; peut aussi être appelée avec un user en param
+     (compatibilité checkout.html qui appelle initNavbar(user) après auth) */
+  function initNavbar(userParam) {
+    const raw = userParam ? null : localStorage.getItem('mp_user');
+    let user = userParam || null;
+    if (!user) {
+      if (!raw) return;
+      try { user = JSON.parse(raw); } catch { return; }
+    }
+    const name = user.full_name || user.username || '?';
+    const role = user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
+
+    /* Navbar */
+    document.getElementById('nav-guest').style.display = 'none';
+    document.getElementById('nav-user').style.display  = 'flex';
+    document.getElementById('nav-dashboard-link').href = _navDashboardUrl(user);
+
+    /* Drawer */
+    document.getElementById('drawer-guest').style.display = 'none';
+    document.getElementById('drawer-user').style.display  = 'block';
+    document.getElementById('drawer-avatar').textContent   = name.charAt(0).toUpperCase();
+    document.getElementById('drawer-fullname').textContent = name;
+    document.getElementById('drawer-role').textContent     = (window.ROLE_LABELS[role] || role);
+    document.getElementById('drawer-espace-link').href     = _navDashboardUrl(user);
+  }
+
+  /* Exécution immédiate pour les pages sans auth explicite */
+  initNavbar();
+</script>
