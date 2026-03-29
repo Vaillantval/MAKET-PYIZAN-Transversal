@@ -565,7 +565,7 @@ async function saveSettings(e) {
 async function loadFaqCats() {
   const r = await fetch('/api/admin/config/faq/categories/', { headers:H });
   if (!r.ok) return;
-  _faqCats = await r.json();
+  _faqCats = (await r.json()).data || [];
 
   // Mettre à jour le select items modal
   const sel = document.getElementById('fi-cat');
@@ -601,7 +601,7 @@ function selectFaqCat(id, titre) {
 async function loadFaqItems(catId) {
   const r = await fetch(`/api/admin/config/faq/items/?categorie_id=${catId}`, { headers:H });
   if (!r.ok) return;
-  const items = await r.json();
+  const items = (await r.json()).data || [];
   const list = document.getElementById('faq-items-list');
   if (!items.length) { list.innerHTML = '<div class="empty-panel">Aucune question dans cette catégorie.</div>'; return; }
   list.innerHTML = '';
@@ -688,7 +688,7 @@ function openFaqItemCreate() {
 async function openFaqItemEdit(id) {
   _faqItemEditId = id;
   const r = await fetch(`/api/admin/config/faq/items/?categorie_id=${_faqCatId}`, { headers:H });
-  const items = await r.json();
+  const items = (await r.json()).data || [];
   const item = items.find(x => x.id === id); if (!item) return;
   document.getElementById('faqitem-modal-title').textContent = 'Modifier question';
   document.getElementById('faqitem-submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
@@ -743,7 +743,7 @@ async function loadMsgs(est_lu) {
   const r = await fetch(url, { headers:H });
   document.getElementById('msgs-loading').style.display = 'none';
   if (!r.ok) return;
-  const data = await r.json();
+  const data = (await r.json()).data || [];
 
   // Badge badge
   const nonLus = data.filter(m => !m.est_lu).length;
