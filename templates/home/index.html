@@ -58,7 +58,7 @@
     .navbar {
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 920;
       background: var(--vert-fonce);
       box-shadow: 0 2px 16px rgba(0,0,0,.15);
     }
@@ -248,6 +248,233 @@
       text-decoration: none; transition: all .15s;
     }
     .btn-dd-cmd:hover { background: #d4c800; }
+
+    /* ── Burger button ──────────────────────────────────────── */
+    .btn-burger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: rgba(255,255,255,.13);
+      border: 1.5px solid rgba(255,255,255,.3);
+      border-radius: 10px;
+      color: var(--blanc);
+      font-size: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background .2s;
+    }
+    .btn-burger:hover { background: rgba(255,255,255,.22); }
+
+    /* ── Nav Drawer ──────────────────────────────────────────── */
+    .nav-drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 915;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .28s;
+    }
+    .nav-drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+    .nav-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 300px;
+      max-width: 88vw;
+      height: 100%;
+      background: var(--blanc);
+      z-index: 916;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform .28s cubic-bezier(.4,0,.2,1);
+      box-shadow: -8px 0 40px rgba(0,0,0,.18);
+      overflow-y: auto;
+    }
+    .nav-drawer.open { transform: translateX(0); }
+
+    .nav-drawer-head {
+      background: var(--vert-fonce);
+      padding: 20px 20px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .nav-drawer-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--blanc);
+      text-decoration: none;
+    }
+    .nav-drawer-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--jaune);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+    .nav-drawer-logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+    .nav-drawer-logo-text span {
+      display: block;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      font-weight: 400;
+      opacity: .7;
+    }
+    .btn-drawer-close {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,.15);
+      border: none;
+      border-radius: 8px;
+      color: var(--blanc);
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background .15s;
+    }
+    .btn-drawer-close:hover { background: rgba(255,255,255,.28); }
+
+    .nav-drawer-nav {
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
+    }
+    .nav-drawer-link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 22px;
+      color: var(--noir);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .nav-drawer-link:hover { background: var(--vert-menthe); color: var(--vert-fonce); }
+    .nav-drawer-link i {
+      width: 18px;
+      text-align: center;
+      color: var(--vert-vif);
+      font-size: 15px;
+    }
+
+    /* Auth section dans le drawer */
+    .drawer-auth {
+      padding: 18px 22px;
+      flex-shrink: 0;
+    }
+    /* Guest */
+    .drawer-auth-guest { display: flex; flex-direction: column; gap: 10px; }
+    .btn-drawer-inscrit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 20px;
+      background: var(--vert-vif);
+      color: var(--blanc);
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background .2s;
+    }
+    .btn-drawer-inscrit:hover { background: var(--vert-fonce); }
+    .btn-drawer-connexion {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 20px;
+      background: transparent;
+      border: 1.5px solid var(--vert-vif);
+      color: var(--vert-vif);
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .btn-drawer-connexion:hover { background: var(--vert-menthe); }
+
+    /* Logged-in */
+    .drawer-auth-user { display: none; }
+    .drawer-user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0 16px;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 14px;
+    }
+    .drawer-avatar {
+      width: 46px;
+      height: 46px;
+      background: var(--vert-vif);
+      color: var(--blanc);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .drawer-user-name { font-size: 14px; font-weight: 700; color: var(--noir); }
+    .drawer-user-role { font-size: 11px; color: var(--gris-texte); margin-top: 2px; }
+    .btn-drawer-espace {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 20px;
+      background: var(--jaune);
+      color: var(--noir);
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      margin-bottom: 10px;
+      transition: background .2s;
+    }
+    .btn-drawer-espace:hover { background: #d4c800; }
+    .btn-drawer-logout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 20px;
+      background: transparent;
+      border: 1.5px solid #e74c3c;
+      color: #e74c3c;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      transition: all .2s;
+    }
+    .btn-drawer-logout:hover { background: #fde8e8; }
 
     /* ── User menu (connecté) ───────────────────────────────── */
     .user-menu {
@@ -1424,9 +1651,7 @@
       .categories-grid  { grid-template-columns: repeat(2, 1fr); }
       .hero-title       { font-size: 32px; }
       .section-title    { font-size: 28px; }
-      /* Navbar: hide content nav links, keep cart + auth */
-      .navbar-actions > a.btn-nav-outline { display: none !important; }
-      .btn-nav { padding: 7px 12px; font-size: 12px; }
+      .btn-nav { padding: 7px 14px; font-size: 12px; }
       .user-name, .user-role-badge { display: none; }
       /* Cart dropdown: constrain width */
       .cart-dd { width: calc(100vw - 20px); right: -10px; left: auto; }
@@ -1555,15 +1780,6 @@
         </div>
 
         <div class="navbar-actions">
-          <a href="{% url 'core:apropos' %}" class="btn-nav btn-nav-outline">
-            <i class="fas fa-info-circle"></i> À propos
-          </a>
-          <a href="{% url 'core:faq' %}" class="btn-nav btn-nav-outline">
-            <i class="fas fa-question-circle"></i> FAQ
-          </a>
-          <a href="{% url 'core:contact' %}" class="btn-nav btn-nav-outline">
-            <i class="fas fa-envelope"></i> Contact
-          </a>
 
           <!-- Panier + dropdown -->
           <div class="cart-dd-wrap" id="cart-dd-wrap">
@@ -1578,32 +1794,22 @@
             </div>
           </div>
 
-          <!-- État : non connecté -->
-          <div id="nav-guest" style="display:flex;align-items:center;gap:10px">
-            <a href="{% url 'home:login' %}" class="btn-nav btn-nav-outline">
+          <!-- Connexion (guest) / Mon espace (connecté) — toujours visible -->
+          <div id="nav-guest" style="display:flex;align-items:center">
+            <a href="{% url 'home:login' %}" class="btn-nav btn-nav-primary">
               <i class="fas fa-sign-in-alt"></i> Connexion
             </a>
-            <a href="{% url 'home:register' %}" class="btn-nav btn-nav-primary">
-              <i class="fas fa-user-plus"></i> S'inscrire
+          </div>
+          <div id="nav-user" style="display:none;align-items:center">
+            <a id="nav-dashboard-link" href="/dashboard/" class="btn-nav btn-nav-primary">
+              <i class="fas fa-th-large"></i> Mon espace
             </a>
           </div>
 
-          <!-- État : connecté -->
-          <div id="nav-user" style="display:none;align-items:center;gap:10px">
-            <a id="nav-dashboard-link" href="/dashboard/" class="btn-nav btn-nav-outline">
-              <i class="fas fa-th-large"></i> <span id="nav-dashboard-label">Dashboard</span>
-            </a>
-            <div class="user-menu">
-              <div class="user-avatar" id="nav-avatar">?</div>
-              <div>
-                <div class="user-name" id="nav-fullname"></div>
-                <span class="user-role-badge" id="nav-role-badge"></span>
-              </div>
-            </div>
-            <button class="btn-logout" onclick="mpLogout()">
-              <i class="fas fa-sign-out-alt"></i> Sortir
-            </button>
-          </div>
+          <!-- Burger menu -->
+          <button class="btn-burger" onclick="openNavDrawer()" aria-label="Menu">
+            <i class="fas fa-bars"></i>
+          </button>
 
         </div>
 
@@ -1611,6 +1817,70 @@
     </div>
   </nav>
 
+  <!-- ══ NAV DRAWER ═══════════════════════════════════════════ -->
+  <div class="nav-drawer-overlay" id="nav-drawer-overlay" onclick="closeNavDrawer()"></div>
+
+  <aside class="nav-drawer" id="nav-drawer" role="dialog" aria-label="Menu navigation">
+
+    <!-- En-tête -->
+    <div class="nav-drawer-head">
+      <a href="/" class="nav-drawer-logo">
+        <div class="nav-drawer-logo-icon">
+          {% if site_settings.logo %}
+            <img src="{{ site_settings.logo.url }}" alt="" style="width:24px;height:24px;object-fit:contain;border-radius:50%">
+          {% else %}
+            🌾
+          {% endif %}
+        </div>
+        <div class="nav-drawer-logo-text">
+          {{ site_settings.nom_site|default:"Makèt Peyizan" }}
+          <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
+        </div>
+      </a>
+      <button class="btn-drawer-close" onclick="closeNavDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Liens de navigation -->
+    <nav class="nav-drawer-nav">
+      <a href="/" class="nav-drawer-link"><i class="fas fa-home"></i> Accueil</a>
+      <a href="#catalogue" class="nav-drawer-link" onclick="closeNavDrawer()"><i class="fas fa-store"></i> Catalogue</a>
+      <a href="{% url 'core:apropos' %}" class="nav-drawer-link"><i class="fas fa-info-circle"></i> À propos</a>
+      <a href="{% url 'core:faq' %}" class="nav-drawer-link"><i class="fas fa-question-circle"></i> FAQ</a>
+      <a href="{% url 'core:contact' %}" class="nav-drawer-link"><i class="fas fa-envelope"></i> Contact</a>
+    </nav>
+
+    <!-- Section auth -->
+    <div class="drawer-auth">
+
+      <!-- Guest -->
+      <div class="drawer-auth-guest" id="drawer-guest">
+        <a href="{% url 'home:register' %}" class="btn-drawer-inscrit">
+          <i class="fas fa-user-plus"></i> S'inscrire gratuitement
+        </a>
+        <a href="{% url 'home:login' %}" class="btn-drawer-connexion">
+          <i class="fas fa-sign-in-alt"></i> Se connecter
+        </a>
+      </div>
+
+      <!-- Connecté -->
+      <div class="drawer-auth-user" id="drawer-user">
+        <div class="drawer-user-info">
+          <div class="drawer-avatar" id="drawer-avatar">?</div>
+          <div>
+            <div class="drawer-user-name" id="drawer-fullname">—</div>
+            <div class="drawer-user-role" id="drawer-role">—</div>
+          </div>
+        </div>
+        <a id="drawer-espace-link" href="/dashboard/" class="btn-drawer-espace">
+          <i class="fas fa-th-large"></i> Mon espace
+        </a>
+        <button class="btn-drawer-logout" onclick="mpLogout()">
+          <i class="fas fa-sign-out-alt"></i> Se déconnecter
+        </button>
+      </div>
+
+    </div>
+  </aside>
 
   <!-- ══ HERO ════════════════════════════════════════════════ -->
   <section class="hero">
@@ -2229,6 +2499,20 @@
       return 'Mon espace';
     }
 
+    // ── Drawer nav ───────────────────────────────────────────
+    function openNavDrawer() {
+      document.getElementById('nav-drawer').classList.add('open');
+      document.getElementById('nav-drawer-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeNavDrawer() {
+      document.getElementById('nav-drawer').classList.remove('open');
+      document.getElementById('nav-drawer-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    // Fermer avec Échap
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNavDrawer(); });
+
     // ── Affichage selon l'état ────────────────────────────────
     (function initNavbar() {
       const raw = localStorage.getItem('mp_user');
@@ -2237,31 +2521,24 @@
       let user;
       try { user = JSON.parse(raw); } catch { return; }
 
-      // Basculer les blocs
+      const name = user.full_name || user.username || '?';
+      const role = user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
+
+      // ── Navbar : basculer guest → user
       document.getElementById('nav-guest').style.display = 'none';
       const navUser = document.getElementById('nav-user');
       navUser.style.display = 'flex';
+      document.getElementById('nav-dashboard-link').href = getDashboardUrl(user);
 
-      // Avatar (initiale)
-      const name = user.full_name || user.username || '?';
-      document.getElementById('nav-avatar').textContent = name.charAt(0).toUpperCase();
+      // ── Drawer : basculer guest → user
+      document.getElementById('drawer-guest').style.display = 'none';
+      const drawerUser = document.getElementById('drawer-user');
+      drawerUser.style.display = 'block';
 
-      // Nom
-      document.getElementById('nav-fullname').textContent = name;
-
-      // Badge rôle
-      const badge = document.getElementById('nav-role-badge');
-      const role  = user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
-      badge.textContent         = ROLE_LABELS[role] || role;
-      badge.style.background    = (ROLE_COLORS[role] || '#555') + '22';
-      badge.style.color         = ROLE_COLORS[role] || '#555';
-      badge.style.border        = '1px solid ' + (ROLE_COLORS[role] || '#555') + '44';
-
-      // Dashboard link
-      const dashLink  = document.getElementById('nav-dashboard-link');
-      const dashLabel = document.getElementById('nav-dashboard-label');
-      dashLink.href        = getDashboardUrl(user);
-      dashLabel.textContent = getDashboardLabel(user);
+      document.getElementById('drawer-avatar').textContent   = name.charAt(0).toUpperCase();
+      document.getElementById('drawer-fullname').textContent = name;
+      document.getElementById('drawer-role').textContent     = ROLE_LABELS[role] || role;
+      document.getElementById('drawer-espace-link').href     = getDashboardUrl(user);
     })();
 
     // ── Bouton « Je suis producteur » ────────────────────────
