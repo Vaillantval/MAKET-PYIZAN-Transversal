@@ -171,7 +171,7 @@ def commander(request):
             premiere_commande = commandes_creees[0]
             moncash = MonCashService()
             result  = moncash.initier_paiement(
-                commande_id=premiere_commande.pk,
+                commande_ref=premiere_commande.numero_commande,
                 montant_htg=premiere_commande.total,
             )
             response_data['redirect_url']  = result['redirect_url']

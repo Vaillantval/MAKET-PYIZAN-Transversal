@@ -71,9 +71,16 @@ class Commande(models.Model):
     def save(self, *args, **kwargs):
         if not self.numero_commande:
             from django.utils import timezone
+            from django.db import transaction
             annee = timezone.now().year
-            count = Commande.objects.filter(numero_commande__startswith=f'CMD-{annee}-').count()
-            self.numero_commande = f'CMD-{annee}-{str(count + 1).zfill(5)}'
+            with transaction.atomic():
+                count = (
+                    Commande.objects
+                    .select_for_update()
+                    .filter(numero_commande__startswith=f'CMD-{annee}-')
+                    .count()
+                )
+                self.numero_commande = f'CMD-{annee}-{str(count + 1).zfill(5)}'
         self.total = self.sous_total + self.frais_livraison - self.remise
         super().save(*args, **kwargs)
 
