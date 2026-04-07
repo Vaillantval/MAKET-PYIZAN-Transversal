@@ -8,6 +8,57 @@ from apps.accounts.permissions import IsSuperAdmin
 from apps.home.models import SiteConfig, FAQCategorie, FAQItem, ContactMessage, ContactReponse, SliderImage
 
 
+# ── GET/POST/DELETE /api/admin/config/site/apk/ ─────────────────
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsSuperAdmin])
+def android_apk(request):
+    """Gestion du fichier APK Android affiché sur le site."""
+    from apps.core.models import SiteSettings
+    settings = SiteSettings.get_solo()
+
+    if request.method == 'GET':
+        apk_url = request.build_absolute_uri(settings.android_apk.url) if settings.android_apk else None
+        return Response({'success': True, 'data': {
+            'has_apk': bool(settings.android_apk),
+            'apk_url': apk_url,
+            'apk_name': settings.android_apk.name.split('/')[-1] if settings.android_apk else None,
+        }})
+
+    if request.method == 'DELETE':
+        if settings.android_apk:
+            settings.android_apk.delete(save=False)
+            settings.android_apk = None
+            settings.save(update_fields=['android_apk'])
+        return Response({'success': True, 'data': {'has_apk': False, 'apk_url': None}})
+
+    # POST — upload du fichier .apk
+    apk_file = request.FILES.get('android_apk')
+    if not apk_file:
+        return Response({'success': False, 'error': 'Aucun fichier fourni.'}, status=400)
+
+    # Validation extension
+    filename = apk_file.name.lower()
+    if not filename.endswith('.apk'):
+        return Response(
+            {'success': False, 'error': 'Format invalide. Seuls les fichiers .apk sont acceptés.'},
+            status=400,
+        )
+
+    # Supprime l'ancien APK s'il existe
+    if settings.android_apk:
+        settings.android_apk.delete(save=False)
+
+    settings.android_apk = apk_file
+    settings.save(update_fields=['android_apk'])
+
+    apk_url = request.build_absolute_uri(settings.android_apk.url)
+    return Response({'success': True, 'data': {
+        'has_apk': True,
+        'apk_url': apk_url,
+        'apk_name': apk_file.name,
+    }}, status=201)
+
+
 def _config_data(c):
     return {
         'nom_site':        c.nom_site,

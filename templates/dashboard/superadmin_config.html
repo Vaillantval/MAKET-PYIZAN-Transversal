@@ -401,6 +401,53 @@
       </div>
     </div>
 
+    <!-- Application Android APK -->
+    <div class="settings-card" id="apk-card">
+      <div class="settings-header">
+        <i class="fab fa-android" style="color:#3ddc84"></i>
+        <h3>Application Android</h3>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:400">Fichier .apk uniquement</span>
+      </div>
+      <div class="settings-body">
+        <!-- État actuel -->
+        <div id="apk-current" style="display:none;margin-bottom:16px;padding:12px 16px;background:var(--green-light);border-radius:8px;border:1px solid var(--green-mid);display:flex;align-items:center;gap:12px">
+          <i class="fas fa-check-circle" style="color:var(--green-mid);font-size:18px;flex-shrink:0"></i>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--green-mid)">APK actuel</div>
+            <div id="apk-current-name" style="font-size:13px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+          </div>
+          <a id="apk-current-link" href="#" download style="flex-shrink:0;padding:5px 12px;border-radius:6px;background:var(--green-mid);color:#fff;font-size:11px;font-weight:700;text-decoration:none">
+            <i class="fas fa-download"></i> Télécharger
+          </a>
+          <button type="button" onclick="deleteApk()" style="flex-shrink:0;padding:5px 10px;border-radius:6px;background:#fdecea;border:1px solid #e74c3c;color:#e74c3c;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
+            <i class="fas fa-trash"></i> Supprimer
+          </button>
+        </div>
+
+        <!-- Upload -->
+        <div class="field">
+          <label><i class="fas fa-upload" style="color:var(--green-mid)"></i> Uploader un nouveau fichier .apk</label>
+          <div id="apk-drop-zone" style="border:2px dashed var(--border);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .18s,background .18s;position:relative">
+            <input type="file" id="apk-file-input" accept=".apk" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+            <div id="apk-drop-content">
+              <i class="fab fa-android" style="font-size:32px;color:#3ddc84;margin-bottom:8px;display:block"></i>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Glissez-déposez votre fichier .apk ici</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">ou cliquez pour sélectionner</div>
+            </div>
+            <div id="apk-selected-name" style="display:none;font-size:13px;font-family:monospace;color:var(--green-mid);font-weight:700"></div>
+          </div>
+          <small style="color:var(--text-muted)">Seuls les fichiers .apk sont acceptés. La bannière de téléchargement s'affiche automatiquement sur le site.</small>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button type="button" id="apk-upload-btn" onclick="uploadApk()" disabled
+            style="padding:9px 22px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:var(--green-mid);color:#fff;font-family:inherit;opacity:.5;transition:opacity .18s">
+            <i class="fas fa-upload"></i> Mettre en ligne l'APK
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="save-bar">
       <button type="submit" class="btn-save" id="save-btn"><i class="fas fa-save"></i> Enregistrer tous les paramètres</button>
     </div>
@@ -531,6 +578,128 @@ async function loadSettings() {
   if (s.favicon) { const p = document.getElementById('s-favicon-preview'); p.src = s.favicon; p.style.display='block'; }
 
   document.getElementById('settings-form').style.display = 'block';
+
+  // Charger l'état APK en parallèle
+  loadApk();
+}
+
+// ═══ APK ANDROID ════════════════════════════════════════════════════════════
+async function loadApk() {
+  const r = await fetch('/api/admin/config/site/apk/', { headers: H });
+  if (!r.ok) return;
+  const { data } = await r.json();
+  renderApkState(data);
+}
+
+function renderApkState(data) {
+  const cur  = document.getElementById('apk-current');
+  const name = document.getElementById('apk-current-name');
+  const link = document.getElementById('apk-current-link');
+  if (data.has_apk) {
+    cur.style.display = 'flex';
+    name.textContent  = data.apk_name || 'maket-peyizan.apk';
+    link.href         = data.apk_url;
+  } else {
+    cur.style.display = 'none';
+  }
+}
+
+// Gestion du drag-and-drop + sélection fichier
+document.addEventListener('DOMContentLoaded', function () {
+  const input   = document.getElementById('apk-file-input');
+  const zone    = document.getElementById('apk-drop-zone');
+  const selName = document.getElementById('apk-selected-name');
+  const content = document.getElementById('apk-drop-content');
+  const btn     = document.getElementById('apk-upload-btn');
+  if (!input) return;
+
+  function setFile(file) {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.apk')) {
+      showToast('Fichier invalide — seuls les .apk sont acceptés.', 'error');
+      return;
+    }
+    content.style.display = 'none';
+    selName.textContent   = '📦 ' + file.name;
+    selName.style.display = 'block';
+    zone.style.borderColor = 'var(--green-mid)';
+    zone.style.background  = 'var(--green-light)';
+    btn.disabled  = false;
+    btn.style.opacity = '1';
+    // transférer le fichier à l'input (il est déjà là si sélectionné)
+  }
+
+  input.addEventListener('change', () => { if (input.files[0]) setFile(input.files[0]); });
+
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor='var(--green-mid)'; });
+  zone.addEventListener('dragleave', () => { zone.style.borderColor=''; });
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.style.borderColor = '';
+    const f = e.dataTransfer.files[0];
+    if (f) {
+      // Injecter le fichier dans l'input
+      const dt = new DataTransfer();
+      dt.items.add(f);
+      input.files = dt.files;
+      setFile(f);
+    }
+  });
+});
+
+async function uploadApk() {
+  const input = document.getElementById('apk-file-input');
+  const btn   = document.getElementById('apk-upload-btn');
+  if (!input.files[0]) return;
+
+  const file = input.files[0];
+  if (!file.name.toLowerCase().endsWith('.apk')) {
+    showToast('Fichier invalide — seuls les .apk sont acceptés.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+
+  const fd = new FormData();
+  fd.append('android_apk', file);
+
+  const r = await fetch('/api/admin/config/site/apk/', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') },
+    body: fd,
+  });
+
+  const json = await r.json();
+  if (json.success) {
+    renderApkState(json.data);
+    // Reset du champ
+    input.value = '';
+    document.getElementById('apk-drop-content').style.display = 'block';
+    document.getElementById('apk-selected-name').style.display = 'none';
+    document.getElementById('apk-drop-zone').style.background = '';
+    document.getElementById('apk-drop-zone').style.borderColor = '';
+    showToast('APK mis en ligne avec succès ! La bannière est maintenant active.', 'success');
+  } else {
+    showToast(json.error || 'Erreur lors de l\'upload.', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-upload"></i> Mettre en ligne l\'APK';
+  btn.style.opacity = '.5';
+}
+
+async function deleteApk() {
+  if (!confirm('Supprimer le fichier APK ? La bannière de téléchargement disparaîtra du site.')) return;
+  const r = await fetch('/api/admin/config/site/apk/', {
+    method: 'DELETE',
+    headers: H,
+  });
+  const json = await r.json();
+  if (json.success) {
+    renderApkState(json.data);
+    showToast('APK supprimé. La bannière a été retirée du site.', 'success');
+  }
 }
 
 async function saveSettings(e) {

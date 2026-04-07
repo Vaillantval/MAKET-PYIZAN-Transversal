@@ -1746,6 +1746,281 @@
 
 <body>
 
+{% if site_settings.android_apk %}
+  <!-- ══ BANNIÈRE TÉLÉCHARGEMENT ANDROID ══════════════════════ -->
+  <div class="apk-banner" id="apk-banner">
+    <div class="apk-banner-inner container">
+
+      <!-- Icône Android animée -->
+      <div class="apk-icon-wrap">
+        <div class="apk-icon-ring"></div>
+        <div class="apk-icon-ring apk-ring2"></div>
+        <div class="apk-icon">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+            <path d="M17.523 15.341A5 5 0 0 0 12 11a5 5 0 0 0-5.523 4.341A1 1 0 0 0 7.5 16.5h9a1 1 0 0 0 1.023-1.159ZM8.5 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm7 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2ZM6.343 4.929l-1.414-1.414a1 1 0 0 0-1.415 1.414l1.415 1.414a1 1 0 0 0 1.414-1.414Zm14.142 0a1 1 0 0 0-1.414 0l-1.414 1.414a1 1 0 0 0 1.414 1.414l1.414-1.414a1 1 0 0 0 0-1.414ZM12 3a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0V4a1 1 0 0 0-1-1Z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Texte -->
+      <div class="apk-text">
+        <span class="apk-label">Application Mobile</span>
+        <span class="apk-desc">Téléchargez Makèt Peyizan sur Android</span>
+      </div>
+
+      <!-- Bouton téléchargement -->
+      <a href="{{ site_settings.android_apk.url }}" download class="apk-btn" id="apk-download-btn">
+        <span class="apk-btn-shimmer"></span>
+        <span class="apk-btn-content">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" class="apk-btn-icon">
+            <path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-7 2h14v2H5v-2z"/>
+          </svg>
+          <span>Télécharger .apk</span>
+        </span>
+        <span class="apk-btn-pulse"></span>
+      </a>
+
+      <!-- Fermer -->
+      <button class="apk-close" id="apk-close-btn" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <style>
+    /* ── Bannière APK ──────────────────────────────────────────── */
+    .apk-banner {
+      background: linear-gradient(100deg, #0f2d1a 0%, #1a4d2e 40%, #1e6b3a 70%, #0d3520 100%);
+      position: relative;
+      overflow: hidden;
+      z-index: 950;
+      border-bottom: 1px solid rgba(46,204,113,.25);
+    }
+    /* grain de fond subtil */
+    .apk-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='80'%3E%3Ccircle cx='40' cy='40' r='60' fill='rgba(46,204,113,.04)'/%3E%3Ccircle cx='200' cy='10' r='80' fill='rgba(46,204,113,.03)'/%3E%3Ccircle cx='360' cy='60' r='50' fill='rgba(46,204,113,.05)'/%3E%3C/svg%3E");
+      background-size: cover;
+      pointer-events: none;
+    }
+    .apk-banner-inner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 11px 24px;
+      position: relative;
+    }
+
+    /* ── Icône ──────────────────────────────────────────────────── */
+    .apk-icon-wrap {
+      position: relative;
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .apk-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #27ae60, #1a6b2f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(39,174,96,.45);
+      position: relative;
+      z-index: 2;
+    }
+    .apk-icon-ring {
+      position: absolute;
+      inset: -6px;
+      border-radius: 18px;
+      border: 1.5px solid rgba(39,174,96,.35);
+      animation: apkRingPulse 2.4s ease-in-out infinite;
+    }
+    .apk-ring2 {
+      inset: -12px;
+      border-radius: 22px;
+      border-color: rgba(39,174,96,.18);
+      animation-delay: .8s;
+    }
+    @keyframes apkRingPulse {
+      0%,100% { opacity: .8; transform: scale(1); }
+      50%      { opacity: .3; transform: scale(1.06); }
+    }
+
+    /* ── Texte ──────────────────────────────────────────────────── */
+    .apk-text {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .apk-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(39,174,96,.85);
+    }
+    .apk-desc {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Bouton téléchargement ──────────────────────────────────── */
+    .apk-btn {
+      flex-shrink: 0;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      overflow: hidden;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 60%, #1a8a4a 100%);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      padding: 9px 20px;
+      text-decoration: none;
+      box-shadow: 0 4px 18px rgba(39,174,96,.5), 0 0 0 0 rgba(39,174,96,.4);
+      animation: apkBtnGlow 2s ease-in-out infinite;
+      transition: transform .18s, box-shadow .18s;
+      white-space: nowrap;
+    }
+    .apk-btn:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 8px 28px rgba(39,174,96,.65), 0 0 0 6px rgba(39,174,96,.12);
+      color: #fff;
+    }
+    .apk-btn:active { transform: scale(.97); }
+
+    /* shimmer glissant sur le bouton */
+    .apk-btn-shimmer {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 60px;
+      background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,.28) 50%, transparent 100%);
+      animation: apkShimmer 2.6s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes apkShimmer {
+      0%   { left: -70px; }
+      60%  { left: calc(100% + 10px); }
+      100% { left: calc(100% + 10px); }
+    }
+
+    /* halo pulsant autour du bouton */
+    .apk-btn-pulse {
+      position: absolute;
+      inset: 0;
+      border-radius: 50px;
+      border: 2px solid rgba(46,204,113,.6);
+      animation: apkPulseRing 2s ease-out infinite;
+      pointer-events: none;
+    }
+    @keyframes apkPulseRing {
+      0%   { opacity: 1; transform: scale(1); }
+      70%  { opacity: 0; transform: scale(1.25); }
+      100% { opacity: 0; }
+    }
+
+    @keyframes apkBtnGlow {
+      0%,100% { box-shadow: 0 4px 18px rgba(39,174,96,.5), 0 0 0 0 rgba(39,174,96,.35); }
+      50%      { box-shadow: 0 4px 24px rgba(39,174,96,.65), 0 0 0 8px rgba(39,174,96,.0); }
+    }
+
+    .apk-btn-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .apk-btn-icon { flex-shrink: 0; }
+
+    /* ── Bouton fermer ──────────────────────────────────────────── */
+    .apk-close {
+      flex-shrink: 0;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 50%;
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: rgba(255,255,255,.7);
+      transition: background .18s, color .18s;
+      margin-left: 4px;
+      padding: 0;
+    }
+    .apk-close:hover {
+      background: rgba(255,255,255,.18);
+      color: #fff;
+    }
+
+    /* Animation d'entrée */
+    .apk-banner {
+      animation: apkSlideDown .4s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes apkSlideDown {
+      from { opacity: 0; max-height: 0; padding-block: 0; }
+      to   { opacity: 1; max-height: 80px; }
+    }
+    /* Animation de fermeture */
+    .apk-banner.hiding {
+      animation: apkSlideUp .32s cubic-bezier(.55,0,1,.45) forwards;
+    }
+    @keyframes apkSlideUp {
+      from { opacity: 1; max-height: 80px; }
+      to   { opacity: 0; max-height: 0; padding-block: 0; overflow: hidden; }
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .apk-label { display: none; }
+      .apk-desc  { font-size: 12px; }
+      .apk-btn   { font-size: 12px; padding: 8px 14px; }
+      .apk-btn span:last-child { display: none; }
+      .apk-btn-content::after { content: '.apk'; }
+      .apk-icon-ring { display: none; }
+    }
+    @media (max-width: 400px) {
+      .apk-text { display: none; }
+    }
+  </style>
+
+  <script>
+    (function () {
+      var DISMISS_KEY = 'mp_apk_dismissed';
+      var banner = document.getElementById('apk-banner');
+      var closeBtn = document.getElementById('apk-close-btn');
+
+      // Si l'utilisateur a déjà fermé la bannière, on la cache immédiatement
+      if (localStorage.getItem(DISMISS_KEY) === '1') {
+        banner.style.display = 'none';
+      }
+
+      closeBtn.addEventListener('click', function () {
+        banner.classList.add('hiding');
+        banner.addEventListener('animationend', function () {
+          banner.style.display = 'none';
+        }, { once: true });
+        localStorage.setItem(DISMISS_KEY, '1');
+      });
+    })();
+  </script>
+{% endif %}
+
   <!-- ══ NAVBAR ══════════════════════════════════════════════ -->
   <nav class="navbar">
     <div class="container">

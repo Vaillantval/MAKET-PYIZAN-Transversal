@@ -62,6 +62,7 @@ urlpatterns = [
 
     # ── Config ──────────────────────────────────────────────────
     path('config/site/',                    views.site_config,            name='site_config'),
+    path('config/site/apk/',               views.android_apk,            name='android_apk'),
     path('config/faq/categories/',          views.faq_categories,         name='faq_categories'),
     path('config/faq/categories/<int:pk>/', views.faq_categorie_detail,   name='faq_categorie_detail'),
     path('config/faq/items/',               views.faq_items,              name='faq_items'),

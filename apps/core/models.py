@@ -155,6 +155,15 @@ class SiteSettings(models.Model):
         help_text='Message affiché pendant la maintenance',
     )
 
+    # ── Application Android ─────────────────────────────────────
+    android_apk = models.FileField(
+        upload_to='android/',
+        null=True,
+        blank=True,
+        verbose_name='Application Android (.apk)',
+        help_text='Fichier .apk de l\'application Android. Affiché comme bannière de téléchargement sur le site.',
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

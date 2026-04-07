@@ -23,6 +23,7 @@ from .collecte_views   import (
 )
 from .config_views     import (
     site_config,
+    android_apk,
     faq_categories, faq_categorie_detail,
     faq_items, faq_item_detail,
     contact_messages, contact_message_detail, repondre_contact,
