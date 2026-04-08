@@ -44,5 +44,6 @@ urlpatterns = [
     path('produits/<slug:slug>/',   views.produit_detail,      name='produit_detail'),
     path('panier/',                 views.panier_page,         name='panier'),
     path('commander/',                   views.checkout_page,   name='checkout'),
-    path('commander/moncash/retour/',    views.moncash_retour,  name='moncash_retour'),
+    path('commander/paiement/retour/',   views.paiement_retour, name='paiement_retour'),
+    path('commander/moncash/retour/',    views.paiement_retour, name='moncash_retour'),  # rétrocompat
 ]

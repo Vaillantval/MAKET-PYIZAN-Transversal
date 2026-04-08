@@ -1,0 +1,270 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vérification du paiement — {{ site_settings.nom_site|default:"Makèt Peyizan" }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --vert-fonce:#1a6b2f; --vert-vif:#27ae60; --vert-menthe:#e8f8ee;
+      --jaune:#e8d800; --blanc:#fff; --noir:#1a1a1a; --gris:#f4f6f9;
+      --gris-bord:#e2e8f0; --shadow:0 4px 24px rgba(0,0,0,.08); --radius:14px;
+    }
+    *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'DM Sans',sans-serif; background:var(--gris); color:var(--noir); min-height:100vh; display:flex; flex-direction:column; }
+    a { text-decoration:none; color:inherit; }
+
+    .navbar { background:var(--vert-fonce); box-shadow:0 2px 16px rgba(0,0,0,.15); }
+    .navbar-inner { display:flex; align-items:center; height:64px; max-width:1100px; margin:0 auto; padding:0 24px; }
+    .navbar-logo { display:flex; align-items:center; gap:10px; }
+    .navbar-logo-icon { width:38px; height:38px; background:var(--jaune); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .navbar-logo-text { font-family:'Playfair Display',serif; font-size:18px; font-weight:900; color:#fff; line-height:1.1; }
+    .navbar-logo-text span { display:block; font-size:11px; font-weight:400; opacity:.7; font-family:'DM Sans',sans-serif; }
+
+    .main { flex:1; display:flex; align-items:center; justify-content:center; padding:40px 24px; }
+    .card { background:#fff; border-radius:20px; box-shadow:var(--shadow); padding:48px 40px; max-width:500px; width:100%; text-align:center; }
+
+    /* ── Loading ── */
+    .spinner-wrap { margin:0 auto 24px; }
+    .spinner { width:72px; height:72px; border:5px solid var(--gris-bord); border-top-color:var(--vert-vif); border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-title { font-size:20px; font-weight:800; color:var(--vert-fonce); margin-bottom:8px; }
+    .loading-sub { font-size:14px; color:#888; line-height:1.6; }
+
+    /* ── Icon states ── */
+    .icon-wrap { width:88px; height:88px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; font-size:38px; color:#fff; }
+    .icon-wrap.success { background:var(--vert-vif); animation:zoomIn .4s ease; }
+    .icon-wrap.error   { background:#e74c3c; animation:zoomIn .4s ease; }
+    .icon-wrap.pending { background:#f59e0b; animation:zoomIn .4s ease; }
+    @keyframes zoomIn { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:none} }
+
+    .card-title { font-size:22px; font-weight:900; margin-bottom:10px; }
+    .card-title.success { color:var(--vert-fonce); }
+    .card-title.error   { color:#c0392b; }
+    .card-title.pending { color:#b45309; }
+    .card-sub { font-size:14px; color:#777; margin-bottom:24px; line-height:1.6; }
+
+    .orders-box { background:#f0fbf4; border-radius:10px; padding:16px; margin-bottom:24px; text-align:left; }
+    .orders-box.error-box { background:#fff5f5; }
+    .orders-box.pending-box { background:#fffbeb; }
+    .order-row { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--vert-fonce); margin-bottom:8px; }
+    .order-row:last-child { margin-bottom:0; }
+    .order-row i { color:var(--vert-vif); flex-shrink:0; }
+    .order-total { margin-left:auto; color:var(--vert-vif); }
+    .meta-line { font-size:12px; color:#888; margin-bottom:5px; }
+    .meta-line span { font-weight:600; color:#555; }
+
+    .method-badge { display:inline-flex; align-items:center; gap:6px; background:var(--vert-menthe); color:var(--vert-fonce); border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; margin-bottom:20px; }
+    .method-badge img { width:18px; height:18px; object-fit:contain; border-radius:3px; }
+
+    .btns { display:flex; gap:12px; flex-wrap:wrap; }
+    .btn { flex:1; min-width:140px; padding:14px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:7px; transition:all .2s; border:none; text-decoration:none; }
+    .btn-primary { background:var(--vert-fonce); color:#fff; }
+    .btn-primary:hover { background:#145a26; }
+    .btn-outline { background:transparent; color:var(--vert-fonce); border:2px solid var(--vert-fonce); }
+    .btn-outline:hover { background:var(--vert-menthe); }
+    .btn-danger { background:#e74c3c; color:#fff; }
+    .btn-danger:hover { background:#c0392b; }
+    .btn-warn { background:#f59e0b; color:#fff; }
+    .btn-warn:hover { background:#d97706; }
+
+    #state-loading { display:block; }
+    #state-success, #state-error, #state-pending { display:none; }
+
+    @media(max-width:480px) {
+      .card { padding:32px 20px; }
+      .btns { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="/" class="navbar-logo">
+      <div class="navbar-logo-icon">
+        {% if site_settings.logo %}
+          <img src="{{ site_settings.logo.url }}" alt="" style="width:26px;height:26px;object-fit:contain;border-radius:50%;">
+        {% else %}
+          🌾
+        {% endif %}
+      </div>
+      <div class="navbar-logo-text">
+        {{ site_settings.nom_site|default:"Makèt Peyizan" }}
+        <span>{{ site_settings.slogan|default:"Marketplace Agricole" }}</span>
+      </div>
+    </a>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="card">
+
+    <!-- ── Chargement ── -->
+    <div id="state-loading">
+      <div class="spinner-wrap"><div class="spinner"></div></div>
+      <div class="loading-title">Vérification en cours…</div>
+      <div class="loading-sub">Nous confirmons votre paiement auprès de la passerelle.<br>Merci de patienter quelques secondes.</div>
+    </div>
+
+    <!-- ── Succès ── -->
+    <div id="state-success">
+      <div id="method-badge-wrap"></div>
+      <div class="icon-wrap success"><i class="fas fa-check"></i></div>
+      <div class="card-title success">Paiement confirmé !</div>
+      <div class="card-sub" id="success-sub">Votre paiement a été vérifié avec succès.<br>Votre commande a été transmise au(x) producteur(s).</div>
+      <div class="orders-box" id="success-orders" style="display:none"></div>
+      <div class="orders-box" id="success-meta" style="display:none;margin-bottom:16px"></div>
+      <div class="btns">
+        <a href="/dashboard/acheteur/commandes/" class="btn btn-primary">
+          <i class="fas fa-list-alt"></i> Mes commandes
+        </a>
+        <a href="/" class="btn btn-outline">
+          <i class="fas fa-store"></i> Catalogue
+        </a>
+      </div>
+    </div>
+
+    <!-- ── En attente ── -->
+    <div id="state-pending">
+      <div class="icon-wrap pending"><i class="fas fa-clock"></i></div>
+      <div class="card-title pending">Paiement en attente</div>
+      <div class="card-sub">Votre paiement n'a pas encore été confirmé par la passerelle.<br>Vos commandes ont été créées et seront validées dès réception du paiement.</div>
+      <div class="orders-box pending-box" style="margin-bottom:24px">
+        <div class="meta-line"><i class="fas fa-info-circle" style="color:#f59e0b"></i> Vous recevrez une notification lorsque votre paiement sera validé.</div>
+      </div>
+      <div class="btns">
+        <a href="/dashboard/acheteur/commandes/" class="btn btn-warn">
+          <i class="fas fa-list-alt"></i> Mes commandes
+        </a>
+        <a href="/" class="btn btn-outline">
+          <i class="fas fa-home"></i> Accueil
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Erreur ── -->
+    <div id="state-error">
+      <div class="icon-wrap error"><i class="fas fa-times"></i></div>
+      <div class="card-title error">Vérification échouée</div>
+      <div class="card-sub">Nous n'avons pas pu vérifier votre paiement.<br>Si vous avez payé, contactez le support avec votre référence de commande.</div>
+      <div class="orders-box error-box" id="error-box" style="display:none;margin-bottom:24px"></div>
+      <div class="btns">
+        <a href="/commander/" class="btn btn-danger">
+          <i class="fas fa-redo"></i> Réessayer
+        </a>
+        <a href="/" class="btn btn-outline">
+          <i class="fas fa-home"></i> Accueil
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const MC_IMG = "{% static 'img/moncash.png' %}";
+  const NC_IMG = "{% static 'img/natcash.png' %}";
+  const METHOD_LABELS = { moncash: 'MonCash', natcash: 'NatCash' };
+
+  function showState(name) {
+    ['loading','success','error','pending'].forEach(s => {
+      document.getElementById('state-' + s).style.display = (s === name) ? 'block' : 'none';
+    });
+  }
+
+  function fmtHTG(n) {
+    if (!n && n !== 0) return '';
+    return Number(n).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' HTG';
+  }
+
+  async function verifierPaiement() {
+    const ref    = localStorage.getItem('mp_pending_ref');
+    const method = localStorage.getItem('mp_pending_method') || 'moncash';
+    const access = localStorage.getItem('mp_access');
+
+    // Badge méthode
+    const badgeWrap = document.getElementById('method-badge-wrap');
+    const img = method === 'natcash' ? NC_IMG : MC_IMG;
+    badgeWrap.innerHTML = `<div class="method-badge"><img src="${img}" alt="${method}"> ${METHOD_LABELS[method] || method}</div>`;
+
+    if (!ref) {
+      showState('pending');
+      return;
+    }
+
+    if (!access) {
+      showState('pending');
+      return;
+    }
+
+    try {
+      const res  = await fetch('/api/payments/plopplop-verify/', {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + access,
+        },
+        body: JSON.stringify({ commande_ref: ref }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        const errBox = document.getElementById('error-box');
+        errBox.style.display = 'block';
+        errBox.innerHTML = `<div class="meta-line" style="color:#c0392b"><i class="fas fa-exclamation-circle"></i> ${data.error || 'Erreur inconnue'}</div>
+          <div class="meta-line" style="margin-top:6px">Référence : <span style="font-family:monospace">${ref}</span></div>`;
+        showState('error');
+        return;
+      }
+
+      if (data.confirme) {
+        // Nettoyer localStorage
+        localStorage.removeItem('mp_pending_ref');
+        localStorage.removeItem('mp_pending_method');
+
+        // Méta paiement
+        const metaBox = document.getElementById('success-meta');
+        let metaHtml = '';
+        if (data.montant) metaHtml += `<div class="meta-line">Montant : <span>${fmtHTG(data.montant)}</span></div>`;
+        if (data.transaction) metaHtml += `<div class="meta-line">Réf. transaction : <span style="font-family:monospace">${data.transaction}</span></div>`;
+        if (metaHtml) { metaBox.innerHTML = metaHtml; metaBox.style.display = 'block'; }
+
+        // Commandes
+        const ordersBox = document.getElementById('success-orders');
+        if (data.commandes && data.commandes.length) {
+          ordersBox.innerHTML = data.commandes.map(c => `
+            <div class="order-row">
+              <i class="fas fa-receipt"></i>
+              <span>${c.numero_commande}</span>
+              <span class="order-total">${fmtHTG(c.total)}</span>
+            </div>`).join('');
+          ordersBox.style.display = 'block';
+        }
+
+        const subEl = document.getElementById('success-sub');
+        subEl.textContent = `Votre paiement ${METHOD_LABELS[method] || method} a été vérifié avec succès. Votre commande a été transmise au(x) producteur(s).`;
+        showState('success');
+
+      } else {
+        // Trans_status = 'no' — en attente
+        showState('pending');
+      }
+
+    } catch (e) {
+      document.getElementById('error-box').style.display = 'block';
+      document.getElementById('error-box').innerHTML = `<div class="meta-line" style="color:#c0392b"><i class="fas fa-exclamation-circle"></i> Erreur réseau. Réessayez plus tard.</div>`;
+      showState('error');
+    }
+  }
+
+  // Lancer la vérification au chargement
+  verifierPaiement();
+</script>
+</body>
+</html>

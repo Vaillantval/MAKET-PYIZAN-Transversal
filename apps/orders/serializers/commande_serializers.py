@@ -5,7 +5,7 @@ from apps.accounts.models import Adresse
 class PasserCommandeSerializer(serializers.Serializer):
     """Données pour passer une commande depuis le panier."""
 
-    METHODES = ['cash', 'moncash', 'hors_ligne']
+    METHODES = ['cash', 'moncash', 'natcash', 'hors_ligne']
     MODES    = ['domicile', 'collecte', 'retrait']
 
     methode_paiement      = serializers.ChoiceField(choices=METHODES)

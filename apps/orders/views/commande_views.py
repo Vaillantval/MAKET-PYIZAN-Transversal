@@ -98,6 +98,7 @@ def commander(request):
     METHODE_MAP = {
         'cash':       Commande.MethodePaiement.CASH,
         'moncash':    Commande.MethodePaiement.MONCASH,
+        'natcash':    Commande.MethodePaiement.NATCASH,
         'hors_ligne': Commande.MethodePaiement.VIREMENT,
     }
     MODE_MAP = {
@@ -164,21 +165,22 @@ def commander(request):
         'commandes': response_commandes,
     }
 
-    # Pour MonCash — initier le paiement et retourner le redirect_url
-    if methode_paiement == 'moncash' and commandes_creees:
+    # Pour MonCash / NatCash — initier via passerelle Plopplop
+    if methode_paiement in ('moncash', 'natcash') and commandes_creees:
         try:
-            from apps.payments.services.moncash_service import MonCashService
+            from apps.payments.services.plopplop_service import PlopplopService
             premiere_commande = commandes_creees[0]
-            moncash = MonCashService()
-            result  = moncash.initier_paiement(
+            plopplop = PlopplopService()
+            result   = plopplop.initier_paiement(
                 commande_ref=premiere_commande.numero_commande,
-                montant_htg=premiere_commande.total,
+                montant=float(premiere_commande.total),
+                payment_method=methode_paiement,
             )
-            response_data['redirect_url']  = result['redirect_url']
-            response_data['moncash_token'] = result['token']
-        except Exception:
-            response_data['moncash_erreur'] = (
-                "Paiement MonCash temporairement indisponible. "
+            response_data['redirect_url']   = result['redirect_url']
+            response_data['transaction_id'] = result['transaction_id']
+        except Exception as e:
+            response_data['paiement_erreur'] = (
+                f"Paiement {methode_paiement.capitalize()} temporairement indisponible. "
                 "Vos commandes ont été créées. Contactez-nous."
             )
 

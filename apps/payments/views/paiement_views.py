@@ -12,7 +12,6 @@ from apps.payments.serializers import (
     PaiementSerializer,
 )
 from apps.payments.services.paiement_service import PaiementService
-from apps.payments.services.moncash_service import MonCashService
 from apps.orders.models import Commande
 
 
@@ -229,3 +228,61 @@ def mes_paiements(request):
 
     serializer = PaiementSerializer(paiements, many=True)
     return Response({'success': True, 'data': serializer.data})
+
+
+# ── POST /api/payments/plopplop-verify/ ─────────────────────────
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def plopplop_verify(request):
+    """
+    Vérifie le statut d'un paiement MonCash/NatCash via Plopplop.
+    Body: { "commande_ref": "CMD-XXXX-XXXXX" }
+    Appelé depuis la page de retour (JS frontend).
+    """
+    commande_ref = request.data.get('commande_ref', '').strip()
+    if not commande_ref:
+        return Response(
+            {'success': False, 'error': 'Référence de commande manquante.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    from apps.payments.services.plopplop_service import PlopplopService
+
+    plopplop = PlopplopService()
+    if not plopplop.is_configured():
+        return Response(
+            {'success': False, 'error': 'Passerelle de paiement non configurée.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    try:
+        result = plopplop.verifier_paiement(commande_ref)
+    except Exception as e:
+        return Response(
+            {'success': False, 'error': f'Erreur de vérification : {e}'},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    trans_status = result.get('trans_status', 'no')
+    commandes = Commande.objects.filter(numero_commande=commande_ref)
+
+    if trans_status == 'ok':
+        commandes.update(
+            statut_paiement=Commande.StatutPaiement.VERIFIE,
+            reference_paiement=result.get('id_transaction', commande_ref),
+        )
+        return Response({
+            'success':     True,
+            'confirme':    True,
+            'montant':     result.get('montant', ''),
+            'method':      result.get('method', ''),
+            'transaction': result.get('id_transaction', ''),
+            'commandes':   list(commandes.values('numero_commande', 'total')),
+        })
+
+    # Statut 'no' = toujours en attente
+    return Response({
+        'success':  True,
+        'confirme': False,
+        'statut':   trans_status,
+    })

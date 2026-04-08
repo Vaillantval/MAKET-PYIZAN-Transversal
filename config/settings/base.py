@@ -125,10 +125,11 @@ SIMPLE_JWT = {
 # ── CORS ────────────────────────────────────────────────────────
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL', default=True, cast=bool)
 
-# ── MonCash ──────────────────────────────────────────────────────
+# ── MonCash / NatCash ────────────────────────────────────────────
 MONCASH_CLIENT_ID   = config('MONCASH_CLIENT_ID',   default='')
 MONCASH_SECRET_KEY  = config('MONCASH_SECRET_KEY',  default='')
 MONCASH_ENVIRONMENT = config('MONCASH_ENVIRONMENT', default='sandbox')
+PLOPPLOP_CLIENT_ID  = config('PLOPPLOP_CLIENT_ID',  default='')
 
 # ── Firebase / FCM ───────────────────────────────────────────────
 # JSON du service account Firebase (contenu brut en variable d'env)
@@ -231,7 +232,10 @@ RESEND_API_KEY      = config('RESEND_API_KEY', default='')
 DEFAULT_FROM_EMAIL  = config('DEFAULT_FROM_EMAIL', default='Maket Peyizan <info@maketpeyizan.ht>')
 ADMINS_NOTIFY       = config('ADMINS_NOTIFY', default='')
 
-# ── MONCASH ─────────────────────────────────────────────────────
+# ── MONCASH (API officielle Digicel) ────────────────────────────
 MONCASH_CLIENT_ID   = config('MONCASH_CLIENT_ID', default='')
 MONCASH_SECRET_KEY  = config('MONCASH_SECRET_KEY', default='')
 MONCASH_ENVIRONMENT = config('MONCASH_ENVIRONMENT', default='sandbox')
+
+# ── PLOPPLOP (passerelle MonCash + NatCash) ──────────────────────
+PLOPPLOP_CLIENT_ID  = config('PLOPPLOP_CLIENT_ID', default='')

@@ -473,57 +473,9 @@ def checkout_page(request):
     return render(request, 'home/checkout.html', {'nb_panier': nb_panier})
 
 
-def moncash_retour(request):
+def paiement_retour(request):
     """
-    Callback MonCash après paiement.
-    GET /commander/moncash/retour/?transactionId=<id>
+    Page de retour après paiement MonCash / NatCash via Plopplop.
+    La vérification est effectuée côté JS (appel API /api/payments/plopplop-verify/).
     """
-    from apps.payments.services.moncash_service import MonCashService
-    from apps.orders.models import Commande
-
-    transaction_id = request.GET.get('transactionId', '')
-    ctx = {'transaction_id': transaction_id, 'success': False, 'commandes': [], 'erreur': ''}
-
-    if not transaction_id:
-        ctx['erreur'] = 'Identifiant de transaction manquant.'
-        return render(request, 'home/moncash_retour.html', ctx)
-
-    mc = MonCashService()
-    try:
-        payment = mc.verifier_paiement(transaction_id)
-    except Exception as e:
-        ctx['erreur'] = f'Erreur de vérification MonCash : {e}'
-        return render(request, 'home/moncash_retour.html', ctx)
-
-    # reference = "MKT-CMD-XXXX-XXXXX"
-    reference = payment.get('reference', '')
-    if reference.startswith('MKT-'):
-        numero = reference[4:]  # retire "MKT-"
-        commandes = Commande.objects.filter(
-            numero_commande=numero
-        ) | Commande.objects.filter(
-            reference_paiement=payment.get('transaction_id', transaction_id)
-        )
-    else:
-        commandes = Commande.objects.filter(
-            reference_paiement=transaction_id
-        )
-
-    commandes = commandes.distinct()
-
-    message_mc = payment.get('message', '').lower()
-    paiement_ok = message_mc in ('successful', 'success', 'approved') or payment.get('cost', 0) > 0
-
-    if paiement_ok:
-        commandes.update(
-            statut_paiement=Commande.StatutPaiement.VERIFIE,
-            reference_paiement=transaction_id,
-        )
-        ctx['success'] = True
-    else:
-        ctx['erreur'] = f"Paiement non confirmé. Statut : {payment.get('message', 'inconnu')}"
-
-    ctx['commandes'] = list(commandes.values('numero_commande', 'total', 'producteur__user__first_name', 'producteur__user__last_name'))
-    ctx['payer'] = payment.get('payer', '')
-    ctx['montant'] = payment.get('cost', '')
-    return render(request, 'home/moncash_retour.html', ctx)
+    return render(request, 'home/paiement_retour.html')

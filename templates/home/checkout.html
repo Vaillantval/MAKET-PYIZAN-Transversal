@@ -177,6 +177,20 @@
     .btn-conf-cat { flex:1; padding:13px; background:transparent; color:var(--vert-fonce); border:2px solid var(--vert-fonce); border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none; }
     .btn-conf-cat:hover { background:var(--vert-menthe); }
 
+    /* ── NatCash extra box ───────────────────────────────────────── */
+    .pm-extra.pm-extra-natcash { background:#f0f9ff; border:1px solid #bae6fd; }
+    .pm-extra-natcash .pm-extra-title { color:#0369a1; }
+
+    /* ── pm-extra inline dans pm-list (collé sous l'option) ─────── */
+    .pm-list .pm-extra { margin-top:-6px; border-radius:0 0 10px 10px; }
+
+    /* ── Bouton commande : animation shimmer continue ────────────── */
+    .btn-submit { position:relative; overflow:hidden; }
+    .btn-submit::after { content:''; position:absolute; top:0; left:-100%; width:55%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent); animation:btn-shine 2.8s ease-in-out infinite; pointer-events:none; }
+    @keyframes btn-shine { 0%{left:-100%} 60%,100%{left:150%} }
+    .btn-submit:disabled::after { display:none; }
+    .btn-submit .pm-btn-img { width:20px; height:20px; object-fit:contain; border-radius:3px; vertical-align:middle; filter:brightness(0) invert(1); }
+
     /* ── Toast ───────────────────────────────────────────────── */
     .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:10px; }
     .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:14px; font-weight:500; box-shadow:0 4px 20px rgba(0,0,0,.15); color:#fff; animation:slideUp .25s ease; }
@@ -367,9 +381,9 @@
             <div class="c-body">
               <div class="pm-list">
 
-                <!-- 1. MonCash -->
-                <label class="pm-option" id="pm-moncash" onclick="selectPayment('moncash',this)">
-                  <input type="radio" name="pm" value="moncash">
+                <!-- 1. MonCash — méthode par défaut -->
+                <label class="pm-option pm-selected" id="pm-moncash" onclick="selectPayment('moncash',this)">
+                  <input type="radio" name="pm" value="moncash" checked>
                   <div class="pm-icon-wrap" style="background:#fff8f0;padding:4px">
                     <img src="{% static 'img/moncash.png' %}" alt="MonCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
                   </div>
@@ -379,8 +393,39 @@
                   </div>
                   <div class="pm-check"><i class="fas fa-check-circle"></i></div>
                 </label>
+                <div class="pm-extra pm-extra-moncash" id="pm-extra-moncash" style="display:block">
+                  <div class="pm-extra-title">
+                    <img src="{% static 'img/moncash.png' %}" alt="MonCash" style="width:22px;height:22px;object-fit:contain;border-radius:4px;vertical-align:middle">
+                    Paiement via MonCash
+                  </div>
+                  <p>Vous allez être redirigé vers la plateforme MonCash pour effectuer votre paiement en toute sécurité.</p>
+                  <p>Montant à payer : <strong id="mc-montant">—</strong></p>
+                  <p style="font-size:11px;color:#92400e"><i class="fas fa-info-circle"></i> Votre commande sera validée automatiquement après confirmation du paiement.</p>
+                </div>
 
-                <!-- 2. Hors ligne -->
+                <!-- 2. NatCash -->
+                <label class="pm-option" id="pm-natcash" onclick="selectPayment('natcash',this)">
+                  <input type="radio" name="pm" value="natcash">
+                  <div class="pm-icon-wrap" style="background:#f0f9ff;padding:4px">
+                    <img src="{% static 'img/natcash.png' %}" alt="NatCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
+                  </div>
+                  <div>
+                    <div class="pm-name">NatCash</div>
+                    <div class="pm-desc">Mobile money Natcom Haiti — paiement immédiat</div>
+                  </div>
+                  <div class="pm-check"><i class="fas fa-check-circle"></i></div>
+                </label>
+                <div class="pm-extra pm-extra-natcash" id="pm-extra-natcash">
+                  <div class="pm-extra-title">
+                    <img src="{% static 'img/natcash.png' %}" alt="NatCash" style="width:22px;height:22px;object-fit:contain;border-radius:4px;vertical-align:middle">
+                    Paiement via NatCash
+                  </div>
+                  <p>Vous allez être redirigé vers la plateforme NatCash de Natcom pour effectuer votre paiement en toute sécurité.</p>
+                  <p>Montant à payer : <strong id="nc-montant">—</strong></p>
+                  <p style="font-size:11px;color:#0369a1"><i class="fas fa-info-circle"></i> Votre commande sera validée automatiquement après confirmation du paiement.</p>
+                </div>
+
+                <!-- 3. Hors ligne -->
                 <label class="pm-option" id="pm-hors_ligne" onclick="selectPayment('hors_ligne',this)">
                   <input type="radio" name="pm" value="hors_ligne">
                   <div class="pm-icon-wrap" style="background:#f0f4ff"><i class="fas fa-receipt" style="color:#4f46e5"></i></div>
@@ -390,10 +435,22 @@
                   </div>
                   <div class="pm-check"><i class="fas fa-check-circle"></i></div>
                 </label>
+                <div class="pm-extra pm-extra-hors-ligne" id="pm-extra-hors-ligne">
+                  <div class="pm-extra-title"><i class="fas fa-receipt"></i> Preuve de paiement</div>
+                  <p>Effectuez votre virement ou dépôt puis importez votre reçu ci-dessous. L'administrateur vérifiera et validera votre commande sous 24h.</p>
+                  <div class="pm-upload-wrap">
+                    <label class="pm-upload-label" for="preuve-paiement-input">
+                      <i class="fas fa-upload"></i> Joindre la preuve <span style="color:#e74c3c">*</span>
+                    </label>
+                    <input type="file" id="preuve-paiement-input" class="pm-upload-input"
+                      accept="image/*,.pdf" onchange="validateSubmit()">
+                    <div class="pm-upload-hint">Formats acceptés : JPG, PNG, PDF — max 5 Mo</div>
+                  </div>
+                </div>
 
-                <!-- 3. À la livraison (espèces) -->
-                <label class="pm-option pm-selected" id="pm-cash" onclick="selectPayment('cash',this)">
-                  <input type="radio" name="pm" value="cash" checked>
+                <!-- 4. À la livraison (espèces) -->
+                <label class="pm-option" id="pm-cash" onclick="selectPayment('cash',this)">
+                  <input type="radio" name="pm" value="cash">
                   <div class="pm-icon-wrap" style="background:#e8f5e9"><i class="fas fa-money-bill-wave" style="color:var(--vert-vif)"></i></div>
                   <div>
                     <div class="pm-name">À la livraison</div>
@@ -401,19 +458,6 @@
                   </div>
                   <div class="pm-check"><i class="fas fa-check-circle"></i></div>
                 </label>
-
-                <!-- 4. NatCash (bientôt) -->
-                <div class="pm-option pm-disabled">
-                  <input type="radio" name="pm" value="natcash" disabled>
-                  <div class="pm-icon-wrap" style="background:#f5fbff;padding:4px">
-                    <img src="{% static 'img/natcash.png' %}" alt="NatCash" style="width:34px;height:34px;object-fit:contain;border-radius:6px">
-                  </div>
-                  <div>
-                    <div class="pm-name">NatCash</div>
-                    <div class="pm-desc">Mobile money Natcom Haiti</div>
-                  </div>
-                  <span class="pm-soon">Bientôt</span>
-                </div>
 
                 <!-- 5. Virement bancaire (bientôt) -->
                 <div class="pm-option pm-disabled">
@@ -426,30 +470,6 @@
                   <span class="pm-soon">Bientôt</span>
                 </div>
 
-              </div>
-
-              <!-- Extra info boxes -->
-              <div class="pm-extra pm-extra-moncash" id="pm-extra-moncash">
-                <div class="pm-extra-title">
-                  <img src="{% static 'img/moncash.png' %}" alt="MonCash" style="width:22px;height:22px;object-fit:contain;border-radius:4px;vertical-align:middle">
-                  Paiement via MonCash
-                </div>
-                <p>Vous allez être redirigé vers la plateforme MonCash de Digicel pour effectuer votre paiement en toute sécurité.</p>
-                <p>Montant à payer : <strong id="mc-montant">—</strong></p>
-                <p style="font-size:11px;color:#92400e"><i class="fas fa-info-circle"></i> Votre commande sera validée automatiquement après confirmation du paiement.</p>
-              </div>
-
-              <div class="pm-extra pm-extra-hors-ligne" id="pm-extra-hors-ligne">
-                <div class="pm-extra-title"><i class="fas fa-receipt"></i> Preuve de paiement</div>
-                <p>Effectuez votre virement ou dépôt puis importez votre reçu ci-dessous. L'administrateur vérifiera et validera votre commande sous 24h.</p>
-                <div class="pm-upload-wrap">
-                  <label class="pm-upload-label" for="preuve-paiement-input">
-                    <i class="fas fa-upload"></i> Joindre la preuve <span style="color:#e74c3c">*</span>
-                  </label>
-                  <input type="file" id="preuve-paiement-input" class="pm-upload-input"
-                    accept="image/*,.pdf" onchange="validateSubmit()">
-                  <div class="pm-upload-hint">Formats acceptés : JPG, PNG, PDF — max 5 Mo</div>
-                </div>
               </div>
             </div>
           </div>
@@ -469,7 +489,7 @@
 
           <!-- Bouton submit mobile -->
           <button class="btn-submit" id="btn-submit-mobile" onclick="passerCommande()" disabled style="display:none">
-            <i class="fas fa-lock"></i> Passer la commande
+            <img class="pm-btn-img" src="{% static 'img/moncash.png' %}" alt=""> Payer avec MonCash
           </button>
 
         </main>
@@ -506,11 +526,11 @@
 
             <div class="recap-footer">
               <button class="btn-submit" id="btn-submit" onclick="passerCommande()" disabled>
-                <i class="fas fa-lock"></i> Passer la commande
+                <img class="pm-btn-img" src="{% static 'img/moncash.png' %}" alt=""> Payer avec MonCash
               </button>
               <div class="security-note">
                 <i class="fas fa-shield-alt"></i>
-                <span>Vous ne serez prélevé qu'après confirmation du producteur. Paiement à la livraison.</span>
+                <span>Vous serez redirigé vers MonCash pour effectuer le paiement en toute sécurité.</span>
               </div>
             </div>
           </div>
@@ -561,7 +581,34 @@
   let addresses      = [];
   let selectedAddrId = null;
   let formMode       = null;   // null | 'autre' | 'nouvelle'
-  let selectedPM     = 'cash';
+  let selectedPM     = 'moncash';
+
+  // ── URLs images statiques pour les boutons ────────────────────────────────
+  const MC_IMG = "{% static 'img/moncash.png' %}";
+  const NC_IMG = "{% static 'img/natcash.png' %}";
+
+  const PM_BTN = {
+    moncash:    `<img class="pm-btn-img" src="${MC_IMG}" alt=""> Payer avec MonCash`,
+    natcash:    `<img class="pm-btn-img" src="${NC_IMG}" alt=""> Payer avec NatCash`,
+    hors_ligne: `<i class="fas fa-paper-plane"></i> Soumettre ma commande`,
+    cash:       `<i class="fas fa-check-circle"></i> Confirmer ma commande`,
+  };
+
+  function updateSubmitBtns(method) {
+    const html = PM_BTN[method] || PM_BTN.cash;
+    ['btn-submit','btn-submit-mobile'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn && !btn.disabled) btn.innerHTML = html;
+    });
+  }
+
+  function restoreSubmitBtns() {
+    const html = PM_BTN[selectedPM] || PM_BTN.cash;
+    ['btn-submit','btn-submit-mobile'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) { btn.disabled = false; btn.innerHTML = html; }
+    });
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function _esc(s) {
@@ -632,6 +679,10 @@
 
     document.getElementById('recap-subtotal').textContent = fmtPrice(data.total);
     document.getElementById('recap-total').textContent    = fmtPrice(data.total);
+    const _t = fmtPrice(data.total);
+    ['mc-montant','nc-montant'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = _t;
+    });
 
     if ((data.producteurs||[]).length > 1) {
       document.getElementById('multi-prod-warn').style.display = 'flex';
@@ -807,6 +858,18 @@
   }
 
   // ── Paiement ──────────────────────────────────────────────────────────────
+  const PM_SECURITY_NOTE = {
+    moncash:    'Vous serez redirigé vers MonCash pour effectuer le paiement en toute sécurité.',
+    natcash:    'Vous serez redirigé vers NatCash pour effectuer le paiement en toute sécurité.',
+    hors_ligne: "Votre commande sera validée après vérification de votre preuve de paiement par l'administrateur.",
+    cash:       "Vous ne serez prélevé qu'après confirmation du producteur. Paiement à la livraison.",
+  };
+  const PM_EXTRA_ID = {
+    moncash:    'pm-extra-moncash',
+    natcash:    'pm-extra-natcash',
+    hors_ligne: 'pm-extra-hors-ligne',
+  };
+
   function selectPayment(method, el) {
     if (el.classList.contains('pm-disabled')) return;
     selectedPM = method;
@@ -814,27 +877,16 @@
     el.classList.add('pm-selected');
     el.querySelector('input[type=radio]').checked = true;
 
-    // Masquer toutes les extra boxes
+    // Masquer toutes les extra boxes puis afficher celle du mode choisi
     document.querySelectorAll('.pm-extra').forEach(b => b.style.display = 'none');
+    const extraId = PM_EXTRA_ID[method];
+    if (extraId) document.getElementById(extraId).style.display = 'block';
 
-    if (method === 'moncash') {
-      const box = document.getElementById('pm-extra-moncash');
-      box.style.display = 'block';
-      // Mettre à jour le montant affiché
-      if (cartData) {
-        document.getElementById('mc-montant').textContent = fmtPrice(cartData.total);
-      }
-      // Mettre à jour la note de sécurité
-      document.querySelector('.security-note span').textContent =
-        'Vous serez redirigé vers MonCash pour effectuer le paiement en toute sécurité.';
-    } else if (method === 'hors_ligne') {
-      document.getElementById('pm-extra-hors-ligne').style.display = 'block';
-      document.querySelector('.security-note span').textContent =
-        'Votre commande sera validée après vérification de votre preuve de paiement par l\'administrateur.';
-    } else {
-      document.querySelector('.security-note span').textContent =
-        'Vous ne serez prélevé qu\'après confirmation du producteur. Paiement à la livraison.';
-    }
+    // Note de sécurité
+    const noteEl = document.querySelector('.security-note span');
+    if (noteEl) noteEl.textContent = PM_SECURITY_NOTE[method] || PM_SECURITY_NOTE.cash;
+
+    updateSubmitBtns(method);
     validateSubmit();
   }
 
@@ -862,7 +914,7 @@
 
       if (!rue || !nom || !dept || !commune) {
         showToast('Veuillez remplir les champs obligatoires (*).',  'error');
-        btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+        restoreSubmitBtns();
         return;
       }
 
@@ -897,7 +949,7 @@
       const fileInput = document.getElementById('preuve-paiement-input');
       if (!fileInput || !fileInput.files.length) {
         showToast('Veuillez joindre une preuve de paiement.', 'error');
-        btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+        restoreSubmitBtns();
         return;
       }
       // Envoyer en multipart/form-data
@@ -925,11 +977,11 @@
           showConfirmation(json.data);
         } else {
           showToast(json.error || 'Erreur lors de la commande.', 'error');
-          btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+          restoreSubmitBtns();
         }
       } catch {
         showToast('Erreur réseau. Veuillez réessayer.', 'error');
-        btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+        restoreSubmitBtns();
       }
       return;
     }
@@ -953,19 +1005,24 @@
       const json = await r.json();
       if (r.ok) {
         const data = json.data;
-        if (selectedPM === 'moncash' && data.redirect_url) {
-          // Rediriger vers la passerelle MonCash
+        if ((selectedPM === 'moncash' || selectedPM === 'natcash') && data.redirect_url) {
+          // Sauvegarder la référence pour la page de retour
+          const premRef = data.commandes && data.commandes.length ? data.commandes[0].numero_commande : '';
+          if (premRef) {
+            localStorage.setItem('mp_pending_ref', premRef);
+            localStorage.setItem('mp_pending_method', selectedPM);
+          }
           window.location.href = data.redirect_url;
         } else {
           showConfirmation(data);
         }
       } else {
         showToast(json.error || 'Erreur lors de la commande.', 'error');
-        btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+        restoreSubmitBtns();
       }
     } catch {
       showToast('Erreur réseau. Veuillez réessayer.', 'error');
-      btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-lock"></i> Passer la commande'; });
+      restoreSubmitBtns();
     }
   }
 
