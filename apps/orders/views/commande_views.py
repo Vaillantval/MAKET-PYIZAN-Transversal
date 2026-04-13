@@ -116,9 +116,17 @@ def commander(request):
     methode_django = METHODE_MAP.get(methode_paiement, Commande.MethodePaiement.CASH)
     mode_django    = MODE_MAP.get(mode_livraison, Commande.ModeLivraison.LIVRAISON_DOMICILE)
 
+    logger.info(
+        "commander: début transaction — acheteur=%s nb_producteurs=%d methode=%s mode=%s",
+        acheteur.pk, len(items_par_producteur), methode_paiement, mode_livraison,
+    )
     try:
         with transaction.atomic():
             for pid, groupe in items_par_producteur.items():
+                logger.info(
+                    "commander: appel creer_commande — acheteur=%s producteur=%s nb_items=%d",
+                    acheteur.pk, pid, len(groupe['items']),
+                )
                 commande = CommandeService.creer_commande(
                     acheteur=acheteur,
                     producteur=groupe['producteur'],
@@ -150,9 +158,23 @@ def commander(request):
             panier.items.all().delete()
 
     except ValueError as e:
+        logger.warning(
+            "commander: erreur de validation — acheteur=%s erreur=%s",
+            acheteur.pk, e,
+        )
         return Response(
             {'success': False, 'error': str(e)},
             status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception:
+        logger.exception(
+            "commander: erreur inattendue lors de la création de commande — "
+            "acheteur=%s methode=%s mode=%s nb_producteurs=%d",
+            acheteur.pk, methode_paiement, mode_livraison, len(items_par_producteur),
+        )
+        return Response(
+            {'success': False, 'error': "Une erreur interne est survenue. Veuillez réessayer."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     # Construire la réponse

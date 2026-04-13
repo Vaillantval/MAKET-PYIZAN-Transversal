@@ -1,28 +1,115 @@
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 from apps.orders.models import Commande, CommandeDetail, HistoriqueStatutCommande
 from apps.stock.services.stock_service import StockService
 from apps.stock.models import MouvementStock
 
+logger = logging.getLogger(__name__)
+
 
 class CommandeService:
     @staticmethod
     @transaction.atomic
     def creer_commande(acheteur, producteur, items, methode_paiement, mode_livraison, adresse_livraison='', notes=''):
-        commande   = Commande.objects.create(acheteur=acheteur, producteur=producteur, methode_paiement=methode_paiement, mode_livraison=mode_livraison, adresse_livraison=adresse_livraison, notes_acheteur=notes)
+        logger.info(
+            "creer_commande: début — acheteur=%s producteur=%s nb_items=%d methode=%s mode=%s",
+            acheteur.pk, producteur.pk, len(items), methode_paiement, mode_livraison,
+        )
+        try:
+            commande = Commande.objects.create(
+                acheteur=acheteur,
+                producteur=producteur,
+                methode_paiement=methode_paiement,
+                mode_livraison=mode_livraison,
+                adresse_livraison=adresse_livraison,
+                notes_acheteur=notes,
+            )
+            logger.info("creer_commande: Commande créée — ref=%s", commande.numero_commande)
+        except Exception:
+            logger.exception(
+                "creer_commande: échec création Commande — acheteur=%s producteur=%s",
+                acheteur.pk, producteur.pk,
+            )
+            raise
+
         sous_total = 0
         for item in items:
             produit  = item['produit']
             quantite = item['quantite']
             lot      = item.get('lot')
+
+            logger.debug(
+                "creer_commande: vérification stock — produit=%s (pk=%s) stock_reel=%s "
+                "stock_reserve=%s quantite_demandee=%s lot=%s",
+                produit.nom, produit.pk, produit.stock_reel,
+                produit.stock_reserve, quantite, lot,
+            )
+
             if produit.stock_reel < quantite:
-                raise ValueError(f"Stock insuffisant pour '{produit.nom}'. Disponible : {produit.stock_reel}, demande : {quantite}")
-            detail = CommandeDetail.objects.create(commande=commande, produit=produit, lot=lot, prix_unitaire=produit.prix_affiche, quantite=quantite, unite_vente=produit.unite_vente)
+                logger.warning(
+                    "creer_commande: stock insuffisant — produit=%s (pk=%s) disponible=%s demande=%s",
+                    produit.nom, produit.pk, produit.stock_reel, quantite,
+                )
+                raise ValueError(
+                    f"Stock insuffisant pour '{produit.nom}'. "
+                    f"Disponible : {produit.stock_reel}, demande : {quantite}"
+                )
+
+            try:
+                detail = CommandeDetail.objects.create(
+                    commande=commande,
+                    produit=produit,
+                    lot=lot,
+                    prix_unitaire=produit.prix_affiche,
+                    quantite=quantite,
+                    unite_vente=produit.unite_vente,
+                )
+                logger.debug(
+                    "creer_commande: CommandeDetail créé — pk=%s produit=%s quantite=%s "
+                    "prix_unitaire=%s sous_total=%s",
+                    detail.pk, produit.nom, quantite, detail.prix_unitaire, detail.sous_total,
+                )
+            except Exception:
+                logger.exception(
+                    "creer_commande: échec création CommandeDetail — commande=%s "
+                    "produit=%s (pk=%s) quantite=%s",
+                    commande.numero_commande, produit.nom, produit.pk, quantite,
+                )
+                raise
+
             sous_total += detail.sous_total
-            produit.stock_reserve += quantite
-            produit.save(update_fields=['stock_reserve'])
-        commande.sous_total = sous_total
-        commande.save()
+
+            try:
+                produit.stock_reserve += quantite
+                produit.save(update_fields=['stock_reserve'])
+                logger.debug(
+                    "creer_commande: stock_reserve mis à jour — produit=%s (pk=%s) "
+                    "nouveau_stock_reserve=%s",
+                    produit.nom, produit.pk, produit.stock_reserve,
+                )
+            except Exception:
+                logger.exception(
+                    "creer_commande: échec mise à jour stock_reserve — produit=%s (pk=%s)",
+                    produit.nom, produit.pk,
+                )
+                raise
+
+        try:
+            commande.sous_total = sous_total
+            commande.save()
+            logger.info(
+                "creer_commande: succès — ref=%s sous_total=%s nb_details=%d",
+                commande.numero_commande, sous_total, len(items),
+            )
+        except Exception:
+            logger.exception(
+                "creer_commande: échec sauvegarde sous_total — commande=%s sous_total=%s",
+                commande.numero_commande, sous_total,
+            )
+            raise
+
         return commande
 
     @staticmethod
