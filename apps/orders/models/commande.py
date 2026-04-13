@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.conf import settings
 
@@ -34,7 +36,7 @@ class Commande(models.Model):
         PAYE           = 'paye',           'Paye'
         REMBOURSE      = 'rembourse',      'Rembourse'
 
-    numero_commande        = models.CharField(max_length=30, unique=True, blank=True)
+    numero_commande        = models.CharField(max_length=45, unique=True, blank=True)
     acheteur               = models.ForeignKey('accounts.Acheteur', on_delete=models.PROTECT, related_name='commandes')
     producteur             = models.ForeignKey('accounts.Producteur', on_delete=models.PROTECT, related_name='commandes_recues')
     collecte               = models.ForeignKey('collectes.Collecte', on_delete=models.SET_NULL, null=True, blank=True, related_name='commandes')
@@ -71,16 +73,8 @@ class Commande(models.Model):
     def save(self, *args, **kwargs):
         if not self.numero_commande:
             from django.utils import timezone
-            from django.db import transaction
             annee = timezone.now().year
-            with transaction.atomic():
-                count = (
-                    Commande.objects
-                    .select_for_update()
-                    .filter(numero_commande__startswith=f'CMD-{annee}-')
-                    .count()
-                )
-                self.numero_commande = f'CMD-{annee}-{str(count + 1).zfill(5)}'
+            self.numero_commande = f'CMD-{annee}-{uuid.uuid4()}'
         self.total = self.sous_total + self.frais_livraison - self.remise
         super().save(*args, **kwargs)
 
