@@ -12,7 +12,7 @@ from apps.payments.serializers import (
     PaiementSerializer,
 )
 from apps.payments.services.paiement_service import PaiementService
-from apps.payments.services.moncash_service import MonCashService
+from apps.payments.services.plopplop_service import PlopplopService
 from apps.orders.models import Commande
 
 
@@ -75,21 +75,27 @@ def initier_paiement(request):
 
     response_data = PaiementSerializer(paiement).data
 
-    # Pour MonCash — initier via l'API et retourner le redirect
-    if type_paiement == 'moncash':
-        try:
-            moncash = MonCashService()
-            result  = moncash.initier_paiement(
-                commande_id=commande.pk,
-                montant_htg=commande.total,
+    # Pour MonCash / NatCash — initier via Plopplop et retourner le redirect
+    if type_paiement in ('moncash', 'natcash'):
+        plopplop = PlopplopService()
+        if not plopplop.is_configured():
+            return Response(
+                {'success': False, 'error': 'Passerelle de paiement non configurée.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-            response_data['redirect_url']  = result['redirect_url']
-            response_data['moncash_token'] = result['token']
+        try:
+            result = plopplop.initier_paiement(
+                commande_ref=commande.numero_commande,
+                montant=float(commande.total),
+                payment_method=type_paiement,
+            )
+            response_data['redirect_url']   = result['redirect_url']
+            response_data['transaction_id'] = result['transaction_id']
         except Exception as e:
             return Response(
                 {
                     'success': False,
-                    'error': f"Service MonCash indisponible : {str(e)}",
+                    'error': f"Service de paiement indisponible : {str(e)}",
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
@@ -198,19 +204,6 @@ def verifier_paiement(request):
 
     response_data = dict(PaiementSerializer(paiement).data)
 
-    # Pour MonCash — vérifier via l'API si non encore confirmé
-    if (
-        paiement.type_paiement == Paiement.TypePaiement.MONCASH and
-        paiement.statut not in [Paiement.Statut.CONFIRME, Paiement.Statut.ECHOUE] and
-        id_transaction
-    ):
-        try:
-            moncash  = MonCashService()
-            mc_data  = moncash.verifier_paiement(id_transaction)
-            response_data['moncash_data'] = mc_data
-        except Exception:
-            pass
-
     return Response({'success': True, 'data': response_data})
 
 
@@ -247,8 +240,6 @@ def plopplop_verify(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    from apps.payments.services.plopplop_service import PlopplopService
-
     plopplop = PlopplopService()
     if not plopplop.is_configured():
         return Response(
@@ -264,20 +255,29 @@ def plopplop_verify(request):
             status=status.HTTP_502_BAD_GATEWAY,
         )
 
-    trans_status = result.get('trans_status', 'no')
-    commandes = Commande.objects.filter(numero_commande=commande_ref)
+    trans_status   = result.get('trans_status', 'no')
+    id_transaction = result.get('id_transaction', commande_ref)
+    commandes      = Commande.objects.filter(numero_commande=commande_ref)
 
     if trans_status == 'ok':
         commandes.update(
             statut_paiement=Commande.StatutPaiement.VERIFIE,
-            reference_paiement=result.get('id_transaction', commande_ref),
+            reference_paiement=id_transaction,
+        )
+        # Mettre à jour le Paiement associé
+        Paiement.objects.filter(
+            commande__numero_commande=commande_ref,
+            statut__in=[Paiement.Statut.INITIE, Paiement.Statut.EN_ATTENTE],
+        ).update(
+            statut=Paiement.Statut.VERIFIE,
+            id_transaction=id_transaction,
         )
         return Response({
             'success':     True,
             'confirme':    True,
             'montant':     result.get('montant', ''),
             'method':      result.get('method', ''),
-            'transaction': result.get('id_transaction', ''),
+            'transaction': id_transaction,
             'commandes':   list(commandes.values('numero_commande', 'total')),
         })
 

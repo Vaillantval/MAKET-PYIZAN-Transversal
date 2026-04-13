@@ -233,12 +233,18 @@ def faq_item_detail(request, pk):
 @permission_classes([IsSuperAdmin])
 def contact_messages(request):
     est_lu_param = request.query_params.get('est_lu', '')
-    qs = ContactMessage.objects.order_by('-created_at')[:100]
-    data = [_contact_msg_data(m) for m in qs]
+    qs = ContactMessage.objects.prefetch_related(
+        'reponses__envoye_par'
+    ).order_by('-created_at')
+
     if est_lu_param != '':
-        want_lu = est_lu_param.lower() in ('true', '1')
-        data = [m for m in data if m['est_lu'] == want_lu]
-    return Response({'success': True, 'data': data})
+        if est_lu_param.lower() in ('true', '1'):
+            qs = qs.exclude(statut='nouveau')
+        else:
+            qs = qs.filter(statut='nouveau')
+
+    qs = qs[:100]
+    return Response({'success': True, 'data': [_contact_msg_data(m) for m in qs]})
 
 
 def _contact_msg_data(m):

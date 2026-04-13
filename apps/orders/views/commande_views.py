@@ -12,6 +12,8 @@ from apps.accounts.models import Adresse
 from apps.orders.models import Panier, Commande
 from apps.orders.serializers import PasserCommandeSerializer
 from apps.orders.services.commande_service import CommandeService
+from apps.payments.models import Paiement
+from apps.payments.services.paiement_service import PaiementService
 
 
 # ── POST /api/orders/commander/ ─────────────────────────────────
@@ -169,8 +171,23 @@ def commander(request):
         'commandes': response_commandes,
     }
 
-    # Pour MonCash / NatCash — initier via passerelle Plopplop
+    # Pour MonCash / NatCash — créer le Paiement en DB puis initier via Plopplop
     if methode_paiement in ('moncash', 'natcash') and commandes_creees:
+        TYPE_PAI_MAP = {
+            'moncash': Paiement.TypePaiement.MONCASH,
+            'natcash': Paiement.TypePaiement.NATCASH,
+        }
+        type_paiement_django = TYPE_PAI_MAP[methode_paiement]
+
+        # Créer un enregistrement Paiement pour chaque commande
+        for commande in commandes_creees:
+            PaiementService.initier_paiement(
+                commande=commande,
+                type_paiement=type_paiement_django,
+                notes='Initié depuis le checkout',
+            )
+
+        # Initier le paiement Plopplop sur la première commande (redirect unique)
         try:
             from apps.payments.services.plopplop_service import PlopplopService
             premiere_commande = commandes_creees[0]
@@ -190,7 +207,6 @@ def commander(request):
                 e,
                 exc_info=True,
             )
-            # Renvoyer le message exact de plopplop pour aider au debug
             response_data['paiement_erreur'] = str(e) or (
                 f"Paiement {methode_paiement.capitalize()} temporairement indisponible. "
                 "Vos commandes ont été créées (réf. ci-dessus). Contactez le support."
