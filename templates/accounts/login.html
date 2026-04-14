@@ -552,6 +552,22 @@
         document.cookie = 'mp_jwt=' + payload.access + '; path=/; SameSite=Lax';
         document.getElementById('alertSuccess').classList.add('show');
         document.getElementById('alertError').classList.remove('show');
+
+        // Fusionner le panier invité dans le panier serveur
+        try {
+          const guestItems = JSON.parse(localStorage.getItem('mp_guest_cart') || '[]');
+          if (guestItems.length) {
+            await Promise.allSettled(guestItems.map(item =>
+              fetch('/api/orders/panier/ajouter/', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + payload.access },
+                body:    JSON.stringify({ slug: item.slug, quantite: item.quantite }),
+              })
+            ));
+            localStorage.removeItem('mp_guest_cart');
+          }
+        } catch {}
+
         const role = payload.user.role;
         const params = new URLSearchParams(window.location.search);
         const nextUrl = params.get('next');

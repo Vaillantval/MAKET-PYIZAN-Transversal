@@ -125,18 +125,20 @@
     .notes-area:focus { border-color:var(--vert-vif); }
     .notes-hint { font-size:11px; color:#aaa; margin-top:6px; }
 
-    /* ── Voucher ─────────────────────────────────────────────── */
-    .voucher-row { display:flex; gap:10px; align-items:stretch; }
-    .voucher-input { flex:1; padding:11px 14px; border:1.5px solid var(--gris-bord); border-radius:8px; font-size:13px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color .15s; text-transform:uppercase; letter-spacing:.04em; }
+    /* ── Voucher (dans recap card) ───────────────────────────── */
+    .recap-voucher { padding:12px 20px; border-top:1px solid var(--gris-bord); background:#f7fdf9; }
+    .recap-voucher-label { font-size:11px; font-weight:700; color:var(--vert-fonce); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+    .voucher-row { display:flex; gap:8px; align-items:stretch; }
+    .voucher-input { flex:1; padding:9px 12px; border:1.5px solid var(--gris-bord); border-radius:8px; font-size:13px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color .15s; text-transform:uppercase; letter-spacing:.04em; background:#fff; }
     .voucher-input:focus { border-color:var(--vert-vif); }
     .voucher-input.v-error { border-color:#ef4444; }
     .voucher-input.v-ok    { border-color:var(--vert-vif); background:#f0fdf4; }
-    .btn-voucher { padding:11px 18px; background:var(--vert-fonce); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; white-space:nowrap; transition:background .2s; }
+    .btn-voucher { padding:9px 14px; background:var(--vert-fonce); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; white-space:nowrap; transition:background .2s; }
     .btn-voucher:hover:not(:disabled) { background:#145a26; }
     .btn-voucher:disabled { opacity:.5; cursor:not-allowed; }
-    .voucher-feedback { margin-top:8px; font-size:12px; display:none; }
-    .voucher-feedback.v-ok    { color:var(--vert-vif); }
-    .voucher-feedback.v-error { color:#ef4444; }
+    .voucher-feedback { margin-top:6px; font-size:12px; display:none; }
+    .voucher-feedback.v-ok    { color:var(--vert-vif); display:flex; align-items:center; gap:5px; }
+    .voucher-feedback.v-error { color:#ef4444; display:flex; align-items:center; gap:5px; }
 
     /* ── Recap card (sticky) ─────────────────────────────────── */
     .recap-card { background:var(--blanc); border-radius:var(--radius); box-shadow:var(--shadow); position:sticky; top:84px; overflow:hidden; }
@@ -497,22 +499,6 @@
             </div>
           </div>
 
-          <!-- Section 4: Voucher -->
-          <div class="c-section">
-            <div class="c-section-head">
-              <div class="c-num">4</div>
-              <div class="c-title">Code de réduction <span style="font-size:12px;font-weight:400;color:#aaa">(optionnel)</span></div>
-            </div>
-            <div class="c-body">
-              <div class="voucher-row">
-                <input id="voucher-input" class="voucher-input" type="text" placeholder="Ex. : PROMO2026" maxlength="30"
-                  oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();applyVoucher();}">
-                <button class="btn-voucher" id="btn-voucher" onclick="applyVoucher()">Appliquer</button>
-              </div>
-              <div class="voucher-feedback" id="voucher-feedback"></div>
-            </div>
-          </div>
-
           <!-- Bouton submit mobile -->
           <button class="btn-submit" id="btn-submit-mobile" onclick="passerCommande()" disabled style="display:none">
             <img class="pm-btn-img" src="{% static 'img/moncash.png' %}" alt=""> Payer avec MonCash
@@ -552,6 +538,17 @@
                 <span>Total</span>
                 <span id="recap-total">—</span>
               </div>
+            </div>
+
+            <!-- Voucher -->
+            <div class="recap-voucher">
+              <div class="recap-voucher-label"><i class="fas fa-tag"></i> Code de réduction</div>
+              <div class="voucher-row">
+                <input id="voucher-input" class="voucher-input" type="text" placeholder="Ex. : PROMO2026" maxlength="30"
+                  oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();applyVoucher();}">
+                <button class="btn-voucher" id="btn-voucher" onclick="applyVoucher()">Appliquer</button>
+              </div>
+              <div class="voucher-feedback" id="voucher-feedback"></div>
             </div>
 
             <div class="recap-footer">
@@ -808,23 +805,24 @@
       if (r.ok && json.success) {
         const remise = json.data.remise_appliquee;
         appliedVoucher = { code, remise };
-        input.className       = 'voucher-input v-ok';
-        feedback.className    = 'voucher-feedback v-ok';
-        feedback.textContent  = `Réduction de ${fmtPrice(remise)} appliquée !`;
-        feedback.style.display = 'block';
+        input.className      = 'voucher-input v-ok';
+        feedback.className   = 'voucher-feedback v-ok';
+        feedback.innerHTML   = `<i class="fas fa-check-circle"></i> Réduction de ${fmtPrice(remise)} appliquée !`;
+        feedback.style.display = 'flex';
         updateRecapTotal();
       } else {
         appliedVoucher = null;
-        input.className       = 'voucher-input v-error';
-        feedback.className    = 'voucher-feedback v-error';
-        feedback.textContent  = (json.error && typeof json.error === 'string') ? json.error : 'Code invalide ou expiré.';
-        feedback.style.display = 'block';
+        input.className      = 'voucher-input v-error';
+        feedback.className   = 'voucher-feedback v-error';
+        const msg = (json.error && typeof json.error === 'string') ? json.error : 'Code invalide ou expiré.';
+        feedback.innerHTML   = `<i class="fas fa-times-circle"></i> ${msg}`;
+        feedback.style.display = 'flex';
         updateRecapTotal();
       }
     } catch {
-      feedback.className    = 'voucher-feedback v-error';
-      feedback.textContent  = 'Erreur réseau. Réessayez.';
-      feedback.style.display = 'block';
+      feedback.className   = 'voucher-feedback v-error';
+      feedback.innerHTML   = '<i class="fas fa-times-circle"></i> Erreur réseau. Réessayez.';
+      feedback.style.display = 'flex';
     } finally {
       btn.disabled    = false;
       btn.textContent = 'Appliquer';
