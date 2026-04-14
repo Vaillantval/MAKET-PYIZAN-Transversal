@@ -643,11 +643,12 @@
     }
   })();
 
-  const PRODUIT_SLUG    = '{{ produit.slug }}';
-  const PRODUIT_NOM     = '{{ produit.nom|escapejs }}';
-  const PRODUIT_IMAGE   = '{% if produit.image_principale %}{{ produit.image_principale.url }}{% endif %}';
-  const PRODUIT_PRIX    = '{{ produit.prix_unitaire|stringformat:".2f" }}';
-  const PRODUIT_UNITE   = '{{ produit.get_unite_vente_display|escapejs }}';
+  const PRODUIT_SLUG       = '{{ produit.slug }}';
+  const PRODUIT_NOM        = '{{ produit.nom|escapejs }}';
+  const PRODUIT_IMAGE      = '{% if produit.image_principale %}{{ produit.image_principale.url }}{% endif %}';
+  const PRODUIT_PRIX       = '{{ produit.prix_unitaire|stringformat:".2f" }}';
+  const PRODUIT_UNITE      = '{{ produit.get_unite_vente_display|escapejs }}';
+  const PRODUIT_PRODUCTEUR = '{{ produit.producteur.user.get_full_name|escapejs }}';
   const STOCK_REEL      = {{ produit.stock_reel }};
   const QTY_MIN         = {{ produit.quantite_min_commande }};
   const PRIX_UNITAIRE   = {{ produit.prix_unitaire|stringformat:".2f" }};
@@ -747,7 +748,7 @@
       if (ex) {
         ex.quantite += qty;
       } else {
-        items.push({ slug: PRODUIT_SLUG, nom: PRODUIT_NOM, image: imgAbs, prix_unitaire: PRODUIT_PRIX, unite_vente_label: PRODUIT_UNITE, quantite: qty });
+        items.push({ slug: PRODUIT_SLUG, nom: PRODUIT_NOM, image: imgAbs, prix_unitaire: PRODUIT_PRIX, unite_vente_label: PRODUIT_UNITE, producteur_nom: PRODUIT_PRODUCTEUR, quantite: qty });
       }
       guestCartSave(items);
       updateBadgePanier(guestCartCount());

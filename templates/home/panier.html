@@ -231,7 +231,7 @@
         slug:            i.slug,
         nom:             i.nom,
         image:           i.image || '',
-        producteur_nom:  '',
+        producteur_nom:  i.producteur_nom || '',
         prix_unitaire:   parseFloat(i.prix_unitaire).toFixed(2),
         unite_vente_label: i.unite_vente_label,
         quantite:        i.quantite,

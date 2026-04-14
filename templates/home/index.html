@@ -2979,12 +2979,31 @@
         dd.classList.add('open');
         if (!fetched) {
           fetched = true;
-          try {
-            const _acc = localStorage.getItem('mp_access');
-            const r = await fetch('/api/orders/panier/', { headers: {'Authorization': 'Bearer ' + _acc} });
-            renderDD((await r.json()).data || {});
-          } catch {
-            dd.innerHTML = '<div class="cart-dd-empty">Erreur de chargement.</div>';
+          const _acc = localStorage.getItem('mp_access');
+          if (!_acc) {
+            // Invité : lire depuis localStorage
+            try {
+              const gItems = JSON.parse(localStorage.getItem('mp_guest_cart') || '[]');
+              const gTotal = gItems.reduce((s, i) => s + parseFloat(i.prix_unitaire) * i.quantite, 0);
+              renderDD({
+                items: gItems.map(i => ({
+                  nom:          i.nom,
+                  image:        i.image || '',
+                  quantite:     i.quantite,
+                  prix_unitaire: parseFloat(i.prix_unitaire).toFixed(2),
+                })),
+                total: gTotal.toFixed(2),
+              });
+            } catch {
+              dd.innerHTML = '<div class="cart-dd-empty">Panier vide.</div>';
+            }
+          } else {
+            try {
+              const r = await fetch('/api/orders/panier/', { headers: {'Authorization': 'Bearer ' + _acc} });
+              renderDD((await r.json()).data || {});
+            } catch {
+              dd.innerHTML = '<div class="cart-dd-empty">Erreur de chargement.</div>';
+            }
           }
         }
       });
