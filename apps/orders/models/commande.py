@@ -76,7 +76,8 @@ class Commande(models.Model):
             # 8 hex chars = 16^8 ≈ 4 milliards de combinaisons → sans collision
             # Format : CMD-2026-A3F7B2C1 (18 chars, bien en-dessous de max_length=30)
             self.numero_commande = f'CMD-{annee}-{uuid.uuid4().hex[:8].upper()}'
-        self.total = self.sous_total + self.frais_livraison - self.remise
+        from decimal import Decimal
+        self.total = max(Decimal('0'), self.sous_total + self.frais_livraison - self.remise)
         super().save(*args, **kwargs)
 
     @property

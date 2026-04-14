@@ -66,6 +66,18 @@ class VoucherService:
             raise ValueError("Ce voucher est expire ou deja utilise.")
         if voucher.beneficiaire and voucher.beneficiaire != acheteur:
             raise ValueError("Ce voucher n'est pas assigne a votre compte.")
+        # Pour les vouchers ouverts (sans bénéficiaire), un acheteur ne peut
+        # utiliser qu'un seul voucher par programme.
+        if not voucher.beneficiaire:
+            from apps.orders.models import Commande
+            deja_utilise = Commande.objects.filter(
+                acheteur=acheteur,
+                voucher__programme=voucher.programme,
+            ).exists()
+            if deja_utilise:
+                raise ValueError(
+                    "Vous avez deja utilise un voucher de ce programme."
+                )
         remise = voucher.calculer_remise(montant_commande)
         if remise == 0:
             raise ValueError(f"Montant minimum requis : {voucher.montant_commande_min} HTG.")

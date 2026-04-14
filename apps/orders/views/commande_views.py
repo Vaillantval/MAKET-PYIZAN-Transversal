@@ -263,6 +263,22 @@ def commander(request):
             'remise': str(remise_totale),
         }
 
+    # Voucher couvre l'intégralité — passer en PAYE directement, skip Plopplop
+    voucher_couvre_tout = (
+        voucher_obj is not None
+        and all(c.total == Decimal('0') for c in commandes_creees)
+    )
+    if voucher_couvre_tout:
+        for c in commandes_creees:
+            c.methode_paiement = Commande.MethodePaiement.VOUCHER
+            c.statut_paiement  = Commande.StatutPaiement.PAYE
+            c.save(update_fields=['methode_paiement', 'statut_paiement'])
+        response_data['voucher_couvre_tout'] = True
+        return Response(
+            {'success': True, 'data': response_data},
+            status=status.HTTP_201_CREATED,
+        )
+
     # Pour MonCash / NatCash — initier le paiement via Plopplop (appel externe)
     if type_paiement_django is not None and commandes_creees:
         # Initier le paiement Plopplop sur la première commande (redirect unique)

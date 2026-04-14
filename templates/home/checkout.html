@@ -551,6 +551,12 @@
               <div class="voucher-feedback" id="voucher-feedback"></div>
             </div>
 
+            <!-- Couverture totale par voucher -->
+            <div id="voucher-free-note" style="display:none;margin:0 20px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 14px;font-size:12px;color:#166534;align-items:center;gap:8px;">
+              <i class="fas fa-gift" style="font-size:16px;color:#16a34a;flex-shrink:0"></i>
+              <span>Votre voucher couvre l'intégralité de cette commande. Aucun paiement requis.</span>
+            </div>
+
             <div class="recap-footer">
               <button class="btn-submit" id="btn-submit" onclick="passerCommande()" disabled>
                 <img class="pm-btn-img" src="{% static 'img/moncash.png' %}" alt=""> Payer avec MonCash
@@ -761,8 +767,8 @@
 
   // ── Voucher ───────────────────────────────────────────────────────────────
   function updateRecapTotal() {
-    const remise = appliedVoucher ? Number(appliedVoucher.remise) : 0;
-    const total  = Math.max(0, cartTotal - remise);
+    const remise  = appliedVoucher ? Number(appliedVoucher.remise) : 0;
+    const total   = Math.max(0, cartTotal - remise);
     document.getElementById('recap-total').textContent = fmtPrice(total);
 
     const remiseLine = document.getElementById('recap-remise-line');
@@ -772,6 +778,23 @@
       remiseEl.textContent     = '- ' + fmtPrice(remise);
     } else {
       remiseLine.style.display = 'none';
+    }
+
+    // Couverture totale par voucher
+    const freeNote = document.getElementById('voucher-free-note');
+    if (total === 0 && appliedVoucher) {
+      if (freeNote) freeNote.style.display = 'flex';
+      ['btn-submit','btn-submit-mobile'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmer ma commande';
+      });
+      const noteEl = document.querySelector('.security-note span');
+      if (noteEl) noteEl.textContent = 'Votre commande est entièrement couverte par votre voucher. Aucun paiement requis.';
+    } else {
+      if (freeNote) freeNote.style.display = 'none';
+      updateSubmitBtns(selectedPM);
+      const noteEl = document.querySelector('.security-note span');
+      if (noteEl) noteEl.textContent = PM_SECURITY_NOTE[selectedPM] || PM_SECURITY_NOTE.cash;
     }
   }
 
@@ -887,9 +910,13 @@
 
   // ── Validation bouton submit ──────────────────────────────────────────────
   function validateSubmit() {
-    const hasAddr   = selectedAddrId !== null || (formMode !== null && isFormFilled());
-    const preuveOk  = selectedPM !== 'hors_ligne' ||
-                      document.getElementById('preuve-paiement-input')?.files?.length > 0;
+    const hasAddr  = selectedAddrId !== null || (formMode !== null && isFormFilled());
+    const remise   = appliedVoucher ? Number(appliedVoucher.remise) : 0;
+    const totalNet = Math.max(0, cartTotal - remise);
+    // Si le voucher couvre tout, aucune preuve n'est requise même en mode hors_ligne
+    const preuveOk = totalNet === 0 ||
+                     selectedPM !== 'hors_ligne' ||
+                     document.getElementById('preuve-paiement-input')?.files?.length > 0;
     const canSubmit = hasAddr && preuveOk;
     ['btn-submit','btn-submit-mobile'].forEach(id => {
       const btn = document.getElementById(id);
@@ -1055,6 +1082,11 @@
       const json = await r.json();
       if (r.ok) {
         const data = json.data;
+        // Voucher couvre l'intégralité — confirmation directe sans redirect paiement
+        if (data.voucher_couvre_tout) {
+          showConfirmation(data);
+          return;
+        }
         if (selectedPM === 'moncash' || selectedPM === 'natcash') {
           if (data.redirect_url) {
             // Sauvegarder la référence pour la page de retour
