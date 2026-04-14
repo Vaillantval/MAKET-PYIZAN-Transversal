@@ -289,10 +289,19 @@ def vouchers_list(request):
 
     programme_id = request.query_params.get('programme_id')
     statut_f     = request.query_params.get('statut')
+    search_q     = request.query_params.get('search', '').strip()
     if programme_id:
         qs = qs.filter(programme_id=programme_id)
     if statut_f:
         qs = qs.filter(statut=statut_f)
+    if search_q:
+        from django.db.models import Q
+        qs = qs.filter(
+            Q(code__icontains=search_q) |
+            Q(beneficiaire__user__email__icontains=search_q) |
+            Q(beneficiaire__user__first_name__icontains=search_q) |
+            Q(beneficiaire__user__last_name__icontains=search_q)
+        )
 
     return Response({'success': True, 'data': [_voucher_data(v) for v in qs]})
 
@@ -666,7 +675,7 @@ def vouchers_import_excel(request):
     Body (multipart/form-data) :
       file            — fichier .xlsx
       programme_id    — int
-      type_valeur     — 'montant_fixe' | 'pourcentage'
+      type_valeur     — 'fixe' | 'pourcent'
       valeur          — nombre
       date_expiration — YYYY-MM-DD
       montant_commande_min? — nombre

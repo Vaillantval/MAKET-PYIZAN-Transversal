@@ -194,8 +194,8 @@
       <div class="field">
         <label>Type de valeur *</label>
         <select id="v-type">
-          <option value="montant_fixe">Montant fixe (HTG)</option>
-          <option value="pourcentage">Pourcentage (%)</option>
+          <option value="fixe">Montant fixe (HTG)</option>
+          <option value="pourcent">Pourcentage (%)</option>
         </select>
       </div>
       <div class="field">
@@ -464,7 +464,7 @@ async function loadVouchers() {
       <tr>
         <td><strong style="font-family:monospace;font-size:14px">${v.code}</strong></td>
         <td style="font-size:12px;color:var(--text-muted)">${v.programme_nom}</td>
-        <td>${v.beneficiaire_nom}</td>
+        <td>${v.beneficiaire_nom || '—'}</td>
         <td><strong>${v.type_valeur==='pourcentage'?v.valeur+'%':fmt(v.valeur)+' HTG'}</strong></td>
         <td><span class="badge badge-${v.statut}">${v.statut_label}</span></td>
         <td style="font-size:12px;color:var(--text-muted)">${fdate(v.date_expiration)}</td>
