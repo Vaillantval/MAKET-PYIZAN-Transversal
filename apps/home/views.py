@@ -181,6 +181,9 @@ def dashboard_acheteur_adresses(request):
 def dashboard_acheteur_profil(request):
     return render(request, 'dashboard/acheteur_profil.html')
 
+def dashboard_acheteur_vouchers(request):
+    return render(request, 'dashboard/acheteur_vouchers.html')
+
 
 def dashboard_producteur(request):
     return render(request, 'dashboard/producteur.html')

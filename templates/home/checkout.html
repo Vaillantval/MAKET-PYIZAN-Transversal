@@ -200,11 +200,31 @@
     /* ── pm-extra inline dans pm-list (collé sous l'option) ─────── */
     .pm-list .pm-extra { margin-top:-6px; border-radius:0 0 10px 10px; }
 
-    /* ── Bouton commande : animation shimmer continue ────────────── */
+    /* ── Bouton commande : animations permanentes ───────────────── */
     .btn-submit { position:relative; overflow:hidden; }
-    .btn-submit::after { content:''; position:absolute; top:0; left:-100%; width:55%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent); animation:btn-shine 2.8s ease-in-out infinite; pointer-events:none; }
-    @keyframes btn-shine { 0%{left:-100%} 60%,100%{left:150%} }
+
+    /* Shimmer sweep */
+    .btn-submit::after {
+      content:''; position:absolute; top:0; left:-100%; width:55%; height:100%;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+      animation:btn-shine 2.6s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes btn-shine { 0%{left:-100%} 55%,100%{left:150%} }
+
+    /* Glow pulse sur le contour */
+    .btn-submit:not(:disabled) {
+      animation:btn-glow 2.4s ease-in-out infinite;
+    }
+    @keyframes btn-glow {
+      0%,100% { box-shadow:0 4px 14px rgba(26,107,47,.35); }
+      50%      { box-shadow:0 4px 28px rgba(26,107,47,.65), 0 0 0 5px rgba(39,174,96,.18); }
+    }
+
+    /* Désactiver toutes les animations sur disabled */
+    .btn-submit:disabled { animation:none; }
     .btn-submit:disabled::after { display:none; }
+
     .btn-submit .pm-btn-img { width:20px; height:20px; object-fit:contain; border-radius:3px; vertical-align:middle; filter:brightness(0) invert(1); }
 
     /* ── Toast ───────────────────────────────────────────────── */

@@ -14,6 +14,7 @@ urlpatterns = [
     path('dashboard/acheteur/commandes/',    views.dashboard_acheteur_commandes, name='dashboard_acheteur_commandes'),
     path('dashboard/acheteur/adresses/',     views.dashboard_acheteur_adresses,  name='dashboard_acheteur_adresses'),
     path('dashboard/acheteur/profil/',       views.dashboard_acheteur_profil,    name='dashboard_acheteur_profil'),
+    path('dashboard/acheteur/vouchers/',     views.dashboard_acheteur_vouchers,  name='dashboard_acheteur_vouchers'),
     path('dashboard/producteur/',                 views.dashboard_producteur,             name='dashboard_producteur'),
     path('dashboard/producteur/commandes/',       views.dashboard_producteur_commandes,   name='dashboard_producteur_commandes'),
     path('dashboard/producteur/collectes/',       views.dashboard_producteur_collectes,   name='dashboard_producteur_collectes'),

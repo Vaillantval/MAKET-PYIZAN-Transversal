@@ -14,6 +14,10 @@
   <a href="/dashboard/acheteur/adresses/" class="nav-item">
     <i class="fas fa-map-marker-alt"></i> Mes adresses
   </a>
+  <a href="/dashboard/acheteur/vouchers/" class="nav-item">
+    <i class="fas fa-ticket-alt"></i> Mes vouchers
+    <span class="nav-badge" id="sb-badge-vouchers" style="display:none"></span>
+  </a>
   <a href="/" class="nav-item">
     <i class="fas fa-store"></i> Catalogue
   </a>
@@ -307,6 +311,7 @@
   <!-- Codes promo -->
   <div class="section-title" style="margin-top:36px">
     <span><i class="fas fa-ticket-alt" style="color:var(--green-mid);margin-right:7px"></i>Codes promo</span>
+    <a href="/dashboard/acheteur/vouchers/">Voir tous <i class="fas fa-arrow-right"></i></a>
   </div>
 
   <div id="vouchers-loading" class="empty-state">
@@ -499,6 +504,11 @@
           </div>`;
       });
       grid.style.display = 'grid';
+
+      // Badge sidebar — nb vouchers actifs
+      const nbActifs = vouchers.filter(v => v.est_valide).length;
+      const badge = document.getElementById('sb-badge-vouchers');
+      if (badge && nbActifs > 0) { badge.textContent = nbActifs; badge.style.display = 'inline'; }
     } catch (_) {
       document.getElementById('vouchers-loading').style.display = 'none';
       document.getElementById('vouchers-empty').style.display = 'block';
