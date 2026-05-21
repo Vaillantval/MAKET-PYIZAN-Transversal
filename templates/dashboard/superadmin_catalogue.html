@@ -312,7 +312,29 @@ function setFilter(btn) {
 }
 function debouncedSearch() { clearTimeout(_debounce); _debounce = setTimeout(load, 350); }
 
+function clearFieldErrors() {
+  ['err-producteur','err-categorie','err-nom','err-prix_unitaire'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
+  });
+  ['f-producteur','f-categorie','f-nom','f-prix_unitaire'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.borderColor = '';
+  });
+}
+
+function showApiError(spanId, msg) {
+  const el = document.getElementById(spanId);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  const fieldId = spanId.replace('err-', 'f-');
+  const field = document.getElementById(fieldId);
+  if (field) field.style.borderColor = '#e74c3c';
+}
+
 function resetForm() {
+  clearFieldErrors();
   ['f-nom','f-description','f-variete','f-prix_unitaire','f-prix_gros','f-quantite_min_commande',
    'f-seuil_alerte','f-origine','f-saison','f-certifications','f-image'].forEach(id => {
     const el = document.getElementById(id);
@@ -437,9 +459,30 @@ async function submitForm(e) {
     load();
   } else {
     const err = data.error || {};
-    const msg = typeof err === 'string' ? err
-      : err && typeof err === 'object' ? Object.values(err).flat().join(' | ') : 'Erreur de validation';
-    showToast(msg, 'error');
+    if (typeof err === 'string') {
+      showToast(err, 'error');
+    } else {
+      // Peupler les spans inline pour les champs connus
+      const fieldMap = {
+        producteur: 'err-producteur', producteur_id: 'err-producteur',
+        categorie:  'err-categorie',
+        nom:        'err-nom',
+        prix_unitaire: 'err-prix_unitaire',
+      };
+      let shownInline = false;
+      for (const [f, spanId] of Object.entries(fieldMap)) {
+        if (err[f]) {
+          showApiError(spanId, Array.isArray(err[f]) ? err[f][0] : err[f]);
+          shownInline = true;
+        }
+      }
+      // Toast pour les erreurs sans span dédié
+      const rest = Object.entries(err)
+        .filter(([f]) => !Object.keys(fieldMap).includes(f))
+        .map(([, v]) => Array.isArray(v) ? v[0] : v);
+      if (rest.length) showToast(rest.join(' | '), 'error');
+      else if (!shownInline) showToast('Erreur de validation.', 'error');
+    }
   }
 }
 

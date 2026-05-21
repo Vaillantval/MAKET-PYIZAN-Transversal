@@ -249,6 +249,8 @@
   }
   .toast.success { background: #27ae60; }
   .toast.error   { background: #e74c3c; }
+  .field-error { display:block; color:#e74c3c; font-size:11px; margin-top:4px; min-height:14px; }
+  input.is-invalid, select.is-invalid, textarea.is-invalid { border-color:#e74c3c !important; }
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -277,12 +279,14 @@
         <div class="form-group">
           <label>{% trans "Nom du produit *" %}</label>
           <input type="text" id="m-nom" placeholder="{% trans 'Ex: Maïs blanc' %}">
+          <span class="field-error" id="err-nom"></span>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>{% trans "Catégorie *" %}</label>
           <select id="m-categorie"></select>
+          <span class="field-error" id="err-categorie"></span>
         </div>
         <div class="form-group">
           <label>{% trans "Variété" %}</label>
@@ -293,10 +297,12 @@
         <div class="form-group">
           <label>{% trans "Prix unitaire (HTG) *" %}</label>
           <input type="number" id="m-prix" placeholder="0" min="0" step="0.01">
+          <span class="field-error" id="err-prix_unitaire"></span>
         </div>
         <div class="form-group">
           <label>{% trans "Prix de gros (HTG)" %}</label>
           <input type="number" id="m-prix-gros" placeholder="{% trans 'Optionnel' %}" min="0" step="0.01">
+          <span class="field-error" id="err-prix_gros"></span>
         </div>
       </div>
       <div class="form-row">
@@ -323,6 +329,7 @@
         <div class="form-group">
           <label>{% trans "Stock disponible *" %}</label>
           <input type="number" id="m-stock" placeholder="0" min="0">
+          <span class="field-error" id="err-stock_disponible"></span>
         </div>
         <div class="form-group">
           <label>{% trans "Seuil d'alerte stock" %}</label>
@@ -419,7 +426,36 @@
     t.className = `toast ${type}`;
     t.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
     c.appendChild(t);
-    setTimeout(() => t.remove(), 3500);
+    setTimeout(() => t.remove(), 4000);
+  }
+
+  function setFieldErr(spanId, msg) {
+    const el = document.getElementById(spanId);
+    if (el) el.textContent = msg;
+    // Marquer le champ correspondant en rouge
+    const fieldId = spanId.replace('err-', 'm-').replace('_unitaire','').replace('_disponible','').replace('_gros','-gros');
+    const field = document.getElementById(fieldId);
+    if (field) field.classList.add('is-invalid');
+  }
+
+  function showApiErrors(error, fieldMap) {
+    if (!error) { showToast('Une erreur est survenue.', 'error'); return; }
+    if (typeof error === 'string') { showToast(error, 'error'); return; }
+    // Peupler les spans inline pour les champs connus
+    let hasInline = false;
+    for (const [field, spanId] of Object.entries(fieldMap)) {
+      if (error[field]) {
+        const msg = Array.isArray(error[field]) ? error[field][0] : error[field];
+        setFieldErr(spanId, msg);
+        hasInline = true;
+      }
+    }
+    // Toast pour les champs restants ou si aucun inline
+    const unknown = Object.entries(error)
+      .filter(([f]) => !Object.keys(fieldMap).includes(f))
+      .map(([, v]) => Array.isArray(v) ? v[0] : v);
+    if (unknown.length) showToast(unknown.join(' | '), 'error');
+    else if (!hasInline) showToast('Erreur de validation.', 'error');
   }
 
   // ── Chargement ────────────────────────────────────────────────────────────────
@@ -568,10 +604,18 @@
     const prix = document.getElementById('m-prix').value;
     const stock = document.getElementById('m-stock').value;
 
-    if (!nom)   { showToast('Le nom est requis.', 'error'); return; }
-    if (!cat)   { showToast('Choisissez une catégorie.', 'error'); return; }
-    if (!prix)  { showToast('Le prix est requis.', 'error'); return; }
-    if (stock === '') { showToast('Le stock est requis.', 'error'); return; }
+    // Effacer les erreurs précédentes
+    ['err-nom','err-categorie','err-prix_unitaire','err-prix_gros','err-stock_disponible']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ''; });
+    ['m-nom','m-categorie','m-prix','m-stock']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('is-invalid'); });
+
+    let hasErr = false;
+    if (!nom)          { setFieldErr('err-nom', 'Le nom est requis.'); hasErr = true; }
+    if (!cat)          { setFieldErr('err-categorie', 'Choisissez une catégorie.'); hasErr = true; }
+    if (!prix)         { setFieldErr('err-prix_unitaire', 'Le prix est requis.'); hasErr = true; }
+    if (stock === '')  { setFieldErr('err-stock_disponible', 'Le stock est requis.'); hasErr = true; }
+    if (hasErr) return;
 
     const btn = document.getElementById('btn-save-produit');
     btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement…';
@@ -607,10 +651,11 @@
         closeModal();
         await loadCatalogue();
       } else {
-        const msg = data.error
-          ? (typeof data.error === 'object' ? Object.values(data.error).flat().join(' ') : data.error)
-          : 'Erreur.';
-        showToast(msg, 'error');
+        showApiErrors(data.error, {
+          nom: 'err-nom', categorie: 'err-categorie',
+          prix_unitaire: 'err-prix_unitaire', prix_gros: 'err-prix_gros',
+          stock_disponible: 'err-stock_disponible',
+        });
       }
     } catch { showToast('Erreur réseau.', 'error'); }
 
