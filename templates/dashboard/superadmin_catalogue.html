@@ -133,12 +133,17 @@
       </div>
       <div class="field">
         <label>{% trans "Prix unitaire (HTG) *" %}</label>
-        <input type="number" id="f-prix_unitaire" required min="0" step="0.01">
+        <input type="number" id="f-prix_unitaire" required min="0.01" step="0.01">
         <span class="field-error" id="err-prix_unitaire"></span>
       </div>
       <div class="field">
         <label>{% trans "Prix en gros (HTG)" %}</label>
         <input type="number" id="f-prix_gros" min="0" step="0.01" placeholder="{% trans 'Optionnel' %}">
+      </div>
+      <div class="field">
+        <label>{% trans "Stock disponible *" %}</label>
+        <input type="number" id="f-stock_disponible" required min="0" value="0">
+        <span class="field-error" id="err-stock_disponible"></span>
       </div>
       <div class="field">
         <label>{% trans "Qté min. commande" %}</label>
@@ -313,11 +318,11 @@ function setFilter(btn) {
 function debouncedSearch() { clearTimeout(_debounce); _debounce = setTimeout(load, 350); }
 
 function clearFieldErrors() {
-  ['err-producteur','err-categorie','err-nom','err-prix_unitaire'].forEach(id => {
+  ['err-producteur','err-categorie','err-nom','err-prix_unitaire','err-stock_disponible'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.textContent = ''; el.style.display = 'none'; }
   });
-  ['f-producteur','f-categorie','f-nom','f-prix_unitaire'].forEach(id => {
+  ['f-producteur','f-categorie','f-nom','f-prix_unitaire','f-stock_disponible'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.borderColor = '';
   });
@@ -335,11 +340,12 @@ function showApiError(spanId, msg) {
 
 function resetForm() {
   clearFieldErrors();
-  ['f-nom','f-description','f-variete','f-prix_unitaire','f-prix_gros','f-quantite_min_commande',
-   'f-seuil_alerte','f-origine','f-saison','f-certifications','f-image'].forEach(id => {
+  ['f-nom','f-description','f-variete','f-prix_unitaire','f-prix_gros','f-stock_disponible',
+   'f-quantite_min_commande','f-seuil_alerte','f-origine','f-saison','f-certifications','f-image'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = el.type === 'number' && id === 'f-quantite_min_commande' ? '1'
-                      : el.type === 'number' && id === 'f-seuil_alerte' ? '10' : '';
+                      : el.type === 'number' && id === 'f-seuil_alerte' ? '10'
+                      : el.type === 'number' && id === 'f-stock_disponible' ? '0' : '';
   });
   document.getElementById('f-unite_vente').value = 'kg';
   document.getElementById('f-statut').value = 'en_attente';
@@ -376,6 +382,7 @@ async function openEdit(id) {
   document.getElementById('f-prix_unitaire').value = p.prix_unitaire;
   document.getElementById('f-prix_gros').value = p.prix_gros || '';
   document.getElementById('f-unite_vente').value = p.unite_vente;
+  document.getElementById('f-stock_disponible').value = p.stock_disponible ?? 0;
   document.getElementById('f-quantite_min_commande').value = p.quantite_min_commande;
   document.getElementById('f-seuil_alerte').value = p.seuil_alerte;
   document.getElementById('f-origine').value = p.origine;
@@ -412,15 +419,32 @@ function previewImg(input) {
 
 async function submitForm(e) {
   e.preventDefault();
+  clearFieldErrors();
+
+  // Validation côté client
+  const nom         = document.getElementById('f-nom').value.trim();
+  const categorie   = document.getElementById('f-categorie').value;
+  const prixU       = parseFloat(document.getElementById('f-prix_unitaire').value);
+  const producteur  = document.getElementById('f-producteur').value;
+  const stockVal    = document.getElementById('f-stock_disponible').value;
+
+  let hasError = false;
+  if (!nom) { showApiError('err-nom', 'Le nom est requis.'); hasError = true; }
+  if (!categorie) { showApiError('err-categorie', 'Veuillez choisir une catégorie.'); hasError = true; }
+  if (!prixU || prixU <= 0) { showApiError('err-prix_unitaire', 'Le prix unitaire doit être supérieur à 0.'); hasError = true; }
+  if (!_editId && !producteur) { showApiError('err-producteur', 'Veuillez choisir un producteur.'); hasError = true; }
+  if (hasError) return;
+
   const btn = document.getElementById('btn-submit');
   btn.disabled = true;
 
   const fd = new FormData();
-  fd.append('nom',                  document.getElementById('f-nom').value);
+  fd.append('nom',                  nom);
   fd.append('description',          document.getElementById('f-description').value);
   fd.append('variete',              document.getElementById('f-variete').value);
   fd.append('prix_unitaire',        document.getElementById('f-prix_unitaire').value);
   fd.append('prix_gros',            document.getElementById('f-prix_gros').value);
+  fd.append('stock_disponible',     stockVal !== '' ? stockVal : '0');
   fd.append('unite_vente',          document.getElementById('f-unite_vente').value);
   fd.append('quantite_min_commande',document.getElementById('f-quantite_min_commande').value);
   fd.append('seuil_alerte',         document.getElementById('f-seuil_alerte').value);
@@ -436,16 +460,14 @@ async function submitForm(e) {
 
   let url, method;
   if (_editId) {
+    fd.append('categorie', categorie);
     url = `/api/admin/catalogue/${_editId}/detail/`;
     method = 'PATCH';
   } else {
-    fd.append('producteur_id', document.getElementById('f-producteur').value);
-    fd.append('categorie',     document.getElementById('f-categorie').value);
+    fd.append('producteur_id', producteur);
+    fd.append('categorie',     categorie);
     url = '/api/admin/catalogue/create/';
     method = 'POST';
-  }
-  if (_editId) {
-    fd.append('categorie', document.getElementById('f-categorie').value);
   }
 
   const authH = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
@@ -462,12 +484,12 @@ async function submitForm(e) {
     if (typeof err === 'string') {
       showToast(err, 'error');
     } else {
-      // Peupler les spans inline pour les champs connus
       const fieldMap = {
         producteur: 'err-producteur', producteur_id: 'err-producteur',
         categorie:  'err-categorie',
         nom:        'err-nom',
-        prix_unitaire: 'err-prix_unitaire',
+        prix_unitaire:    'err-prix_unitaire',
+        stock_disponible: 'err-stock_disponible',
       };
       let shownInline = false;
       for (const [f, spanId] of Object.entries(fieldMap)) {
@@ -476,7 +498,6 @@ async function submitForm(e) {
           shownInline = true;
         }
       }
-      // Toast pour les erreurs sans span dédié
       const rest = Object.entries(err)
         .filter(([f]) => !Object.keys(fieldMap).includes(f))
         .map(([, v]) => Array.isArray(v) ? v[0] : v);
