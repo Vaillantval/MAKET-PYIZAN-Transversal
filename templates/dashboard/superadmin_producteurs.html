@@ -81,22 +81,22 @@
   .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
   @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 
-  /* ── User search UI ── */
-  .user-search-wrap { position:relative; }
-  .user-search-wrap input { width:100%; box-sizing:border-box; padding:9px 12px 9px 34px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; transition:border-color .18s; }
-  .user-search-wrap input:focus { border-color:var(--green-mid); }
-  .user-search-wrap .search-ico { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px; pointer-events:none; }
-  .user-dropdown { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--card); border:1.5px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:300; max-height:210px; overflow-y:auto; }
+  /* ── User select UI ── */
+  .user-select-wrap { position:relative; }
+  .user-select-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text-muted); cursor:pointer; user-select:none; transition:border-color .18s; }
+  .user-select-bar:hover, .user-select-bar.open { border-color:var(--green-mid); color:var(--text); }
+  .user-select-bar .bar-arrow { font-size:11px; color:var(--text-muted); transition:transform .2s; flex-shrink:0; }
+  .user-select-bar.open .bar-arrow { transform:rotate(180deg); }
+  .user-dropdown { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--card); border:1.5px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.13); z-index:300; max-height:220px; overflow-y:auto; }
+  .user-dropdown.open { display:block; }
   .user-dropdown-item { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .15s; }
   .user-dropdown-item:last-child { border-bottom:none; }
   .user-dropdown-item:hover { background:var(--bg); }
-  .user-dropdown-item.disabled { opacity:.5; cursor:not-allowed; pointer-events:none; }
   .user-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; flex-shrink:0; }
   .user-dropdown-info { flex:1; min-width:0; }
   .user-dropdown-info .uname { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .user-dropdown-info .uemail { font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .user-role-tag { font-size:10px; padding:2px 7px; border-radius:10px; border:1px solid var(--border); color:var(--text-muted); background:var(--bg); white-space:nowrap; flex-shrink:0; }
-  .user-role-tag.already { background:#fde8e8; color:#e74c3c; border-color:#fde8e8; }
 
   .user-selected-card { display:none; margin-top:10px; padding:10px 14px; background:var(--bg); border:1.5px solid var(--green-mid); border-radius:8px; align-items:center; gap:10px; }
   .user-selected-card.visible { display:flex; }
@@ -136,12 +136,11 @@
 
         <!-- Mode A : sélectionner un utilisateur existant -->
         <div class="full" id="user-search-section">
-          <div class="user-search-wrap">
-            <i class="fas fa-search search-ico"></i>
-            <input type="text" id="user-search-input"
-                   placeholder="{% trans 'Rechercher par nom, email, téléphone...' %}"
-                   autocomplete="off"
-                   oninput="debouncedUserSearch()" onfocus="debouncedUserSearch()">
+          <div class="user-select-wrap">
+            <div class="user-select-bar" id="user-select-bar" onclick="toggleUserDropdown()">
+              <span id="user-select-label">{% trans "Sélectionner un utilisateur..." %}</span>
+              <i class="fas fa-chevron-down bar-arrow"></i>
+            </div>
             <div class="user-dropdown" id="user-dropdown"></div>
           </div>
           <div class="user-selected-card" id="user-selected-card"></div>
@@ -459,11 +458,11 @@ async function doAction(id, statut, fromDrawer = false) {
 // ── Création / Édition Producteur ─────────────────────────────────────────
 let _editProdId    = null;
 let _selectedUserId = null;  // user existant sélectionné pour la création
-let _userSearchDebounce;
 
 // ── Bascule entre les deux modes de création ──────────────────
 function switchToNewUserMode() {
   _selectedUserId = null;
+  closeUserDropdown();
   document.getElementById('user-search-section').style.display = 'none';
   document.getElementById('user-new-section').style.display    = 'block';
   document.getElementById('user-section-label').textContent    = 'Nouveau compte utilisateur';
@@ -474,69 +473,85 @@ function switchToExistingUserMode() {
   document.getElementById('user-new-section').style.display    = 'none';
   document.getElementById('user-search-section').style.display = 'block';
   document.getElementById('user-section-label').textContent    = 'Associer un compte utilisateur';
-  document.getElementById('user-search-input').value = '';
-  document.getElementById('user-dropdown').style.display = 'none';
+  closeUserDropdown();
   clearSelectedUser();
   ['f-username','f-telephone','f-first_name','f-last_name','f-email','f-password','f-password2']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['err-username','err-email'].forEach(id => { document.getElementById(id).textContent = ''; });
 }
 
-// ── Recherche utilisateurs existants ──────────────────────────
-function debouncedUserSearch() {
-  clearTimeout(_userSearchDebounce);
-  _userSearchDebounce = setTimeout(searchUsers, 280);
+// ── Dropdown utilisateurs (chargement à la demande) ───────────
+let _usersCache = null;
+
+function closeUserDropdown() {
+  const bar      = document.getElementById('user-select-bar');
+  const dropdown = document.getElementById('user-dropdown');
+  if (bar)      bar.classList.remove('open');
+  if (dropdown) dropdown.classList.remove('open');
 }
 
-async function searchUsers() {
-  const q        = document.getElementById('user-search-input').value.trim();
+async function toggleUserDropdown() {
+  const bar      = document.getElementById('user-select-bar');
   const dropdown = document.getElementById('user-dropdown');
-  if (!q) { dropdown.style.display = 'none'; return; }
 
-  dropdown.style.display = 'block';
-  dropdown.innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:12px"><i class="fas fa-spinner fa-spin"></i> Recherche…</div>';
+  if (dropdown.classList.contains('open')) {
+    closeUserDropdown(); return;
+  }
 
-  try {
-    const r = await fetch(`/api/admin/users/?search=${encodeURIComponent(q)}`, { headers: H });
-    if (!r.ok) { dropdown.style.display = 'none'; return; }
-    const users = (await r.json()).data || [];
+  bar.classList.add('open');
+  dropdown.classList.add('open');
+  dropdown.innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:12px"><i class="fas fa-spinner fa-spin"></i> Chargement…</div>';
 
-    if (!users.length) {
-      dropdown.innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:12px">Aucun utilisateur trouvé.</div>';
+  // Charger une seule fois par ouverture de modal
+  if (!_usersCache) {
+    try {
+      const r = await fetch('/api/admin/users/', { headers: H });
+      if (!r.ok) throw new Error();
+      _usersCache = (await r.json()).data || [];
+    } catch {
+      dropdown.innerHTML = '<div style="padding:10px 14px;color:#e74c3c;font-size:12px">Erreur de chargement.</div>';
       return;
     }
+  }
 
-    dropdown.innerHTML = '';
-    const roleLabels = { acheteur:'Acheteur', producteur:'Producteur', collecteur:'Collecteur', superadmin:'Superadmin', admin:'Admin' };
-    users.slice(0, 8).forEach(u => {
-      const alreadyProd = u.profil_producteur_statut !== null && u.profil_producteur_statut !== undefined;
-      const initial     = (u.full_name || u.username || '?')[0].toUpperCase();
-      const item        = document.createElement('div');
-      item.className    = 'user-dropdown-item' + (alreadyProd ? ' disabled' : '');
+  // Filtrer : uniquement les utilisateurs sans profil producteur
+  const roleLabels  = { acheteur:'Acheteur', collecteur:'Collecteur', superadmin:'Superadmin', admin:'Admin' };
+  const disponibles = _usersCache.filter(u =>
+    u.profil_producteur_statut === null || u.profil_producteur_statut === undefined
+  );
 
-      item.innerHTML = `
-        <div class="user-avatar" style="background:${alreadyProd ? '#ccc' : 'var(--green-mid)'}">
-          ${initial}
-        </div>
-        <div class="user-dropdown-info">
-          <div class="uname">${escHtml(u.full_name || u.username)}</div>
-          <div class="uemail">${escHtml(u.email)}${u.telephone ? ' · ' + escHtml(u.telephone) : ''}</div>
-        </div>
-        <span class="user-role-tag${alreadyProd ? ' already' : ''}">
-          ${alreadyProd ? 'Déjà producteur' : (roleLabels[u.role] || u.role)}
-        </span>`;
+  if (!disponibles.length) {
+    dropdown.innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:12px">Aucun utilisateur disponible.</div>';
+    return;
+  }
 
-      if (!alreadyProd) item.onclick = () => selectUser(u);
-      dropdown.appendChild(item);
-    });
-  } catch { dropdown.style.display = 'none'; }
+  dropdown.innerHTML = '';
+  disponibles.forEach(u => {
+    const initial = (u.full_name || u.username || '?')[0].toUpperCase();
+    const item    = document.createElement('div');
+    item.className = 'user-dropdown-item';
+    item.innerHTML = `
+      <div class="user-avatar" style="background:var(--green-mid)">${initial}</div>
+      <div class="user-dropdown-info">
+        <div class="uname">${escHtml(u.full_name || u.username)}</div>
+        <div class="uemail">${escHtml(u.email)}${u.telephone ? ' · ' + escHtml(u.telephone) : ''}</div>
+      </div>
+      <span class="user-role-tag">${roleLabels[u.role] || u.role}</span>`;
+    item.onclick = () => selectUser(u);
+    dropdown.appendChild(item);
+  });
 }
 
 function selectUser(u) {
   _selectedUserId = u.id;
-  document.getElementById('user-dropdown').style.display = 'none';
-  document.getElementById('user-search-input').value     = '';
+  closeUserDropdown();
 
+  // Mettre à jour le label de la barre
+  const label = document.getElementById('user-select-label');
+  label.style.color = 'var(--text)';
+  label.textContent = u.full_name || u.username;
+
+  // Afficher la carte de confirmation
   const card = document.getElementById('user-selected-card');
   card.classList.add('visible');
   card.innerHTML = `
@@ -549,23 +564,25 @@ function selectUser(u) {
     </div>
     <button type="button" onclick="clearSelectedUser()"
             style="background:transparent;border:none;cursor:pointer;color:var(--text-muted);font-size:17px;flex-shrink:0;padding:4px"
-            title="Changer">
+            title="Changer de sélection">
       <i class="fas fa-times-circle"></i>
     </button>`;
 }
 
 function clearSelectedUser() {
   _selectedUserId = null;
-  const card = document.getElementById('user-selected-card');
+  const card  = document.getElementById('user-selected-card');
+  const label = document.getElementById('user-select-label');
   card.classList.remove('visible');
   card.innerHTML = '';
+  label.style.color = '';
+  label.textContent = 'Sélectionner un utilisateur...';
 }
 
 // Fermer dropdown si clic hors de la zone
 document.addEventListener('click', e => {
   const wrap = document.getElementById('user-search-section');
-  if (wrap && !wrap.contains(e.target))
-    document.getElementById('user-dropdown').style.display = 'none';
+  if (wrap && !wrap.contains(e.target)) closeUserDropdown();
 });
 
 // ── Ouverture du modal Création ───────────────────────────────
@@ -585,9 +602,9 @@ function openCreate() {
   ['edit-firstname-wrap','edit-lastname-wrap','edit-email-wrap','edit-telephone-wrap']
     .forEach(id => { document.getElementById(id).style.display = 'none'; });
 
-  // Reset search
-  document.getElementById('user-search-input').value    = '';
-  document.getElementById('user-dropdown').style.display = 'none';
+  // Reset dropdown
+  _usersCache = null;
+  closeUserDropdown();
   clearSelectedUser();
 
   // Reset champs nouveau compte
