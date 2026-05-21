@@ -1,0 +1,9 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "sh -c 'celery -A config worker --loglevel=info --concurrency=2'"
+restartPolicyType = "always"
+restartPolicyMaxRetries = 10
+# Pas de healthcheck — un worker Celery n'expose pas de port HTTP

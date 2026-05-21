@@ -11,15 +11,11 @@ from apps.collectes.models import ParticipationCollecte
 @receiver(post_save, sender=Producteur)
 def on_producteur_cree(sender, instance, created, **kwargs):
     if created:
-        from apps.emails.utils import (
-            email_producteur_bienvenue,
-            email_admin_nouveau_producteur,
-        )
-        email_producteur_bienvenue(instance)
-        email_admin_nouveau_producteur(instance)
+        from apps.emails.tasks import task_producteur_inscrit
+        task_producteur_inscrit.delay(instance.pk)
 
 
-# ── Signal : Statut producteur changé (validation/rejet/suspension) ───────
+# ── Signal : Statut producteur changé (validation/rejet/suspension) ─────────
 @receiver(pre_save, sender=Producteur)
 def on_producteur_statut_change(sender, instance, **kwargs):
     if not instance.pk:
@@ -32,26 +28,10 @@ def on_producteur_statut_change(sender, instance, **kwargs):
     if ancien.statut == instance.statut:
         return
 
-    from apps.emails.utils import (
-        email_producteur_valide,
-        email_producteur_suspendu,
-        email_producteur_rejete,
-    )
-
-    if instance.statut == Producteur.Statut.ACTIF:
-        email_producteur_valide(instance)
-    elif instance.statut == Producteur.Statut.SUSPENDU:
-        email_producteur_suspendu(instance)
-    elif instance.statut == Producteur.Statut.INACTIF:
-        email_producteur_rejete(instance)
-
-
-# ── Signal : Nouvelle commande créée ───────────────────────────
-# Les emails de confirmation de commande sont envoyés uniquement
-# après confirmation du paiement (voir on_paiement_change ci-dessous).
-@receiver(post_save, sender=Commande)
-def on_commande_creee(sender, instance, created, **kwargs):
-    pass
+    from apps.emails.tasks import task_producteur_statut_change
+    # Passer le nouveau statut en paramètre — à l'exécution de la tâche,
+    # le save() sera terminé et l'instance en base aura le bon statut.
+    task_producteur_statut_change.delay(instance.pk, instance.statut)
 
 
 # ── Signal : Statut commande changé ────────────────────────────
@@ -67,8 +47,8 @@ def on_commande_statut_change(sender, instance, **kwargs):
     if ancienne.statut == instance.statut:
         return
 
-    from apps.emails.utils import email_statut_commande_change
-    email_statut_commande_change(instance, ancienne.get_statut_display())
+    from apps.emails.tasks import task_commande_statut_change
+    task_commande_statut_change.delay(instance.pk, ancienne.get_statut_display())
 
 
 # ── Signal : Paiement changé ────────────────────────────────────
@@ -84,25 +64,13 @@ def on_paiement_change(sender, instance, **kwargs):
     if ancien.statut == instance.statut:
         return
 
-    from apps.emails.utils import (
-        email_paiement_confirme,
-        email_preuve_paiement_admin
-    )
+    from apps.emails.tasks import task_paiement_confirme, task_preuve_paiement_soumise
 
     if instance.statut == Paiement.Statut.CONFIRME:
-        email_paiement_confirme(instance)
-        # Envoyer les emails de commande uniquement après paiement confirmé
-        from apps.emails.utils import (
-            email_nouvelle_commande_acheteur,
-            email_nouvelle_commande_admin,
-        )
-        from apps.emails.fcm_notifications import push_nouvelle_commande_admin
-        email_nouvelle_commande_acheteur(instance.commande)
-        email_nouvelle_commande_admin(instance.commande)
-        push_nouvelle_commande_admin(instance.commande)
+        task_paiement_confirme.delay(instance.pk)
 
     if instance.statut == Paiement.Statut.SOUMIS:
-        email_preuve_paiement_admin(instance)
+        task_preuve_paiement_soumise.delay(instance.pk)
 
 
 # ── Signal : Nouvelle alerte stock ─────────────────────────────
@@ -110,21 +78,15 @@ def on_paiement_change(sender, instance, **kwargs):
 def on_alerte_stock_creee(sender, instance, created, **kwargs):
     if created and instance.niveau in [
         AlerteStock.Niveau.CRITIQUE,
-        AlerteStock.Niveau.EPUISE
+        AlerteStock.Niveau.EPUISE,
     ]:
-        from apps.emails.utils import email_alerte_stock, email_alerte_stock_admin
-        from apps.emails.fcm_notifications import push_alerte_stock_admin, push_alerte_stock_producteur
-        email_alerte_stock(instance)        # email producteur
-        email_alerte_stock_admin(instance)  # email admin
-        push_alerte_stock_producteur(instance)
-        push_alerte_stock_admin(instance)
+        from apps.emails.tasks import task_alerte_stock
+        task_alerte_stock.delay(instance.pk)
 
 
 # ── Signal : Invitation collecte ───────────────────────────────
 @receiver(post_save, sender=ParticipationCollecte)
 def on_participation_creee(sender, instance, created, **kwargs):
     if created:
-        from apps.emails.utils import email_invitation_collecte
-        from apps.emails.fcm_notifications import push_invitation_collecte_producteur
-        email_invitation_collecte(instance)
-        push_invitation_collecte_producteur(instance)
+        from apps.emails.tasks import task_invitation_collecte
+        task_invitation_collecte.delay(instance.pk)

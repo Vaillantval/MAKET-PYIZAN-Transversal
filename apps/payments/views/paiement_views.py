@@ -290,31 +290,21 @@ def plopplop_verify(request):
             'commandes':   list(commandes_qs.values('numero_commande', 'total')),
         })
 
-    # Paiement non confirmé — notifier l'acheteur et les admins
+    # Paiement non confirmé — notifier l'acheteur et les admins (async)
     if commandes_list:
         try:
-            acheteur_user   = commandes_list[0].acheteur.user
-            methode_display = methode or (
-                commandes_list[0].get_methode_paiement_display()
-            )
-            from apps.emails.utils import (
-                email_paiement_echec_acheteur,
-                email_paiement_echec_admin,
-            )
-            email_paiement_echec_acheteur(
-                commandes=commandes_list,
+            acheteur_user = commandes_list[0].acheteur.user
+            from apps.emails.tasks import task_paiement_echec
+            task_paiement_echec.delay(
+                commande_ids=[c.pk for c in commandes_list],
                 methode=commandes_list[0].methode_paiement,
                 prenom=acheteur_user.first_name,
                 email_dest=acheteur_user.email,
-            )
-            email_paiement_echec_admin(
-                commandes=commandes_list,
-                methode=commandes_list[0].methode_paiement,
-                acheteur=acheteur_user,
+                acheteur_id=acheteur_user.pk,
                 raison=f"Plopplop trans_status={trans_status!r} — ref={commande_ref}",
             )
         except Exception:
-            logger.exception("Erreur envoi notification paiement non confirme — ref=%s", commande_ref)
+            logger.exception("Erreur queuing notification paiement non confirme — ref=%s", commande_ref)
 
     return Response({
         'success':  True,

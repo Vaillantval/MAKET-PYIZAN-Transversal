@@ -1,0 +1,9 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "sh -c 'celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler'"
+restartPolicyType = "always"
+restartPolicyMaxRetries = 10
+# Pas de healthcheck — beat n'expose pas de port HTTP

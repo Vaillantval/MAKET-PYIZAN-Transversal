@@ -457,14 +457,10 @@ def vouchers_bulk_create(request):
     )
     crees_list = list(crees_qs)
 
-    # Envoyer un email à chaque bénéficiaire
-    from apps.emails.utils import email_voucher_cree
+    # Envoyer un email à chaque bénéficiaire (async)
+    from apps.emails.tasks import task_voucher_cree
     for v in crees_list:
-        try:
-            email_voucher_cree(v)
-        except Exception:
-            import logging
-            logging.getLogger(__name__).exception("Erreur envoi email voucher %s", v.code)
+        task_voucher_cree.delay(v.pk)
 
     return Response(
         {
@@ -782,14 +778,10 @@ def vouchers_import_excel(request):
     )
     crees_list = list(crees_qs)
 
-    # Envoyer un email à chaque bénéficiaire
-    from apps.emails.utils import email_voucher_cree
-    import logging as _logging
+    # Envoyer un email à chaque bénéficiaire (async)
+    from apps.emails.tasks import task_voucher_cree
     for v in crees_list:
-        try:
-            email_voucher_cree(v)
-        except Exception:
-            _logging.getLogger(__name__).exception("Erreur envoi email voucher %s", v.code)
+        task_voucher_cree.delay(v.pk)
 
     return Response(
         {

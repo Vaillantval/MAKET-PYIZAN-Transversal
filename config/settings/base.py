@@ -25,6 +25,7 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'drf_spectacular',
     'django_filters',
+    'django_celery_beat',
 ]
 
 LOCAL_APPS = [
@@ -244,4 +245,22 @@ JAZZMIN_UI_TWEAKS = {
 RESEND_API_KEY      = config('RESEND_API_KEY', default='')
 DEFAULT_FROM_EMAIL  = config('DEFAULT_FROM_EMAIL', default='Maket Peyizan <info@maketpeyizan.ht>')
 ADMINS_NOTIFY       = config('ADMINS_NOTIFY', default='')
+
+# ── CELERY ───────────────────────────────────────────────────────
+CELERY_BROKER_URL        = config('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND    = config('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_TASK_SERIALIZER   = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT    = ['json']
+CELERY_TIMEZONE          = TIME_ZONE
+CELERY_ENABLE_UTC        = True
+
+# Retry automatique si le broker est temporairement indisponible
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Limite la durée de vie des résultats (inutile de les garder indéfiniment)
+CELERY_RESULT_EXPIRES = 3600  # 1 heure
+
+# Beat — tâches planifiées (activées par django-celery-beat)
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
