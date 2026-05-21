@@ -87,7 +87,7 @@
   .user-select-bar:hover, .user-select-bar.open { border-color:var(--green-mid); color:var(--text); }
   .user-select-bar .bar-arrow { font-size:11px; color:var(--text-muted); transition:transform .2s; flex-shrink:0; }
   .user-select-bar.open .bar-arrow { transform:rotate(180deg); }
-  .user-dropdown { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--card); border:1.5px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.13); z-index:300; max-height:220px; overflow-y:auto; }
+  .user-dropdown { display:none; position:fixed; background:var(--card); border:1.5px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.13); z-index:650; max-height:220px; overflow-y:auto; }
   .user-dropdown.open { display:block; }
   .user-dropdown-item { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .15s; }
   .user-dropdown-item:last-child { border-bottom:none; }
@@ -498,6 +498,12 @@ async function toggleUserDropdown() {
     closeUserDropdown(); return;
   }
 
+  // Positionner le dropdown en fixed sous la barre (échappe overflow:auto du modal)
+  const rect = bar.getBoundingClientRect();
+  dropdown.style.top   = (rect.bottom + 4) + 'px';
+  dropdown.style.left  = rect.left + 'px';
+  dropdown.style.width = rect.width + 'px';
+
   bar.classList.add('open');
   dropdown.classList.add('open');
   dropdown.innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:12px"><i class="fas fa-spinner fa-spin"></i> Chargement…</div>';
@@ -505,11 +511,15 @@ async function toggleUserDropdown() {
   // Charger une seule fois par ouverture de modal
   if (!_usersCache) {
     try {
-      const r = await fetch('/api/admin/users/', { headers: H });
-      if (!r.ok) throw new Error();
+      const freshToken = localStorage.getItem('mp_access');
+      const r = await fetch('/api/admin/users/', {
+        headers: { 'Authorization': 'Bearer ' + freshToken, 'Content-Type': 'application/json' }
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       _usersCache = (await r.json()).data || [];
-    } catch {
+    } catch(err) {
       dropdown.innerHTML = '<div style="padding:10px 14px;color:#e74c3c;font-size:12px">Erreur de chargement.</div>';
+      console.error('users fetch error', err);
       return;
     }
   }
@@ -581,9 +591,15 @@ function clearSelectedUser() {
 
 // Fermer dropdown si clic hors de la zone
 document.addEventListener('click', e => {
-  const wrap = document.getElementById('user-search-section');
-  if (wrap && !wrap.contains(e.target)) closeUserDropdown();
+  const wrap     = document.getElementById('user-search-section');
+  const dropdown = document.getElementById('user-dropdown');
+  if (wrap && !wrap.contains(e.target) && dropdown && !dropdown.contains(e.target)) {
+    closeUserDropdown();
+  }
 });
+
+// Fermer/repositionner le dropdown si le modal défile
+document.getElementById('prod-modal').addEventListener('scroll', closeUserDropdown, true);
 
 // ── Ouverture du modal Création ───────────────────────────────
 function openCreate() {
