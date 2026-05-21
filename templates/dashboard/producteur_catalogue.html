@@ -574,11 +574,11 @@
     if (stock === '') { showToast('Le stock est requis.', 'error'); return; }
 
     const btn = document.getElementById('btn-save-produit');
-    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Enregistrement…';" %}
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement…';
 
     const formData = new FormData();
     formData.append('nom',                   nom);
-    formData.append('categorie_id',          cat);
+    formData.append('categorie',              cat);
     formData.append('variete',               document.getElementById('m-variete').value.trim());
     formData.append('prix_unitaire',         prix);
     formData.append('prix_gros',             document.getElementById('m-prix-gros').value || '');
@@ -614,7 +614,7 @@
       }
     } catch { showToast('Erreur réseau.', 'error'); }
 
-    btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> {% trans "Enregistrer';" %}
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Enregistrer';
   }
 
   // ── Suppression ───────────────────────────────────────────────────────────────

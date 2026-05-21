@@ -332,7 +332,7 @@ async function openCreate() {
   _editId = null;
   resetForm();
   document.getElementById('drawer-title').textContent = 'Nouveau produit';
-  document.getElementById('btn-submit').innerHTML = '<i class="fas fa-plus"></i> {% trans "Créer le produit';" %}
+  document.getElementById('btn-submit').innerHTML = '<i class="fas fa-plus"></i> Créer le produit';
   document.getElementById('drawer-overlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
 }
@@ -340,7 +340,7 @@ async function openCreate() {
 async function openEdit(id) {
   _editId = id;
   document.getElementById('drawer-title').textContent = 'Éditer le produit';
-  document.getElementById('btn-submit').innerHTML = '<i class="fas fa-save"></i> {% trans "Enregistrer';" %}
+  document.getElementById('btn-submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
   document.getElementById('drawer-overlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
 
@@ -418,12 +418,12 @@ async function submitForm(e) {
     method = 'PATCH';
   } else {
     fd.append('producteur_id', document.getElementById('f-producteur').value);
-    fd.append('categorie_id',  document.getElementById('f-categorie').value);
+    fd.append('categorie',     document.getElementById('f-categorie').value);
     url = '/api/admin/catalogue/create/';
     method = 'POST';
   }
   if (_editId) {
-    fd.append('categorie_id', document.getElementById('f-categorie').value);
+    fd.append('categorie', document.getElementById('f-categorie').value);
   }
 
   const authH = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
@@ -437,7 +437,8 @@ async function submitForm(e) {
     load();
   } else {
     const err = data.error || {};
-    const msg = typeof err === 'string' ? err : (err.nom || err.producteur_id || err.categorie_id || 'Erreur de validation');
+    const msg = typeof err === 'string' ? err
+      : err && typeof err === 'object' ? Object.values(err).flat().join(' | ') : 'Erreur de validation';
     showToast(msg, 'error');
   }
 }
