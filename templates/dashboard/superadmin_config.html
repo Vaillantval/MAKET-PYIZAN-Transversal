@@ -512,18 +512,27 @@ function showToast(msg, type='success') {
 // Navigate via hash
 function checkHash() {
   const hash = window.location.hash;
+  const btns   = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.tab-panel');
   if (hash === '#faq') {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    btns.forEach(b => b.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    btns[1].classList.add('active');
     document.getElementById('tab-faq').classList.add('active');
     loadFaqCats();
   } else if (hash === '#contact') {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn')[2].classList.add('active');
+    btns.forEach(b => b.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    btns[2].classList.add('active');
     document.getElementById('tab-contact').classList.add('active');
     loadMsgs('');
+  } else {
+    // #settings, hash vide, ou tout autre hash non reconnu → onglet Paramètres
+    btns.forEach(b => b.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    btns[0].classList.add('active');
+    document.getElementById('tab-settings').classList.add('active');
+    loadSettings();
   }
 }
 window.addEventListener('hashchange', checkHash);
@@ -1114,6 +1123,5 @@ async function confirmerEnvoi() {
 mpAuthCheck('superadmin').then(u => {
   if (!u || !u.is_superuser) return;
   checkHash();
-  if (!window.location.hash) loadSettings();
 });
 {% endblock %}
