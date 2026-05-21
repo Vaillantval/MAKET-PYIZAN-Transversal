@@ -269,18 +269,35 @@ def plopplop_verify(request):
     commandes_list = list(commandes_qs)
 
     if trans_status == 'ok':
-        commandes_qs.update(
-            statut_paiement=Commande.StatutPaiement.VERIFIE,
-            reference_paiement=id_transaction,
-        )
-        # Mettre à jour le Paiement associé
-        Paiement.objects.filter(
+        from apps.orders.services.commande_service import CommandeService
+
+        paiements_a_confirmer = Paiement.objects.filter(
             commande__numero_commande=commande_ref,
             statut__in=[Paiement.Statut.INITIE, Paiement.Statut.EN_ATTENTE],
-        ).update(
-            statut=Paiement.Statut.VERIFIE,
-            id_transaction=id_transaction,
-        )
+        ).select_related('commande')
+
+        for paiement in paiements_a_confirmer:
+            # 1. Enregistrer l'ID Plopplop avant confirmation
+            paiement.id_transaction = id_transaction
+            paiement.save(update_fields=['id_transaction'])
+
+            # 2. Confirmer le paiement → statut_paiement = PAYE
+            #    Déclenche le signal pre_save → task_paiement_confirme.delay()
+            PaiementService.confirmer_paiement(
+                paiement,
+                verifie_par=None,
+                note_verification=f"Confirmé automatiquement via Plopplop — {id_transaction}",
+            )
+
+            # 3. Confirmer la commande → statut = CONFIRMEE, stock débité
+            try:
+                CommandeService.confirmer_commande(paiement.commande)
+            except Exception as e:
+                logger.warning(
+                    "plopplop_verify: confirmer_commande échoué pour %s : %s",
+                    paiement.commande.numero_commande, e,
+                )
+
         return Response({
             'success':     True,
             'confirme':    True,
