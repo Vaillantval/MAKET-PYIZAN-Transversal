@@ -46,47 +46,100 @@ def producteurs_list(request):
 @authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsSuperAdmin])
 def producteur_create(request):
-    """Créer un producteur depuis le panel admin."""
-    data = request.data.copy()
-    data['role'] = 'producteur'
-    # L'admin n'a pas de champ password2 dans la modale — on le duplique
-    if 'password2' not in data and 'password' in data:
-        data['password2'] = data['password']
-
-    serializer = RegisterSerializer(data=data)
-    if not serializer.is_valid():
-        return Response(
-            {'success': False, 'error': serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    user       = serializer.save()
-    producteur = user.profil_producteur
-
-    # Champs non gérés par RegisterSerializer
-    if request.data.get('adresse_complete'):
-        producteur.adresse_complete = request.data['adresse_complete']
-    if request.data.get('note_admin'):
-        producteur.note_admin = request.data['note_admin']
-
-    # Honorer le statut choisi par l'admin (défaut : en_attente)
+    """
+    Créer un producteur depuis le panel admin.
+    Deux modes :
+      - user_id fourni  → associer un utilisateur existant
+      - sinon           → créer un nouvel utilisateur via RegisterSerializer
+    """
     STATUTS_VALIDES = ['actif', 'en_attente', 'suspendu', 'inactif']
-    statut_choisi = request.data.get('statut', 'en_attente')
-    producteur.statut = statut_choisi if statut_choisi in STATUTS_VALIDES else 'en_attente'
-    if producteur.statut == 'actif':
-        producteur.valide_par      = request.user
-        producteur.date_validation = timezone.now()
+    statut_choisi   = request.data.get('statut', 'en_attente')
+    if statut_choisi not in STATUTS_VALIDES:
+        statut_choisi = 'en_attente'
 
-    producteur.save()
+    user_id = request.data.get('user_id')
+
+    if user_id:
+        # ── Mode A : utilisateur existant ──────────────────────
+        from apps.accounts.models import CustomUser
+        try:
+            user = CustomUser.objects.get(pk=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {'success': False, 'error': 'Utilisateur introuvable.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if hasattr(user, 'profil_producteur'):
+            return Response(
+                {'success': False, 'error': 'Cet utilisateur possède déjà un profil producteur.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not request.data.get('departement') or not request.data.get('commune'):
+            return Response(
+                {'success': False, 'error': {'departement': ['Le département et la commune sont requis.']}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if user.role != 'producteur':
+            user.role = 'producteur'
+            user.save(update_fields=['role'])
+
+        sup = request.data.get('superficie_ha') or None
+        producteur = Producteur.objects.create(
+            user              = user,
+            departement       = request.data.get('departement', ''),
+            commune           = request.data.get('commune', ''),
+            localite          = request.data.get('localite', ''),
+            superficie_ha     = sup,
+            description       = request.data.get('description', ''),
+            num_identification = request.data.get('num_identification', ''),
+            adresse_complete  = request.data.get('adresse_complete', ''),
+            note_admin        = request.data.get('note_admin', ''),
+            statut            = statut_choisi,
+        )
+        if statut_choisi == 'actif':
+            producteur.valide_par      = request.user
+            producteur.date_validation = timezone.now()
+            producteur.save()
+
+    else:
+        # ── Mode B : nouvel utilisateur ────────────────────────
+        data = request.data.copy()
+        data['role'] = 'producteur'
+        if 'password2' not in data and 'password' in data:
+            data['password2'] = data['password']
+
+        serializer = RegisterSerializer(data=data)
+        if not serializer.is_valid():
+            return Response(
+                {'success': False, 'error': serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user       = serializer.save()
+        producteur = user.profil_producteur
+
+        if request.data.get('adresse_complete'):
+            producteur.adresse_complete = request.data['adresse_complete']
+        if request.data.get('note_admin'):
+            producteur.note_admin = request.data['note_admin']
+
+        producteur.statut = statut_choisi
+        if statut_choisi == 'actif':
+            producteur.valide_par      = request.user
+            producteur.date_validation = timezone.now()
+        producteur.save()
 
     return Response(
         {
             'success': True,
             'data': ProducteurProfilSerializer(
                 producteur, context={'request': request}
-            ).data
+            ).data,
         },
-        status=status.HTTP_201_CREATED
+        status=status.HTTP_201_CREATED,
     )
 
 

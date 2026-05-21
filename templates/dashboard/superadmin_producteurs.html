@@ -80,6 +80,31 @@
   .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:500; color:#fff; box-shadow:0 4px 20px rgba(0,0,0,.15); animation:slideUp .25s ease; }
   .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
   @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── User search UI ── */
+  .user-search-wrap { position:relative; }
+  .user-search-wrap input { width:100%; box-sizing:border-box; padding:9px 12px 9px 34px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; transition:border-color .18s; }
+  .user-search-wrap input:focus { border-color:var(--green-mid); }
+  .user-search-wrap .search-ico { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px; pointer-events:none; }
+  .user-dropdown { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--card); border:1.5px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:300; max-height:210px; overflow-y:auto; }
+  .user-dropdown-item { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .15s; }
+  .user-dropdown-item:last-child { border-bottom:none; }
+  .user-dropdown-item:hover { background:var(--bg); }
+  .user-dropdown-item.disabled { opacity:.5; cursor:not-allowed; pointer-events:none; }
+  .user-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; flex-shrink:0; }
+  .user-dropdown-info { flex:1; min-width:0; }
+  .user-dropdown-info .uname { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .user-dropdown-info .uemail { font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .user-role-tag { font-size:10px; padding:2px 7px; border-radius:10px; border:1px solid var(--border); color:var(--text-muted); background:var(--bg); white-space:nowrap; flex-shrink:0; }
+  .user-role-tag.already { background:#fde8e8; color:#e74c3c; border-color:#fde8e8; }
+
+  .user-selected-card { display:none; margin-top:10px; padding:10px 14px; background:var(--bg); border:1.5px solid var(--green-mid); border-radius:8px; align-items:center; gap:10px; }
+  .user-selected-card.visible { display:flex; }
+  .or-divider { text-align:center; margin:12px 0 8px; color:var(--text-muted); font-size:12px; }
+  .btn-new-user-toggle { width:100%; padding:9px; border-radius:8px; border:1.5px dashed var(--border); background:transparent; color:var(--green-mid); font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:7px; transition:border-color .18s, background .18s; }
+  .btn-new-user-toggle:hover { border-color:var(--green-mid); background:rgba(39,174,96,.06); }
+  .btn-back-search { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg); color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; margin-bottom:14px; transition:border-color .18s; }
+  .btn-back-search:hover { border-color:var(--green-mid); color:var(--green-mid); }
   @media (max-width: 700px) {
     .toolbar { gap: 6px; }
     .search-box { min-width: 100%; }
@@ -105,40 +130,86 @@
     <h3 id="modal-title">{% trans "Nouveau producteur" %}</h3>
     <form id="prod-form" onsubmit="submitProd(event)">
       <div class="form-grid">
-        <div class="section-label">{% trans "Compte utilisateur" %}</div>
-        <div class="field" id="username-wrap">
-          <label>{% trans "Nom d'utilisateur *" %}</label>
-          <input type="text" id="f-username" placeholder="{% trans 'Ex: jean.pierre' %}">
-          <span class="field-error" id="err-username"></span>
+
+        <!-- ══ SECTION COMPTE (mode création) ══ -->
+        <div class="section-label full" id="user-section-label">{% trans "Associer un compte utilisateur" %}</div>
+
+        <!-- Mode A : sélectionner un utilisateur existant -->
+        <div class="full" id="user-search-section">
+          <div class="user-search-wrap">
+            <i class="fas fa-search search-ico"></i>
+            <input type="text" id="user-search-input"
+                   placeholder="{% trans 'Rechercher par nom, email, téléphone...' %}"
+                   autocomplete="off"
+                   oninput="debouncedUserSearch()" onfocus="debouncedUserSearch()">
+            <div class="user-dropdown" id="user-dropdown"></div>
+          </div>
+          <div class="user-selected-card" id="user-selected-card"></div>
+          <div class="or-divider">— {% trans "ou" %} —</div>
+          <button type="button" class="btn-new-user-toggle" onclick="switchToNewUserMode()">
+            <i class="fas fa-user-plus"></i> {% trans "Créer un nouveau utilisateur" %}
+          </button>
         </div>
-        <div class="field">
+
+        <!-- Mode B : créer un nouveau utilisateur -->
+        <div class="full" id="user-new-section" style="display:none">
+          <button type="button" class="btn-back-search" onclick="switchToExistingUserMode()">
+            <i class="fas fa-arrow-left"></i> {% trans "Choisir un utilisateur existant" %}
+          </button>
+          <div class="form-grid" style="gap:12px">
+            <div class="field">
+              <label>{% trans "Nom d'utilisateur *" %}</label>
+              <input type="text" id="f-username" placeholder="Ex: jean.pierre">
+              <span class="field-error" id="err-username"></span>
+            </div>
+            <div class="field">
+              <label>{% trans "Téléphone" %}</label>
+              <input type="text" id="f-telephone" placeholder="+509 ...">
+            </div>
+            <div class="field">
+              <label>{% trans "Prénom" %}</label>
+              <input type="text" id="f-first_name" placeholder="{% trans 'Prénom' %}">
+            </div>
+            <div class="field">
+              <label>{% trans "Nom" %}</label>
+              <input type="text" id="f-last_name" placeholder="{% trans 'Nom de famille' %}">
+            </div>
+            <div class="field full">
+              <label>{% trans "Email *" %}</label>
+              <input type="email" id="f-email" placeholder="email@exemple.com">
+              <span class="field-error" id="err-email"></span>
+            </div>
+            <div class="field">
+              <label>{% trans "Mot de passe *" %}</label>
+              <input type="password" id="f-password" placeholder="{% trans 'Minimum 8 caractères' %}">
+            </div>
+            <div class="field" id="password2-wrap">
+              <label>{% trans "Confirmer MDP *" %}</label>
+              <input type="password" id="f-password2">
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION COMPTE (mode édition — champs infos utilisateur) ══ -->
+        <div class="field" id="edit-firstname-wrap" style="display:none">
+          <label>{% trans "Prénom" %}</label>
+          <input type="text" id="f-first_name-edit">
+        </div>
+        <div class="field" id="edit-lastname-wrap" style="display:none">
+          <label>{% trans "Nom" %}</label>
+          <input type="text" id="f-last_name-edit">
+        </div>
+        <div class="field" id="edit-email-wrap" style="display:none">
+          <label>{% trans "Email" %}</label>
+          <input type="email" id="f-email-edit">
+        </div>
+        <div class="field" id="edit-telephone-wrap" style="display:none">
           <label>{% trans "Téléphone" %}</label>
-          <input type="text" id="f-telephone" placeholder="+509 ...">
-        </div>
-        <div class="field">
-          <label>{% trans "Prénom *" %}</label>
-          <input type="text" id="f-first_name" placeholder="{% trans 'Prénom' %}">
-        </div>
-        <div class="field">
-          <label>{% trans "Nom *" %}</label>
-          <input type="text" id="f-last_name" placeholder="{% trans 'Nom de famille' %}">
-        </div>
-        <div class="field full">
-          <label>{% trans "Email *" %}</label>
-          <input type="email" id="f-email" placeholder="{% trans 'email@exemple.com' %}">
-          <span class="field-error" id="err-email"></span>
-        </div>
-        <div class="field" id="password-wrap">
-          <label>{% trans "Mot de passe *" %}</label>
-          <input type="password" id="f-password" placeholder="{% trans 'Minimum 8 caractères' %}">
-        </div>
-        <div class="field" id="password2-wrap">
-          <label>{% trans "Confirmer MDP *" %}</label>
-          <input type="password" id="f-password2">
+          <input type="text" id="f-telephone-edit">
         </div>
 
         <hr class="section-sep">
-        <div class="section-label"><i class="fas fa-tractor" style="margin-right:5px"></i>{% trans "Profil Producteur" %}</div>
+        <div class="section-label full"><i class="fas fa-tractor" style="margin-right:5px"></i>{% trans "Profil Producteur" %}</div>
         <div class="field">
           <label>{% trans "Département *" %}</label>
           <select id="f-departement"></select>
@@ -386,129 +457,302 @@ async function doAction(id, statut, fromDrawer = false) {
 }
 
 // ── Création / Édition Producteur ─────────────────────────────────────────
-let _editProdId = null;
+let _editProdId    = null;
+let _selectedUserId = null;  // user existant sélectionné pour la création
+let _userSearchDebounce;
 
+// ── Bascule entre les deux modes de création ──────────────────
+function switchToNewUserMode() {
+  _selectedUserId = null;
+  document.getElementById('user-search-section').style.display = 'none';
+  document.getElementById('user-new-section').style.display    = 'block';
+  document.getElementById('user-section-label').textContent    = 'Nouveau compte utilisateur';
+}
+
+function switchToExistingUserMode() {
+  _selectedUserId = null;
+  document.getElementById('user-new-section').style.display    = 'none';
+  document.getElementById('user-search-section').style.display = 'block';
+  document.getElementById('user-section-label').textContent    = 'Associer un compte utilisateur';
+  document.getElementById('user-search-input').value = '';
+  document.getElementById('user-dropdown').style.display = 'none';
+  clearSelectedUser();
+  ['f-username','f-telephone','f-first_name','f-last_name','f-email','f-password','f-password2']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['err-username','err-email'].forEach(id => { document.getElementById(id).textContent = ''; });
+}
+
+// ── Recherche utilisateurs existants ──────────────────────────
+function debouncedUserSearch() {
+  clearTimeout(_userSearchDebounce);
+  _userSearchDebounce = setTimeout(searchUsers, 280);
+}
+
+async function searchUsers() {
+  const q        = document.getElementById('user-search-input').value.trim();
+  const dropdown = document.getElementById('user-dropdown');
+  if (!q) { dropdown.style.display = 'none'; return; }
+
+  dropdown.style.display = 'block';
+  dropdown.innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:12px"><i class="fas fa-spinner fa-spin"></i> Recherche…</div>';
+
+  try {
+    const r = await fetch(`/api/admin/users/?search=${encodeURIComponent(q)}`, { headers: H });
+    if (!r.ok) { dropdown.style.display = 'none'; return; }
+    const users = (await r.json()).data || [];
+
+    if (!users.length) {
+      dropdown.innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:12px">Aucun utilisateur trouvé.</div>';
+      return;
+    }
+
+    dropdown.innerHTML = '';
+    const roleLabels = { acheteur:'Acheteur', producteur:'Producteur', collecteur:'Collecteur', superadmin:'Superadmin', admin:'Admin' };
+    users.slice(0, 8).forEach(u => {
+      const alreadyProd = u.profil_producteur_statut !== null && u.profil_producteur_statut !== undefined;
+      const initial     = (u.full_name || u.username || '?')[0].toUpperCase();
+      const item        = document.createElement('div');
+      item.className    = 'user-dropdown-item' + (alreadyProd ? ' disabled' : '');
+
+      item.innerHTML = `
+        <div class="user-avatar" style="background:${alreadyProd ? '#ccc' : 'var(--green-mid)'}">
+          ${initial}
+        </div>
+        <div class="user-dropdown-info">
+          <div class="uname">${escHtml(u.full_name || u.username)}</div>
+          <div class="uemail">${escHtml(u.email)}${u.telephone ? ' · ' + escHtml(u.telephone) : ''}</div>
+        </div>
+        <span class="user-role-tag${alreadyProd ? ' already' : ''}">
+          ${alreadyProd ? 'Déjà producteur' : (roleLabels[u.role] || u.role)}
+        </span>`;
+
+      if (!alreadyProd) item.onclick = () => selectUser(u);
+      dropdown.appendChild(item);
+    });
+  } catch { dropdown.style.display = 'none'; }
+}
+
+function selectUser(u) {
+  _selectedUserId = u.id;
+  document.getElementById('user-dropdown').style.display = 'none';
+  document.getElementById('user-search-input').value     = '';
+
+  const card = document.getElementById('user-selected-card');
+  card.classList.add('visible');
+  card.innerHTML = `
+    <div class="user-avatar" style="background:var(--green-mid);width:38px;height:38px;font-size:16px;flex-shrink:0">
+      ${(u.full_name || u.username || '?')[0].toUpperCase()}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:14px;font-weight:700;color:var(--text)">${escHtml(u.full_name || u.username)}</div>
+      <div style="font-size:12px;color:var(--text-muted)">${escHtml(u.email)}${u.telephone ? ' · ' + escHtml(u.telephone) : ''}</div>
+    </div>
+    <button type="button" onclick="clearSelectedUser()"
+            style="background:transparent;border:none;cursor:pointer;color:var(--text-muted);font-size:17px;flex-shrink:0;padding:4px"
+            title="Changer">
+      <i class="fas fa-times-circle"></i>
+    </button>`;
+}
+
+function clearSelectedUser() {
+  _selectedUserId = null;
+  const card = document.getElementById('user-selected-card');
+  card.classList.remove('visible');
+  card.innerHTML = '';
+}
+
+// Fermer dropdown si clic hors de la zone
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('user-search-section');
+  if (wrap && !wrap.contains(e.target))
+    document.getElementById('user-dropdown').style.display = 'none';
+});
+
+// ── Ouverture du modal Création ───────────────────────────────
 function openCreate() {
-  _editProdId = null;
-  document.getElementById('modal-title').textContent = 'Nouveau producteur';
-  document.getElementById('prod-submit-btn').innerHTML = '<i class="fas fa-plus"></i> Créer';
-  ['f-username','f-first_name','f-last_name','f-email','f-telephone','f-password','f-password2',
-   'f-superficie','f-adresse','f-description','f-num_id','f-note_admin'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+  _editProdId    = null;
+  _selectedUserId = null;
+  document.getElementById('modal-title').textContent             = 'Nouveau producteur';
+  document.getElementById('prod-submit-btn').innerHTML           = '<i class="fas fa-plus"></i> Créer';
+
+  // Montrer la section "Associer un compte"
+  document.getElementById('user-section-label').style.display   = 'block';
+  document.getElementById('user-section-label').textContent      = 'Associer un compte utilisateur';
+  document.getElementById('user-search-section').style.display  = 'block';
+  document.getElementById('user-new-section').style.display     = 'none';
+
+  // Cacher les champs mode édition
+  ['edit-firstname-wrap','edit-lastname-wrap','edit-email-wrap','edit-telephone-wrap']
+    .forEach(id => { document.getElementById(id).style.display = 'none'; });
+
+  // Reset search
+  document.getElementById('user-search-input').value    = '';
+  document.getElementById('user-dropdown').style.display = 'none';
+  clearSelectedUser();
+
+  // Reset champs nouveau compte
+  ['f-username','f-telephone','f-first_name','f-last_name','f-email','f-password','f-password2']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['err-username','err-email'].forEach(id => { document.getElementById(id).textContent = ''; });
+
+  // Reset champs producteur
+  ['f-superficie','f-adresse','f-description','f-num_id','f-note_admin']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   _geoProd.reset();
   document.getElementById('f-statut').value = 'en_attente';
-  document.getElementById('username-wrap').style.display = 'flex';
-  document.getElementById('password-wrap').style.display = 'flex';
-  document.getElementById('password2-wrap').style.display = 'flex';
-  document.getElementById('password-wrap').querySelector('label').textContent = 'Mot de passe *';
-  document.getElementById('f-username').required = true;
-  document.getElementById('f-password').required = true;
+
   document.getElementById('prod-modal').classList.add('open');
 }
 
+// ── Ouverture du modal Édition ────────────────────────────────
 async function openEdit(id) {
-  _editProdId = id;
-  document.getElementById('modal-title').textContent = 'Éditer le producteur';
+  _editProdId    = id;
+  _selectedUserId = null;
+  document.getElementById('modal-title').textContent   = 'Éditer le producteur';
   document.getElementById('prod-submit-btn').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
-  document.getElementById('username-wrap').style.display = 'none';
-  document.getElementById('password-wrap').querySelector('label').textContent = 'Nouveau mot de passe (laisser vide = inchangé)';
-  document.getElementById('f-username').required = false;
-  document.getElementById('f-password').required = false;
+
+  // Cacher la section "Associer un compte"
+  document.getElementById('user-section-label').style.display  = 'none';
+  document.getElementById('user-search-section').style.display = 'none';
+  document.getElementById('user-new-section').style.display    = 'none';
+
+  // Montrer les champs info utilisateur (mode édition)
+  ['edit-firstname-wrap','edit-lastname-wrap','edit-email-wrap','edit-telephone-wrap']
+    .forEach(id => { document.getElementById(id).style.display = 'flex'; });
+
   document.getElementById('prod-modal').classList.add('open');
 
   const r = await fetch(`/api/admin/producteurs/${id}/detail/`, { headers: H });
   if (!r.ok) { showToast('Erreur de chargement', 'error'); return; }
   const p = (await r.json()).data;
 
-  document.getElementById('f-first_name').value   = p.first_name  || '';
-  document.getElementById('f-last_name').value    = p.last_name   || '';
-  document.getElementById('f-email').value        = p.email       || '';
-  document.getElementById('f-telephone').value    = p.telephone   || '';
-  document.getElementById('f-superficie').value   = p.superficie_ha || '';
-  document.getElementById('f-adresse').value      = p.adresse_complete || '';
-  document.getElementById('f-description').value  = p.description || '';
-  document.getElementById('f-num_id').value       = p.num_identification || '';
-  document.getElementById('f-statut').value       = p.statut;
-  document.getElementById('f-note_admin').value   = p.note_admin  || '';
-  document.getElementById('f-password').value     = '';
-  document.getElementById('password2-wrap').style.display = 'none';
+  document.getElementById('f-first_name-edit').value  = p.first_name  || '';
+  document.getElementById('f-last_name-edit').value   = p.last_name   || '';
+  document.getElementById('f-email-edit').value       = p.email       || '';
+  document.getElementById('f-telephone-edit').value   = p.telephone   || '';
+  document.getElementById('f-superficie').value        = p.superficie_ha || '';
+  document.getElementById('f-adresse').value           = p.adresse_complete || '';
+  document.getElementById('f-description').value       = p.description || '';
+  document.getElementById('f-num_id').value            = p.num_identification || '';
+  document.getElementById('f-statut').value            = p.statut;
+  document.getElementById('f-note_admin').value        = p.note_admin  || '';
   await _geoProd.prefill({ deptSlug: p.departement, communeNom: p.commune, sectionNom: p.localite });
 }
 
 function closeProdModal() {
   document.getElementById('prod-modal').classList.remove('open');
-  _editProdId = null;
+  _editProdId    = null;
+  _selectedUserId = null;
 }
 
+// ── Soumission du formulaire ──────────────────────────────────
 async function submitProd(e) {
   e.preventDefault();
-  ['err-username','err-email'].forEach(id => { document.getElementById(id).textContent=''; });
   const btn = document.getElementById('prod-submit-btn');
   btn.disabled = true;
 
-  const pwd  = document.getElementById('f-password').value;
-  const pwd2 = document.getElementById('f-password2').value;
-  if (!_editProdId && pwd && pwd !== pwd2) {
-    showToast('Les mots de passe ne correspondent pas.', 'error');
-    btn.disabled = false; return;
-  }
-
-  let url, method, body;
   const geoVals = {
     departement: _geoProd.dept.value,
     commune:     _geoProd.commune.value,
     localite:    _geoProd.section ? _geoProd.section.value : '',
   };
 
+  // ── Mode édition ──────────────────────────────────────────
   if (_editProdId) {
-    body = {
-      first_name:       document.getElementById('f-first_name').value,
-      last_name:        document.getElementById('f-last_name').value,
-      email:            document.getElementById('f-email').value,
-      telephone:        document.getElementById('f-telephone').value,
+    const body = {
+      first_name:        document.getElementById('f-first_name-edit').value,
+      last_name:         document.getElementById('f-last_name-edit').value,
+      email:             document.getElementById('f-email-edit').value,
+      telephone:         document.getElementById('f-telephone-edit').value,
       ...geoVals,
-      superficie_ha:    document.getElementById('f-superficie').value || null,
-      adresse_complete: document.getElementById('f-adresse').value,
-      description:      document.getElementById('f-description').value,
+      superficie_ha:     document.getElementById('f-superficie').value || null,
+      adresse_complete:  document.getElementById('f-adresse').value,
+      description:       document.getElementById('f-description').value,
       num_identification: document.getElementById('f-num_id').value,
-      note_admin:       document.getElementById('f-note_admin').value,
+      note_admin:        document.getElementById('f-note_admin').value,
+      statut:            document.getElementById('f-statut').value,
     };
-    if (pwd) body.password = pwd;
-    url = `/api/admin/producteurs/${_editProdId}/detail/`;
-    method = 'PATCH';
-  } else {
-    body = {
-      username:         document.getElementById('f-username').value,
-      first_name:       document.getElementById('f-first_name').value,
-      last_name:        document.getElementById('f-last_name').value,
-      email:            document.getElementById('f-email').value,
-      telephone:        document.getElementById('f-telephone').value,
-      password:         pwd,
-      ...geoVals,
-      superficie_ha:    document.getElementById('f-superficie').value || null,
-      adresse_complete: document.getElementById('f-adresse').value,
-      description:      document.getElementById('f-description').value,
-      num_identification: document.getElementById('f-num_id').value,
-      statut:           document.getElementById('f-statut').value,
-    };
-    url = '/api/admin/producteurs/create/';
-    method = 'POST';
+    const r    = await fetch(`/api/admin/producteurs/${_editProdId}/detail/`, { method:'PATCH', headers:H, body:JSON.stringify(body) });
+    const data = await r.json();
+    btn.disabled = false;
+    if (r.ok) { showToast('Producteur mis à jour !'); closeProdModal(); load(); }
+    else showToast(typeof data.error === 'string' ? data.error : 'Erreur de sauvegarde', 'error');
+    return;
   }
 
-  const r = await fetch(url, { method, headers: H, body: JSON.stringify(body) });
+  // ── Mode création : utilisateur existant ──────────────────
+  if (_selectedUserId) {
+    if (!geoVals.departement || !geoVals.commune) {
+      showToast('Le département et la commune sont requis.', 'error');
+      btn.disabled = false; return;
+    }
+    const body = {
+      user_id: _selectedUserId,
+      ...geoVals,
+      superficie_ha:     document.getElementById('f-superficie').value || null,
+      adresse_complete:  document.getElementById('f-adresse').value,
+      description:       document.getElementById('f-description').value,
+      num_identification: document.getElementById('f-num_id').value,
+      statut:            document.getElementById('f-statut').value,
+      note_admin:        document.getElementById('f-note_admin').value,
+    };
+    const r    = await fetch('/api/admin/producteurs/create/', { method:'POST', headers:H, body:JSON.stringify(body) });
+    const data = await r.json();
+    btn.disabled = false;
+    if (r.ok) { showToast(`Producteur créé : ${data.data?.code_producteur || ''}`); closeProdModal(); load(); }
+    else showToast(typeof data.error === 'string' ? data.error : 'Erreur', 'error');
+    return;
+  }
+
+  // ── Mode création : nouveau utilisateur ───────────────────
+  const newUserSection = document.getElementById('user-new-section');
+  if (newUserSection.style.display === 'none') {
+    showToast('Sélectionnez un utilisateur existant ou créez un nouveau compte.', 'error');
+    btn.disabled = false; return;
+  }
+
+  ['err-username','err-email'].forEach(id => { document.getElementById(id).textContent = ''; });
+
+  const pwd  = document.getElementById('f-password').value;
+  const pwd2 = document.getElementById('f-password2').value;
+  if (pwd !== pwd2) {
+    showToast('Les mots de passe ne correspondent pas.', 'error');
+    btn.disabled = false; return;
+  }
+
+  if (!geoVals.departement || !geoVals.commune) {
+    showToast('Le département et la commune sont requis.', 'error');
+    btn.disabled = false; return;
+  }
+
+  const body = {
+    username:          document.getElementById('f-username').value,
+    first_name:        document.getElementById('f-first_name').value,
+    last_name:         document.getElementById('f-last_name').value,
+    email:             document.getElementById('f-email').value,
+    telephone:         document.getElementById('f-telephone').value,
+    password:          pwd,
+    ...geoVals,
+    superficie_ha:     document.getElementById('f-superficie').value || null,
+    adresse_complete:  document.getElementById('f-adresse').value,
+    description:       document.getElementById('f-description').value,
+    num_identification: document.getElementById('f-num_id').value,
+    statut:            document.getElementById('f-statut').value,
+    note_admin:        document.getElementById('f-note_admin').value,
+  };
+
+  const r    = await fetch('/api/admin/producteurs/create/', { method:'POST', headers:H, body:JSON.stringify(body) });
   const data = await r.json();
   btn.disabled = false;
 
   if (r.ok) {
-    showToast(_editProdId ? 'Producteur mis à jour !' : `Producteur créé : ${data.data?.code_producteur || ''}`);
+    showToast(`Producteur créé : ${data.data?.code_producteur || ''}`);
     closeProdModal();
     load();
   } else {
     const err = data.error || {};
-    if (err.username) { document.getElementById('err-username').textContent = Array.isArray(err.username) ? err.username[0] : err.username; }
-    if (err.email)    { document.getElementById('err-email').textContent    = Array.isArray(err.email)    ? err.email[0]    : err.email; }
+    if (err.username) document.getElementById('err-username').textContent = Array.isArray(err.username) ? err.username[0] : err.username;
+    if (err.email)    document.getElementById('err-email').textContent    = Array.isArray(err.email)    ? err.email[0]    : err.email;
     showToast(typeof err === 'string' ? err : 'Erreur de validation', 'error');
   }
 }
