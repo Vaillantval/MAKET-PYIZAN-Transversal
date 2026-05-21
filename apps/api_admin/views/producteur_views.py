@@ -1,8 +1,6 @@
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.authentication import SessionAuthentication
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
@@ -16,7 +14,6 @@ from django.utils.translation import gettext as _
 
 # ── GET /api/admin/producteurs/ ─────────────────────────────────
 @api_view(['GET'])
-@authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsSuperAdmin])
 def producteurs_list(request):
     """Liste des producteurs avec filtres."""
@@ -43,7 +40,6 @@ def producteurs_list(request):
 
 # ── POST /api/admin/producteurs/create/ ─────────────────────────
 @api_view(['POST'])
-@authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsSuperAdmin])
 def producteur_create(request):
     """
@@ -145,7 +141,6 @@ def producteur_create(request):
 
 # ── GET/PATCH /api/admin/producteurs/<id>/detail/ ───────────────
 @api_view(['GET', 'PATCH'])
-@authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsSuperAdmin])
 def producteur_detail(request, pk):
     """Détail ou mise à jour d'un producteur."""
@@ -189,7 +184,6 @@ def producteur_detail(request, pk):
 
 # ── PATCH /api/admin/producteurs/<id>/statut/ ───────────────────
 @api_view(['PATCH'])
-@authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsSuperAdmin])
 def producteur_statut(request, pk):
     """

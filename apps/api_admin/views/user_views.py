@@ -128,14 +128,10 @@ import os
 import random
 
 from drf_spectacular.utils import extend_schema
-from rest_framework.authentication import SessionAuthentication
-from rest_framework.decorators import authentication_classes
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 @extend_schema(tags=['Admin — Carte'])
 @api_view(['GET'])
-@authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsSuperAdmin])
 def users_carte(request):
     """
