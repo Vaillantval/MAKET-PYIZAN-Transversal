@@ -14,23 +14,23 @@ class RegisterSerializer(serializers.Serializer):
     email      = serializers.EmailField()
     password   = serializers.CharField(write_only=True, validators=[validate_password])
     password2  = serializers.CharField(write_only=True)
-    first_name = serializers.CharField(max_length=150, required=False, default='')
-    last_name  = serializers.CharField(max_length=150, required=False, default='')
-    telephone  = serializers.CharField(max_length=20, required=False, default='')
+    first_name = serializers.CharField(max_length=150, required=False, default='', allow_blank=True)
+    last_name  = serializers.CharField(max_length=150, required=False, default='', allow_blank=True)
+    telephone  = serializers.CharField(max_length=20, required=False, default='', allow_blank=True)
     role       = serializers.ChoiceField(
         choices=['acheteur', 'producteur', 'collecteur'],
         default='acheteur',
     )
 
     # Champs Producteur (requis si role=producteur)
-    departement       = serializers.CharField(max_length=100, required=False, default='')
-    commune           = serializers.CharField(max_length=100, required=False, default='')
-    localite          = serializers.CharField(max_length=100, required=False, default='')
+    departement       = serializers.CharField(max_length=100, required=False, default='', allow_blank=True)
+    commune           = serializers.CharField(max_length=100, required=False, default='', allow_blank=True)
+    localite          = serializers.CharField(max_length=100, required=False, default='', allow_blank=True)
     superficie_ha     = serializers.DecimalField(
         max_digits=8, decimal_places=2, required=False, allow_null=True
     )
-    description       = serializers.CharField(required=False, default='')
-    num_identification = serializers.CharField(max_length=50, required=False, default='')
+    description       = serializers.CharField(required=False, default='', allow_blank=True)
+    num_identification = serializers.CharField(max_length=50, required=False, default='', allow_blank=True)
 
     # Champs Acheteur
     type_acheteur    = serializers.ChoiceField(
@@ -38,7 +38,7 @@ class RegisterSerializer(serializers.Serializer):
         required=False,
         default=Acheteur.TypeAcheteur.PARTICULIER,
     )
-    nom_organisation = serializers.CharField(max_length=200, required=False, default='')
+    nom_organisation = serializers.CharField(max_length=200, required=False, default='', allow_blank=True)
 
     def validate_username(self, value):
         if CustomUser.objects.filter(username=value).exists():

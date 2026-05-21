@@ -391,7 +391,7 @@ let _editProdId = null;
 function openCreate() {
   _editProdId = null;
   document.getElementById('modal-title').textContent = 'Nouveau producteur';
-  document.getElementById('prod-submit-btn').innerHTML = '<i class="fas fa-plus"></i> {% trans "Créer';" %}
+  document.getElementById('prod-submit-btn').innerHTML = '<i class="fas fa-plus"></i> Créer';
   ['f-username','f-first_name','f-last_name','f-email','f-telephone','f-password','f-password2',
    'f-superficie','f-adresse','f-description','f-num_id','f-note_admin'].forEach(id => {
     const el = document.getElementById(id);
@@ -411,7 +411,7 @@ function openCreate() {
 async function openEdit(id) {
   _editProdId = id;
   document.getElementById('modal-title').textContent = 'Éditer le producteur';
-  document.getElementById('prod-submit-btn').innerHTML = '<i class="fas fa-save"></i> {% trans "Enregistrer';" %}
+  document.getElementById('prod-submit-btn').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
   document.getElementById('username-wrap').style.display = 'none';
   document.getElementById('password-wrap').querySelector('label').textContent = 'Nouveau mot de passe (laisser vide = inchangé)';
   document.getElementById('f-username').required = false;
