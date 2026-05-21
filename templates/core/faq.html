@@ -182,7 +182,7 @@
               <i class="fas fa-chevron-right"></i>
             {% endif %}
             {{ cat.titre }}
-            <span class="faq-nav-count">{{ cat.items.count }}</span>
+            <span class="faq-nav-count">{{ cat.items.all|length }}</span>
           </div>
           {% endfor %}
         </nav>
@@ -201,7 +201,6 @@
             </div>
 
             {% for item in cat.items.all %}
-            {% if item.is_active %}
             <div class="faq-item">
               <div class="faq-question" onclick="toggleFAQ(this)">
                 {{ item.question }}
@@ -213,7 +212,6 @@
                 <div class="faq-reponse-inner">{{ item.reponse|linebreaksbr }}</div>
               </div>
             </div>
-            {% endif %}
             {% endfor %}
           </div>
           {% endfor %}

@@ -95,6 +95,7 @@ class ContactMessage(models.Model):
 
     nom        = models.CharField(max_length=100)
     email      = models.EmailField()
+    telephone  = models.CharField(max_length=20, blank=True)
     sujet      = models.CharField(max_length=200, blank=True)
     message    = models.TextField()
     statut     = models.CharField(

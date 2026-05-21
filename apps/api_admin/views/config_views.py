@@ -5,7 +5,8 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 
 from apps.accounts.permissions import IsSuperAdmin
-from apps.home.models import SiteConfig, FAQCategorie, FAQItem, ContactMessage, ContactReponse, SliderImage
+from apps.home.models import ContactMessage, ContactReponse, SliderImage
+from apps.core.models import FAQCategorie, FAQItem
 from django.utils.translation import gettext as _
 
 
@@ -60,16 +61,46 @@ def android_apk(request):
     }}, status=201)
 
 
-def _config_data(c):
+def _config_data(s, request=None):
+    def img_url(f):
+        if not f:
+            return None
+        return request.build_absolute_uri(f.url) if request else f.url
+
     return {
-        'nom_site':        c.nom_site,
-        'slogan':          c.slogan,
-        'email_contact':   c.email_contact,
-        'telephone':       c.telephone,
-        'adresse':         c.adresse,
-        'facebook_url':    c.facebook_url,
-        'instagram_url':   c.instagram_url,
-        'whatsapp_numero': c.whatsapp_numero,
+        'nom_site':            s.nom_site,
+        'slogan':              s.slogan,
+        'logo':                img_url(s.logo),
+        'favicon':             img_url(s.favicon),
+        # Hero
+        'hero_badge_texte':    s.hero_badge_texte,
+        'hero_titre_ligne1':   s.hero_titre_ligne1,
+        'hero_titre_ligne2':   s.hero_titre_ligne2,
+        'hero_sous_titre':     s.hero_sous_titre,
+        # À propos
+        'a_propos_titre':      s.a_propos_titre,
+        'a_propos_contenu':    s.a_propos_contenu,
+        'a_propos_mission':    s.a_propos_mission,
+        'a_propos_vision':     s.a_propos_vision,
+        'annee_fondation':     s.annee_fondation,
+        # Contact
+        'email_contact':       s.email_contact,
+        'telephone':           s.telephone,
+        'whatsapp':            s.whatsapp,
+        'horaires':            s.horaires,
+        'adresse':             s.adresse,
+        # Réseaux sociaux
+        'facebook_url':        s.facebook_url,
+        'instagram_url':       s.instagram_url,
+        'twitter_url':         s.twitter_url,
+        'youtube_url':         s.youtube_url,
+        # Footer & SEO
+        'copyright_texte':     s.copyright_texte,
+        'meta_description':    s.meta_description,
+        'google_analytics_id': s.google_analytics_id,
+        # Maintenance
+        'mode_maintenance':    s.mode_maintenance,
+        'message_maintenance': s.message_maintenance,
     }
 
 
@@ -77,19 +108,35 @@ def _config_data(c):
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsSuperAdmin])
 def site_config(request):
-    config = SiteConfig.get_config()
+    from apps.core.models import SiteSettings
+    s = SiteSettings.get_solo()
 
     if request.method == 'GET':
-        return Response({'success': True, 'data': _config_data(config)})
+        return Response({'success': True, 'data': _config_data(s, request)})
 
-    for field in [
-        'nom_site', 'slogan', 'email_contact', 'telephone',
-        'adresse', 'facebook_url', 'instagram_url', 'whatsapp_numero'
-    ]:
+    text_fields = [
+        'nom_site', 'slogan', 'hero_badge_texte', 'hero_titre_ligne1',
+        'hero_titre_ligne2', 'hero_sous_titre', 'a_propos_titre',
+        'a_propos_contenu', 'a_propos_mission', 'a_propos_vision',
+        'email_contact', 'telephone', 'whatsapp', 'adresse', 'horaires',
+        'facebook_url', 'instagram_url', 'twitter_url', 'youtube_url',
+        'copyright_texte', 'meta_description', 'google_analytics_id',
+        'message_maintenance',
+    ]
+    for field in text_fields:
         if field in request.data:
-            setattr(config, field, request.data[field])
-    config.save()
-    return Response({'success': True, 'data': _config_data(config)})
+            setattr(s, field, request.data[field])
+    if 'annee_fondation' in request.data:
+        raw = request.data['annee_fondation']
+        s.annee_fondation = int(raw) if raw else None
+    if 'mode_maintenance' in request.data:
+        val = request.data['mode_maintenance']
+        s.mode_maintenance = val not in ('false', '0', False, 'False')
+    for img_field in ('logo', 'favicon', 'login_image', 'register_image', 'a_propos_image'):
+        if img_field in request.FILES:
+            setattr(s, img_field, request.FILES[img_field])
+    s.save()
+    return Response({'success': True, 'data': _config_data(s, request)})
 
 
 # ── GET/POST /api/admin/config/faq/categories/ ──────────────────
@@ -103,6 +150,7 @@ def faq_categories(request):
             return Response({'success': False, 'error': _('Le titre est requis.')}, status=400)
         cat = FAQCategorie.objects.create(
             titre     = titre,
+            icone     = request.data.get('icone', ''),
             ordre     = int(request.data.get('ordre', 0)),
             is_active = request.data.get('is_active', True),
         )
@@ -118,7 +166,7 @@ def _faq_cat_data(c):
         'titre':     c.titre,
         'ordre':     c.ordre,
         'is_active': c.is_active,
-        'icone':     '',
+        'icone':     c.icone,
         'nb_items':  c.items.count(),
     }
 
@@ -139,6 +187,8 @@ def faq_categorie_detail(request, pk):
     if request.method == 'PATCH':
         if 'titre' in request.data:
             cat.titre = request.data['titre']
+        if 'icone' in request.data:
+            cat.icone = request.data['icone']
         if 'ordre' in request.data:
             cat.ordre = int(request.data['ordre'])
         if 'is_active' in request.data:
@@ -256,7 +306,7 @@ def _contact_msg_data(m):
             'envoye_par': r.envoye_par.get_full_name() if r.envoye_par else 'Admin',
             'envoye_le':  r.envoye_le.isoformat(),
         }
-        for r in m.reponses.select_related('envoye_par').all()
+        for r in m.reponses.all()
     ]
     return {
         'id':         m.pk,

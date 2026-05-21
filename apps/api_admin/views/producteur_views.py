@@ -46,9 +46,12 @@ def producteurs_list(request):
 @authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsSuperAdmin])
 def producteur_create(request):
-    """Créer un producteur directement validé."""
+    """Créer un producteur depuis le panel admin."""
     data = request.data.copy()
     data['role'] = 'producteur'
+    # L'admin n'a pas de champ password2 dans la modale — on le duplique
+    if 'password2' not in data and 'password' in data:
+        data['password2'] = data['password']
 
     serializer = RegisterSerializer(data=data)
     if not serializer.is_valid():
@@ -59,9 +62,21 @@ def producteur_create(request):
 
     user       = serializer.save()
     producteur = user.profil_producteur
-    producteur.statut          = 'actif'
-    producteur.valide_par      = request.user
-    producteur.date_validation = timezone.now()
+
+    # Champs non gérés par RegisterSerializer
+    if request.data.get('adresse_complete'):
+        producteur.adresse_complete = request.data['adresse_complete']
+    if request.data.get('note_admin'):
+        producteur.note_admin = request.data['note_admin']
+
+    # Honorer le statut choisi par l'admin (défaut : en_attente)
+    STATUTS_VALIDES = ['actif', 'en_attente', 'suspendu', 'inactif']
+    statut_choisi = request.data.get('statut', 'en_attente')
+    producteur.statut = statut_choisi if statut_choisi in STATUTS_VALIDES else 'en_attente'
+    if producteur.statut == 'actif':
+        producteur.valide_par      = request.user
+        producteur.date_validation = timezone.now()
+
     producteur.save()
 
     return Response(

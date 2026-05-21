@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .models import FAQCategorie, ContactMessage, SiteSettings
+from django.db.models import Prefetch
+from .models import FAQCategorie, FAQItem, SiteSettings
+from apps.home.models import ContactMessage
 from django.utils.translation import gettext as _
 
 
@@ -12,15 +14,18 @@ def apropos(request):
 
 def faq(request):
     """Page FAQ."""
+    active_items_qs = FAQItem.objects.filter(is_active=True).order_by('ordre')
     categories = FAQCategorie.objects.filter(
-        is_active=True
+        is_active=True,
+        items__is_active=True,
     ).prefetch_related(
-        'items'
-    ).filter(items__is_active=True).distinct()
+        Prefetch('items', queryset=active_items_qs)
+    ).distinct()
 
-    # Fallback : toutes catégories actives même sans items
     if not categories.exists():
-        categories = FAQCategorie.objects.filter(is_active=True)
+        categories = FAQCategorie.objects.filter(is_active=True).prefetch_related(
+            Prefetch('items', queryset=active_items_qs)
+        )
 
     return render(request, 'core/faq.html', {
         'categories': categories,

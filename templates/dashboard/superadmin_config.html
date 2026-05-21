@@ -546,7 +546,7 @@ async function loadSettings() {
   const r = await fetch('/api/admin/config/site/', { headers: H });
   document.getElementById('settings-loading').style.display = 'none';
   if (!r.ok) return;
-  const s = await r.json();
+  const { data: s } = await r.json();
 
   // Remplir les champs
   document.getElementById('s-nom-site').value   = s.nom_site||'';
@@ -956,7 +956,10 @@ async function loadMsgs(est_lu) {
   if (nonLus > 0) { tabBadge.textContent = nonLus; tabBadge.style.display='inline'; }
   else tabBadge.style.display = 'none';
   const sbBadge = document.getElementById('sb-badge-msgs');
-  if (sbBadge && nonLus > 0) { sbBadge.textContent = nonLus; sbBadge.style.display = 'inline'; }
+  if (sbBadge) {
+    if (nonLus > 0) { sbBadge.textContent = nonLus; sbBadge.style.display = 'inline'; }
+    else sbBadge.style.display = 'none';
+  }
 
   if (!data.length) { document.getElementById('msgs-empty').style.display = 'block'; return; }
   const list = document.getElementById('msgs-list');
