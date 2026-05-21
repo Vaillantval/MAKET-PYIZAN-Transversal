@@ -312,6 +312,12 @@ const _geoProd = new GeoSelector({
   baseUrl:   '/api/geo',
 });
 
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function authHeaders() {
+  return { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access'), 'Content-Type': 'application/json' };
+}
 function showToast(msg, type='success') {
   const t = document.createElement('div'); t.className = `toast ${type}`;
   t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
@@ -347,7 +353,7 @@ async function load() {
 
   let r;
   try {
-    r = await fetch(url, { headers: H });
+    r = await fetch(url, { headers: authHeaders() });
   } catch (err) {
     document.getElementById('tbl-loading').style.display = 'none';
     document.getElementById('tbl-empty').style.display = 'block';
@@ -442,7 +448,7 @@ function closeDrawer() {
 async function doAction(id, statut, fromDrawer = false) {
   const note = fromDrawer ? (document.getElementById('note-input')?.value || '') : '';
   const r = await fetch(`/api/admin/producteurs/${id}/statut/`, {
-    method: 'PATCH', headers: H,
+    method: 'PATCH', headers: authHeaders(),
     body: JSON.stringify({ statut, note }),
   });
   const data = await r.json();
@@ -511,10 +517,7 @@ async function toggleUserDropdown() {
   // Charger une seule fois par ouverture de modal
   if (!_usersCache) {
     try {
-      const freshToken = localStorage.getItem('mp_access');
-      const r = await fetch('/api/admin/users/', {
-        headers: { 'Authorization': 'Bearer ' + freshToken, 'Content-Type': 'application/json' }
-      });
+      const r = await fetch('/api/admin/users/', { headers: authHeaders() });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       _usersCache = (await r.json()).data || [];
     } catch(err) {
@@ -655,7 +658,7 @@ async function openEdit(id) {
 
   document.getElementById('prod-modal').classList.add('open');
 
-  const r = await fetch(`/api/admin/producteurs/${id}/detail/`, { headers: H });
+  const r = await fetch(`/api/admin/producteurs/${id}/detail/`, { headers: authHeaders() });
   if (!r.ok) { showToast('Erreur de chargement', 'error'); return; }
   const p = (await r.json()).data;
 
@@ -705,7 +708,7 @@ async function submitProd(e) {
       note_admin:        document.getElementById('f-note_admin').value,
       statut:            document.getElementById('f-statut').value,
     };
-    const r    = await fetch(`/api/admin/producteurs/${_editProdId}/detail/`, { method:'PATCH', headers:H, body:JSON.stringify(body) });
+    const r    = await fetch(`/api/admin/producteurs/${_editProdId}/detail/`, { method:'PATCH', headers: authHeaders(), body:JSON.stringify(body) });
     const data = await r.json();
     btn.disabled = false;
     if (r.ok) { showToast('Producteur mis à jour !'); closeProdModal(); load(); }
@@ -729,11 +732,16 @@ async function submitProd(e) {
       statut:            document.getElementById('f-statut').value,
       note_admin:        document.getElementById('f-note_admin').value,
     };
-    const r    = await fetch('/api/admin/producteurs/create/', { method:'POST', headers:H, body:JSON.stringify(body) });
+    const r    = await fetch('/api/admin/producteurs/create/', { method:'POST', headers: authHeaders(), body:JSON.stringify(body) });
     const data = await r.json();
     btn.disabled = false;
     if (r.ok) { showToast(`Producteur créé : ${data.data?.code_producteur || ''}`); closeProdModal(); load(); }
-    else showToast(typeof data.error === 'string' ? data.error : 'Erreur', 'error');
+    else {
+      const err = data.error;
+      const msg = typeof err === 'string' ? err
+        : err && typeof err === 'object' ? Object.values(err).flat().join(' | ') : 'Erreur';
+      showToast(msg, 'error');
+    }
     return;
   }
 
@@ -774,7 +782,7 @@ async function submitProd(e) {
     note_admin:        document.getElementById('f-note_admin').value,
   };
 
-  const r    = await fetch('/api/admin/producteurs/create/', { method:'POST', headers:H, body:JSON.stringify(body) });
+  const r    = await fetch('/api/admin/producteurs/create/', { method:'POST', headers: authHeaders(), body:JSON.stringify(body) });
   const data = await r.json();
   btn.disabled = false;
 
@@ -786,15 +794,13 @@ async function submitProd(e) {
     const err = data.error || {};
     if (err.username) document.getElementById('err-username').textContent = Array.isArray(err.username) ? err.username[0] : err.username;
     if (err.email)    document.getElementById('err-email').textContent    = Array.isArray(err.email)    ? err.email[0]    : err.email;
-    showToast(typeof err === 'string' ? err : 'Erreur de validation', 'error');
+    const msg = typeof err === 'string' ? err
+      : err && typeof err === 'object' ? Object.values(err).flat().join(' | ') : 'Erreur de validation';
+    showToast(msg, 'error');
   }
 }
 
 mpAuthCheck('superadmin').then(u => {
-  if (u) {
-    // Rafraîchir le token dans H (mpAuthCheck peut avoir renouvelé le token)
-    H['Authorization'] = 'Bearer ' + localStorage.getItem('mp_access');
-    load();
-  }
+  if (u) load();
 });
 {% endblock %}
