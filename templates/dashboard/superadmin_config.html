@@ -669,7 +669,7 @@ async function uploadApk() {
   }
 
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Envoi en cours...';" %}
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
 
   const fd = new FormData();
   fd.append('android_apk', file);
@@ -695,7 +695,7 @@ async function uploadApk() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-upload"></i> {% trans "Mettre en ligne l\'APK';" %}
+  btn.innerHTML = '<i class="fas fa-upload"></i> Mettre en ligne l\'APK';
   btn.style.opacity = '.5';
 }
 
@@ -716,7 +716,7 @@ async function saveSettings(e) {
   e.preventDefault();
   const btn = document.getElementById('save-btn');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Enregistrement...';" %}
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
 
   // Champs texte
   const textData = {
@@ -770,7 +770,7 @@ async function saveSettings(e) {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-save"></i> {% trans "Enregistrer tous les paramètres';" %}
+  btn.innerHTML = '<i class="fas fa-save"></i> Enregistrer tous les paramètres';
   if (r.ok) { showToast('Paramètres enregistrés !'); loadSettings(); }
   else showToast('Erreur lors de la sauvegarde', 'error');
 }
@@ -842,7 +842,7 @@ async function loadFaqItems(catId) {
 function openFaqCatCreate() {
   _faqCatEditId = null;
   document.getElementById('faqcat-modal-title').textContent = 'Nouvelle catégorie FAQ';
-  document.getElementById('faqcat-submit').innerHTML = '<i class="fas fa-plus"></i> {% trans "Créer';" %}
+  document.getElementById('faqcat-submit').innerHTML = '<i class="fas fa-plus"></i> Créer';
   document.getElementById('fc-titre').value = '';
   document.getElementById('fc-icone').value = 'fas fa-question-circle';
   document.getElementById('fc-ordre').value = '0';
@@ -854,7 +854,7 @@ async function openFaqCatEdit(id) {
   _faqCatEditId = id;
   const cat = _faqCats.find(c => c.id === id); if (!cat) return;
   document.getElementById('faqcat-modal-title').textContent = 'Modifier catégorie FAQ';
-  document.getElementById('faqcat-submit').innerHTML = '<i class="fas fa-save"></i> {% trans "Enregistrer';" %}
+  document.getElementById('faqcat-submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
   document.getElementById('fc-titre').value = cat.titre;
   document.getElementById('fc-icone').value = cat.icone;
   document.getElementById('fc-ordre').value = cat.ordre;
@@ -895,7 +895,7 @@ async function submitFaqCat(e) {
 function openFaqItemCreate() {
   _faqItemEditId = null;
   document.getElementById('faqitem-modal-title').textContent = 'Nouvelle question';
-  document.getElementById('faqitem-submit').innerHTML = '<i class="fas fa-plus"></i> {% trans "Créer';" %}
+  document.getElementById('faqitem-submit').innerHTML = '<i class="fas fa-plus"></i> Créer';
   document.getElementById('fi-question').value = '';
   document.getElementById('fi-reponse').value = '';
   document.getElementById('fi-ordre').value = '0';
@@ -910,7 +910,7 @@ async function openFaqItemEdit(id) {
   const items = (await r.json()).data || [];
   const item = items.find(x => x.id === id); if (!item) return;
   document.getElementById('faqitem-modal-title').textContent = 'Modifier question';
-  document.getElementById('faqitem-submit').innerHTML = '<i class="fas fa-save"></i> {% trans "Enregistrer';" %}
+  document.getElementById('faqitem-submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
   document.getElementById('fi-cat').value      = item.categorie_id;
   document.getElementById('fi-question').value = item.question;
   document.getElementById('fi-reponse').value  = item.reponse;
@@ -1111,7 +1111,7 @@ async function confirmerEnvoi() {
   const btn = document.getElementById('reply-confirm-btn');
   const txt = document.getElementById('reply-txt-' + _replyMsgId);
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Envoi…';" %}
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi…';
 
   const r = await fetch(`/api/admin/config/contact/${_replyMsgId}/repondre/`, {
     method: 'POST',
@@ -1119,7 +1119,7 @@ async function confirmerEnvoi() {
     body: JSON.stringify({ reponse: txt.value.trim() }),
   });
   btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-paper-plane"></i> {% trans "Envoyer';" %}
+  btn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer';
 
   if (r.ok) {
     closeReplyModal();
