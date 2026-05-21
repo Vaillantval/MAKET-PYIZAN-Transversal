@@ -777,16 +777,21 @@ async function saveSettings(e) {
 
 // ═══ FAQ ══════════════════════════════════════════════════════════════════════
 async function loadFaqCats() {
-  const r = await fetch('/api/admin/config/faq/categories/', { headers:H });
-  if (!r.ok) return;
-  _faqCats = (await r.json()).data || [];
+  const list = document.getElementById('faq-cats-list');
+  try {
+    const r = await fetch('/api/admin/config/faq/categories/', { headers:H });
+    if (!r.ok) { list.innerHTML = '<div class="empty-panel">Erreur de chargement.</div>'; return; }
+    _faqCats = (await r.json()).data || [];
+  } catch {
+    list.innerHTML = '<div class="empty-panel">Erreur de chargement.</div>';
+    return;
+  }
 
   // Mettre à jour le select items modal
   const sel = document.getElementById('fi-cat');
   sel.innerHTML = '<option value="">{% trans "-- Sélectionner --" %}</option>';
   _faqCats.forEach(c => sel.innerHTML += `<option value="${c.id}">{% trans "${c.titre}" %}</option>`);
 
-  const list = document.getElementById('faq-cats-list');
   if (!_faqCats.length) { list.innerHTML = '<div class="empty-panel">{% trans "Aucune catégorie." %}</div>'; return; }
   list.innerHTML = '';
   _faqCats.forEach(c => {
@@ -954,7 +959,13 @@ async function loadMsgs(est_lu) {
   document.getElementById('msgs-loading').style.display = 'block';
   document.getElementById('msgs-list').innerHTML = '';
   document.getElementById('msgs-empty').style.display = 'none';
-  const r = await fetch(url, { headers:H });
+  let r;
+  try {
+    r = await fetch(url, { headers:H });
+  } catch {
+    document.getElementById('msgs-loading').style.display = 'none';
+    return;
+  }
   document.getElementById('msgs-loading').style.display = 'none';
   if (!r.ok) return;
   const data = (await r.json()).data || [];
@@ -1122,6 +1133,8 @@ async function confirmerEnvoi() {
 
 mpAuthCheck('superadmin').then(u => {
   if (!u || !u.is_superuser) return;
+  // Rafraîchir H après que mpAuthCheck ait potentiellement renouvelé le token
+  H.Authorization = 'Bearer ' + localStorage.getItem('mp_access');
   checkHash();
 });
 {% endblock %}
