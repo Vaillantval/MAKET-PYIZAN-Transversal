@@ -45,13 +45,25 @@ def users_list(request):
 @permission_classes([IsSuperAdmin])
 def user_create(request):
     """Créer un utilisateur."""
-    serializer = RegisterSerializer(data=request.data)
+    data = request.data.copy()
+    # Dupliquer password2 si absent (l'admin n'a qu'un champ de confirmation)
+    if 'password2' not in data and 'password' in data:
+        data['password2'] = data['password']
+
+    serializer = RegisterSerializer(data=data)
     if not serializer.is_valid():
         return Response(
             {'success': False, 'error': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
     user = serializer.save()
+
+    # Appliquer is_active si fourni (RegisterSerializer ne le gère pas)
+    is_active = request.data.get('is_active')
+    if is_active is not None:
+        user.is_active = bool(is_active)
+        user.save(update_fields=['is_active'])
+
     return Response(
         {
             'success': True,

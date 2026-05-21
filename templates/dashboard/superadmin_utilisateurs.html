@@ -348,14 +348,15 @@ async function submitUser(e) {
     role:       document.getElementById('f-role').value,
     is_active:  document.getElementById('f-is_active').checked,
   };
-  if (pwd) body.password = pwd;
-
   let url, method;
   if (_editUserId) {
+    if (pwd) body.password = pwd;
     url = `/api/admin/users/${_editUserId}/detail/`;
     method = 'PATCH';
   } else {
-    body.username = document.getElementById('f-username').value;
+    body.password  = pwd;
+    body.password2 = pwd2;
+    body.username  = document.getElementById('f-username').value;
     const role = body.role;
     if (role === 'producteur') {
       body.departement = document.getElementById('f-departement').value;
