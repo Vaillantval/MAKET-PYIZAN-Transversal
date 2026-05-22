@@ -157,13 +157,21 @@ def catalogue_toggle(request, pk):
 
     nouvelle_val = not getattr(produit, champ)
     setattr(produit, champ, nouvelle_val)
-    produit.save(update_fields=[champ])
+    update_fields = [champ]
+
+    # Sync statut when toggling is_active so filters stay consistent
+    if champ == 'is_active':
+        produit.statut = Produit.Statut.ACTIF if nouvelle_val else Produit.Statut.INACTIF
+        update_fields.append('statut')
+
+    produit.save(update_fields=update_fields)
 
     return Response({
         'success': True,
         'data': {
-            'id':  produit.pk,
-            champ: nouvelle_val,
+            'id':     produit.pk,
+            champ:    getattr(produit, champ),
+            'statut': produit.statut,
         }
     })
 

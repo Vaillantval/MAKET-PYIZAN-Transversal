@@ -121,7 +121,7 @@ class ProduitCreateUpdateSerializer(serializers.ModelSerializer):
             'stock_disponible', 'seuil_alerte',
             'image_principale',
             'origine', 'saison', 'certifications',
-            'is_active',
+            'statut', 'is_active',
         ]
 
     def validate_prix_unitaire(self, value):

@@ -171,7 +171,7 @@
           <option value="en_attente">{% trans "En attente de validation" %}</option>
           <option value="actif">{% trans "Actif" %}</option>
           <option value="brouillon">{% trans "Brouillon" %}</option>
-          <option value="suspendu">{% trans "Suspendu" %}</option>
+          <option value="epuise">{% trans "Épuisé" %}</option>
           <option value="inactif">{% trans "Inactif" %}</option>
         </select>
       </div>
@@ -202,8 +202,8 @@
   <button class="filter-btn active" data-statut="" onclick="setFilter(this)">{% trans "Tous" %}</button>
   <button class="filter-btn" data-statut="actif" onclick="setFilter(this)">{% trans "Actifs" %}</button>
   <button class="filter-btn" data-statut="en_attente" onclick="setFilter(this)">{% trans "En attente" %}</button>
-  <button class="filter-btn" data-statut="suspendu" onclick="setFilter(this)">{% trans "Suspendus" %}</button>
   <button class="filter-btn" data-statut="brouillon" onclick="setFilter(this)">{% trans "Brouillons" %}</button>
+  <button class="filter-btn" data-statut="epuise" onclick="setFilter(this)">{% trans "Épuisés" %}</button>
   <button class="filter-btn" data-statut="inactif" onclick="setFilter(this)">{% trans "Inactifs" %}</button>
   <button class="btn-new" onclick="openCreate()"><i class="fas fa-plus"></i> {% trans "Nouveau produit" %}</button>
 </div>
