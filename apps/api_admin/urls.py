@@ -44,8 +44,9 @@ urlpatterns = [
     path('stocks/lots/',              views.lots_list,      name='lots_list'),
     path('stocks/lots/create/',       views.lot_create,     name='lot_create'),
     path('stocks/lots/<int:pk>/',     views.lot_detail,     name='lot_detail'),
-    path('stocks/alertes/',           views.alertes_stock,  name='alertes_stock'),
-    path('stocks/mouvements/',        views.mouvements_stock, name='mouvements_stock'),
+    path('stocks/alertes/',              views.alertes_stock,      name='alertes_stock'),
+    path('stocks/mouvements/',           views.mouvements_stock,   name='mouvements_stock'),
+    path('stocks/recalculer-reserves/',  views.recalculer_reserves, name='recalculer_reserves'),
 
     # ── Collectes ───────────────────────────────────────────────
     path('collectes/',                          views.collectes_list,             name='collectes_list'),

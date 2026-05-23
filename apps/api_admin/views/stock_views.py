@@ -194,6 +194,37 @@ def alertes_stock(request):
     return Response({'success': True, 'data': data})
 
 
+# ── POST /api/admin/stocks/recalculer-reserves/ ─────────────────
+@api_view(['POST'])
+@permission_classes([IsSuperAdmin])
+def recalculer_reserves(request):
+    """
+    Réconcilie stock_reserve pour tous les produits depuis les commandes actives.
+    À appeler si stock_reserve s'est désynchronisé (suppression manuelle, rollback partiel, etc.)
+    """
+    from apps.catalog.models import Produit
+    produits = list(Produit.objects.all())
+    corrections = []
+    for produit in produits:
+        ancien = produit.stock_reserve
+        nouveau = produit.recalculer_stock_reserve()
+        if ancien != nouveau:
+            corrections.append({
+                'produit_id':  produit.pk,
+                'produit_nom': produit.nom,
+                'avant':       ancien,
+                'apres':       nouveau,
+            })
+    return Response({
+        'success': True,
+        'data': {
+            'produits_verifies':  len(produits),
+            'corrections':        len(corrections),
+            'detail':             corrections,
+        }
+    })
+
+
 # ── GET /api/admin/stocks/mouvements/ ───────────────────────────
 @api_view(['GET'])
 @permission_classes([IsSuperAdmin])

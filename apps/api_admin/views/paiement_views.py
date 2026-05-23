@@ -72,11 +72,14 @@ def paiement_statut(request, pk):
             paiement.commande.statut_paiement = 'non_paye'
             paiement.commande.save(update_fields=['statut_paiement'])
     else:  # 'verifie'
-        paiement.statut            = Paiement.Statut.VERIFIE
-        paiement.verifie_par       = request.user
-        paiement.date_verification = timezone.now()
-        paiement.note_verification = note
-        paiement.save()
+        with transaction.atomic():
+            paiement.statut            = Paiement.Statut.VERIFIE
+            paiement.verifie_par       = request.user
+            paiement.date_verification = timezone.now()
+            paiement.note_verification = note
+            paiement.save()
+            paiement.commande.statut_paiement = 'verifie'
+            paiement.commande.save(update_fields=['statut_paiement'])
 
     if montant_recu:
         try:

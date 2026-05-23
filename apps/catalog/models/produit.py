@@ -105,6 +105,17 @@ class Produit(models.Model):
     def prix_affiche(self):
         return self.prix_unitaire
 
+    def recalculer_stock_reserve(self):
+        from django.db.models import Sum
+        from apps.orders.models import Commande
+        total = Commande.objects.filter(
+            details__produit=self,
+            statut__in=[Commande.Statut.EN_ATTENTE, Commande.Statut.CONFIRMEE],
+        ).aggregate(total=Sum('details__quantite'))['total'] or 0
+        self.stock_reserve = total
+        self.save(update_fields=['stock_reserve'])
+        return self.stock_reserve
+
 
 class ImageProduit(models.Model):
     produit    = models.ForeignKey(Produit, on_delete=models.CASCADE, related_name='images')

@@ -129,11 +129,12 @@ class CommandeService:
             lot = detail.lot or detail.produit.lots.filter(statut='disponible', quantite_actuelle__gte=detail.quantite).first()
             if not lot:
                 raise ValueError(f"Aucun lot disponible pour '{detail.produit.nom}'")
-            StockService.sortie_stock(lot=lot, quantite=detail.quantite, type_mouvement=MouvementStock.TypeMouvement.SORTIE_VENTE, commande=commande, effectue_par=effectue_par)
-            # Sauvegarder le lot utilisé pour traçabilité (utile si annulation ultérieure)
+            # Assigner le lot avant le débit : si sortie_stock() échoue,
+            # le rollback atomic annule aussi cette sauvegarde
             if not detail.lot:
                 detail.lot = lot
                 detail.save(update_fields=['lot'])
+            StockService.sortie_stock(lot=lot, quantite=detail.quantite, type_mouvement=MouvementStock.TypeMouvement.SORTIE_VENTE, commande=commande, effectue_par=effectue_par)
             detail.produit.stock_reserve = max(0, detail.produit.stock_reserve - detail.quantite)
             detail.produit.save(update_fields=['stock_reserve'])
         commande.statut            = Commande.Statut.CONFIRMEE
@@ -184,4 +185,17 @@ class CommandeService:
         commande.statut = Commande.Statut.ANNULEE
         commande.save()
         HistoriqueStatutCommande.objects.create(commande=commande, statut_avant=statut_avant, statut_apres=Commande.Statut.ANNULEE, effectue_par=effectue_par, commentaire=motif or "Commande annulee.")
+
+        # Remettre le voucher disponible si toutes les commandes liées sont annulées
+        if commande.voucher:
+            voucher = commande.voucher
+            encore_actif = Commande.objects.filter(
+                voucher=voucher,
+            ).exclude(pk=commande.pk).exclude(statut=Commande.Statut.ANNULEE).exists()
+            if not encore_actif:
+                from apps.payments.models import Voucher
+                voucher.statut           = Voucher.Statut.ACTIF
+                voucher.date_utilisation = None
+                voucher.save(update_fields=['statut', 'date_utilisation'])
+
         return commande
