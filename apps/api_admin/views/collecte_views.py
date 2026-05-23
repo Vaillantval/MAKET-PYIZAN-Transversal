@@ -88,7 +88,13 @@ def collectes_list(request):
 @permission_classes([IsSuperAdmin])
 def collecte_create(request):
     """Planifier une nouvelle collecte."""
-    zone_id = request.data.get('zone_id')
+    zone_id       = request.data.get('zone_id')
+    date_planifie = request.data.get('date_planifiee') or request.data.get('date_prevue')
+    if not zone_id or not date_planifie:
+        return Response(
+            {'success': False, 'error': _("zone_id et date_planifiee sont requis.")},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     zone    = get_object_or_404(ZoneCollecte, pk=zone_id)
 
     point_id       = request.data.get('point_collecte_id')
@@ -106,7 +112,7 @@ def collecte_create(request):
         collecte = CollecteService.planifier_collecte(
             zone=zone,
             point_collecte=point_collecte,
-            date_planifiee=request.data.get('date_planifiee') or request.data.get('date_prevue'),
+            date_planifiee=date_planifie,
             collecteur=collecteur,
             heure_debut=request.data.get('heure_debut') or None,
             heure_fin=request.data.get('heure_fin') or None,

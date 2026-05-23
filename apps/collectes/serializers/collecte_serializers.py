@@ -64,9 +64,8 @@ class ParticipationCollecteSerializer(serializers.ModelSerializer):
 
 class ConfirmerParticipationSerializer(serializers.Serializer):
     """Données pour confirmer une participation."""
-    quantite_prevue = serializers.DecimalField(
-                        max_digits=10, decimal_places=2,
-                        required=False, allow_null=True,
+    quantite_prevue = serializers.IntegerField(
+                        required=False, allow_null=True, min_value=0,
                         help_text="Quantité que le producteur prévoit d'apporter",
                       )
     notes           = serializers.CharField(
