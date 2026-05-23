@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.db import transaction
 
 from apps.accounts.permissions import IsSuperAdmin
 from apps.payments.models import Paiement
@@ -33,31 +35,55 @@ def paiements_list(request):
 @permission_classes([IsSuperAdmin])
 def paiement_statut(request, pk):
     """
-    Confirmer ou rejeter un paiement.
-    Body : { "action": "confirmer" | "rejeter", "note": "..." }
+    Mettre à jour le statut d'un paiement.
+    Body : { "statut": "verifie"|"confirme"|"echoue"|"annule", "note": "...", "montant_recu": ... }
     """
     paiement = get_object_or_404(Paiement, pk=pk)
-    action   = request.data.get('action')
-    note     = request.data.get('note', '')
+    nouveau_statut = request.data.get('statut')
+    note           = request.data.get('note', '')
+    montant_recu   = request.data.get('montant_recu')
 
-    if action not in ['confirmer', 'rejeter']:
+    STATUTS_VALIDES = ['verifie', 'confirme', 'echoue', 'annule']
+    if nouveau_statut not in STATUTS_VALIDES:
         return Response(
-            {'success': False, 'error': _("Action : 'confirmer' ou 'rejeter'.")},
+            {'success': False, 'error': _("Statut invalide. Valeurs acceptées : verifie, confirme, echoue, annule.")},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    if action == 'confirmer':
+    if nouveau_statut == 'confirme':
         paiement = PaiementService.confirmer_paiement(
             paiement=paiement,
             verifie_par=request.user,
             note_verification=note,
         )
-    else:
+    elif nouveau_statut == 'echoue':
         paiement = PaiementService.rejeter_paiement(
             paiement=paiement,
             verifie_par=request.user,
             motif=note,
         )
+    elif nouveau_statut == 'annule':
+        with transaction.atomic():
+            paiement.statut             = Paiement.Statut.ANNULE
+            paiement.verifie_par        = request.user
+            paiement.date_verification  = timezone.now()
+            paiement.note_verification  = note
+            paiement.save()
+            paiement.commande.statut_paiement = 'non_paye'
+            paiement.commande.save(update_fields=['statut_paiement'])
+    else:  # 'verifie'
+        paiement.statut            = Paiement.Statut.VERIFIE
+        paiement.verifie_par       = request.user
+        paiement.date_verification = timezone.now()
+        paiement.note_verification = note
+        paiement.save()
+
+    if montant_recu:
+        try:
+            paiement.montant_recu = float(montant_recu)
+            paiement.save(update_fields=['montant_recu'])
+        except (ValueError, TypeError):
+            pass
 
     return Response({
         'success': True,

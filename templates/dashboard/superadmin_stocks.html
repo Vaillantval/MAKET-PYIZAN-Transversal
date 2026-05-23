@@ -155,10 +155,11 @@
       <input type="text" id="lots-search" placeholder="{% trans 'N° lot, produit...' %}" oninput="debouncedLots()">
     </div>
     <button class="filter-btn active" data-statut="" onclick="setLotsFilter(this)">{% trans "Tous" %}</button>
+    <button class="filter-btn" data-statut="en_cours" onclick="setLotsFilter(this)">{% trans "En cours" %}</button>
     <button class="filter-btn" data-statut="disponible" onclick="setLotsFilter(this)">{% trans "Disponibles" %}</button>
     <button class="filter-btn" data-statut="epuise" onclick="setLotsFilter(this)">{% trans "Épuisés" %}</button>
     <button class="filter-btn" data-statut="expire" onclick="setLotsFilter(this)">{% trans "Expirés" %}</button>
-    <button class="filter-btn" data-statut="retire" onclick="setLotsFilter(this)">{% trans "Retirés" %}</button>
+    <button class="filter-btn" data-statut="rappel" onclick="setLotsFilter(this)">{% trans "Rappelés" %}</button>
     <button class="btn-new" onclick="openLotCreate()"><i class="fas fa-plus"></i> {% trans "Nouveau lot" %}</button>
   </div>
   <div class="table-wrap">

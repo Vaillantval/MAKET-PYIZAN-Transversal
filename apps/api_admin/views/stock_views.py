@@ -12,18 +12,25 @@ from django.utils.translation import gettext as _
 
 
 def _lot_data(lot):
+    p = lot.produit
     return {
         'id':                lot.pk,
         'numero_lot':        lot.numero_lot,
-        'produit':           lot.produit.nom,
-        'producteur':        lot.produit.producteur.user.get_full_name(),
+        'produit_id':        p.pk,
+        'produit_nom':       p.nom,
+        'producteur_nom':    p.producteur.user.get_full_name(),
+        'producteur_code':   p.producteur.code_producteur,
+        'categorie':         p.categorie.nom,
         'quantite_initiale': lot.quantite_initiale,
         'quantite_actuelle': lot.quantite_actuelle,
         'quantite_vendue':   lot.quantite_vendue,
         'taux_ecoulement':   lot.taux_ecoulement,
         'statut':            lot.statut,
+        'statut_label':      lot.get_statut_display(),
         'date_recolte':      str(lot.date_recolte) if lot.date_recolte else None,
+        'date_expiration':   str(lot.date_expiration) if lot.date_expiration else None,
         'lieu_stockage':     lot.lieu_stockage,
+        'notes':             lot.notes,
         'created_at':        lot.created_at.isoformat(),
     }
 
@@ -67,22 +74,28 @@ def lot_create(request):
     produit_id = request.data.get('produit_id')
     produit    = get_object_or_404(Produit, pk=produit_id)
 
-    quantite = int(request.data.get('quantite', 0))
+    quantite = int(request.data.get('quantite_initiale', 0))
     if quantite <= 0:
         return Response(
             {'success': False, 'error': _("La quantité doit être > 0.")},
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    statut_lot = request.data.get('statut', 'disponible')
+    STATUTS_LOT = ['en_cours', 'disponible', 'epuise', 'expire', 'rappel']
+    if statut_lot not in STATUTS_LOT:
+        statut_lot = 'disponible'
+
     lot = Lot.objects.create(
         produit=produit,
         quantite_initiale=quantite,
         quantite_actuelle=quantite,
-        date_recolte=request.data.get('date_recolte'),
+        date_recolte=request.data.get('date_recolte') or None,
+        date_expiration=request.data.get('date_expiration') or None,
         lieu_stockage=request.data.get('lieu_stockage', ''),
         notes=request.data.get('notes', ''),
         cree_par=request.user,
-        statut='disponible',
+        statut=statut_lot,
     )
 
     return Response(
@@ -102,7 +115,7 @@ def lot_detail(request, pk):
     if request.method == 'GET':
         return Response({'success': True, 'data': _lot_data(lot)})
 
-    # PATCH — ajustement du stock
+    # PATCH — ajustement du stock et mise à jour des champs
     nouvelle_quantite = request.data.get('quantite_actuelle')
     motif             = request.data.get('motif', 'Ajustement admin')
 
@@ -120,6 +133,30 @@ def lot_detail(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    # Champs directement éditables
+    STATUTS_LOT = ['en_cours', 'disponible', 'epuise', 'expire', 'rappel']
+    update_fields = []
+
+    if 'statut' in request.data and request.data['statut'] in STATUTS_LOT:
+        lot.statut = request.data['statut']
+        update_fields.append('statut')
+    if 'date_recolte' in request.data:
+        lot.date_recolte = request.data['date_recolte'] or None
+        update_fields.append('date_recolte')
+    if 'date_expiration' in request.data:
+        lot.date_expiration = request.data['date_expiration'] or None
+        update_fields.append('date_expiration')
+    if 'lieu_stockage' in request.data:
+        lot.lieu_stockage = request.data['lieu_stockage']
+        update_fields.append('lieu_stockage')
+    if 'notes' in request.data:
+        lot.notes = request.data['notes']
+        update_fields.append('notes')
+
+    if update_fields:
+        lot.save(update_fields=update_fields)
+
+    lot.refresh_from_db()
     return Response({'success': True, 'data': _lot_data(lot)})
 
 
@@ -141,15 +178,16 @@ def alertes_stock(request):
 
     data = [
         {
-            'id':           a.pk,
-            'produit':      a.produit.nom,
-            'producteur':   a.produit.producteur.user.get_full_name(),
-            'niveau':       a.niveau,
-            'stock_actuel': a.stock_actuel,
-            'seuil':        a.seuil,
-            'message':      a.message,
-            'statut':       a.statut,
-            'created_at':   a.created_at.isoformat(),
+            'id':              a.pk,
+            'produit_nom':     a.produit.nom,
+            'producteur_nom':  a.produit.producteur.user.get_full_name(),
+            'producteur_tel':  a.produit.producteur.user.telephone if hasattr(a.produit.producteur.user, 'telephone') else '',
+            'niveau':          a.niveau,
+            'stock_actuel':    a.stock_actuel,
+            'seuil':           a.seuil,
+            'message':         a.message,
+            'statut':          a.statut,
+            'created_at':      a.created_at.isoformat(),
         }
         for a in qs
     ]
@@ -168,7 +206,7 @@ def mouvements_stock(request):
     data = [
         {
             'id':             m.pk,
-            'produit':        m.produit.nom,
+            'produit_nom':    m.produit.nom,
             'type_mouvement': m.get_type_mouvement_display(),
             'quantite':       m.quantite,
             'stock_avant':    m.stock_avant,
