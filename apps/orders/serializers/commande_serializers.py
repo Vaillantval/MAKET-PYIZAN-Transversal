@@ -29,10 +29,25 @@ class PasserCommandeSerializer(serializers.Serializer):
                                default='',
                              )
 
-    # Preuve de paiement (hors ligne)
-    preuve_paiement        = serializers.ImageField(
+    # Preuve de paiement (hors ligne) — JPG, PNG ou PDF acceptés
+    preuve_paiement        = serializers.FileField(
                                required=False, allow_null=True
                              )
+
+    def validate_preuve_paiement(self, value):
+        if value is None:
+            return value
+        import os
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext not in ('.jpg', '.jpeg', '.png', '.gif', '.pdf'):
+            raise serializers.ValidationError(
+                "Format non supporté. Utilisez JPG, PNG ou PDF."
+            )
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError(
+                "Fichier trop volumineux (max 5 Mo)."
+            )
+        return value
 
     notes                  = serializers.CharField(
                                required=False, allow_blank=True,

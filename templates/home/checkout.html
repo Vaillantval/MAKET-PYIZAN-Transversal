@@ -634,6 +634,7 @@
   let cartData       = null;
   let addresses      = [];
   let selectedAddrId = null;
+  let _savedAddrId   = null;   // sauvegarde avant ouverture du formulaire "autre"
   let formMode       = null;   // null | 'autre' | 'nouvelle'
   let selectedPM     = 'moncash';
   let appliedVoucher = null;   // { code, remise } | null
@@ -875,6 +876,7 @@
 
   // ── Form: adresse inline ──────────────────────────────────────────────────
   function showAddrForm(mode) {
+    _savedAddrId = selectedAddrId;   // mémoriser avant d'effacer
     formMode = mode;
     const wrap = document.getElementById('addr-form-wrap');
     wrap.style.display = 'block';
@@ -921,6 +923,18 @@
     document.getElementById('addr-form-wrap').style.display = 'none';
     document.getElementById('btn-autre').classList.remove('active');
     document.getElementById('btn-nouvelle').classList.remove('active');
+    // Restaurer l'adresse sélectionnée avant l'ouverture du formulaire
+    if (_savedAddrId !== null) {
+      selectedAddrId = _savedAddrId;
+      const prevEl = document.getElementById('addr-opt-' + _savedAddrId);
+      if (prevEl) {
+        document.querySelectorAll('.addr-option').forEach(o => o.classList.remove('selected'));
+        prevEl.classList.add('selected');
+        const r = prevEl.querySelector('input[type=radio]');
+        if (r) r.checked = true;
+      }
+      _savedAddrId = null;
+    }
   }
 
   function toggleAddrForm(mode) {
