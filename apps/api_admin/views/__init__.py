@@ -13,7 +13,7 @@ from .catalogue_views  import (
 )
 from .stock_views      import (
     lots_list, lot_create, lot_detail,
-    alertes_stock, mouvements_stock,
+    alertes_stock, mouvements_stock, recalculer_reserves,
 )
 from .collecte_views   import (
     collectes_list, collecte_create, collecte_detail,
