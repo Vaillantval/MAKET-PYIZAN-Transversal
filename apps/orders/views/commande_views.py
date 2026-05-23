@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -189,24 +190,31 @@ def commander(request):
 
                 # Gérer la preuve hors ligne
                 if methode_paiement == 'hors_ligne':
+                    paiement_hl = PaiementService.initier_paiement(
+                        commande=commande,
+                        type_paiement=Paiement.TypePaiement.VIREMENT,
+                        notes='Paiement hors ligne',
+                    )
                     preuve = data.get('preuve_paiement')
                     if preuve:
-                        commande.preuve_paiement = preuve
-                        commande.statut_paiement = Commande.StatutPaiement.PREUVE_SOUMISE
-                        commande.save(update_fields=[
-                            'preuve_paiement', 'statut_paiement',
-                        ])
+                        PaiementService.soumettre_preuve(
+                            paiement=paiement_hl,
+                            preuve_image=preuve,
+                        )
 
                 commandes_creees.append(commande)
 
             # Créer les enregistrements Paiement à l'intérieur de la transaction
             # pour que tout soit atomique (rollback si échec)
             if type_paiement_django is not None:
+                # Toutes les commandes d'un même panier partagent un batch_ref
+                # pour que plopplop_verify puisse toutes les confirmer en une passe
+                batch_ref = commandes_creees[0].numero_commande
                 for commande in commandes_creees:
                     PaiementService.initier_paiement(
                         commande=commande,
                         type_paiement=type_paiement_django,
-                        notes='Initié depuis le checkout',
+                        notes=f'BATCH:{batch_ref}',
                     )
 
             # Vider le panier après commande réussie
@@ -274,6 +282,27 @@ def commander(request):
             c.methode_paiement = Commande.MethodePaiement.VOUCHER
             c.statut_paiement  = Commande.StatutPaiement.PAYE
             c.save(update_fields=['methode_paiement', 'statut_paiement'])
+            # Mettre à jour ou créer un Paiement pour la trace d'audit
+            paiements_pendants = c.paiements.filter(
+                statut__in=[Paiement.Statut.INITIE, Paiement.Statut.EN_ATTENTE]
+            )
+            if paiements_pendants.exists():
+                paiements_pendants.update(
+                    type_paiement=Paiement.TypePaiement.VOUCHER,
+                    statut=Paiement.Statut.CONFIRME,
+                    note_verification=f"Couvert intégralement par voucher {voucher_obj.code}",
+                    date_verification=timezone.now(),
+                )
+            else:
+                Paiement.objects.create(
+                    commande=c,
+                    effectue_par=c.acheteur.user,
+                    type_paiement=Paiement.TypePaiement.VOUCHER,
+                    statut=Paiement.Statut.CONFIRME,
+                    montant=c.remise,
+                    note_verification=f"Couvert intégralement par voucher {voucher_obj.code}",
+                    date_verification=timezone.now(),
+                )
         response_data['voucher_couvre_tout'] = True
         return Response(
             {'success': True, 'data': response_data},
@@ -282,23 +311,25 @@ def commander(request):
 
     # Pour MonCash / NatCash — initier le paiement via Plopplop (appel externe)
     if type_paiement_django is not None and commandes_creees:
-        # Initier le paiement Plopplop sur la première commande (redirect unique)
+        # Un seul redirect Plopplop pour la totalité du panier (multi-producteur)
+        # Le batch_ref est le numero de la première commande (identique aux notes Paiement)
         try:
             from apps.payments.services.plopplop_service import PlopplopService
-            premiere_commande = commandes_creees[0]
-            plopplop = PlopplopService()
-            result   = plopplop.initier_paiement(
-                commande_ref=premiere_commande.numero_commande,
-                montant=float(premiere_commande.total),
+            batch_ref   = commandes_creees[0].numero_commande
+            total_batch = sum(c.total for c in commandes_creees)
+            plopplop    = PlopplopService()
+            result      = plopplop.initier_paiement(
+                commande_ref=batch_ref,
+                montant=float(total_batch),
                 payment_method=methode_paiement,
             )
             response_data['redirect_url']   = result['redirect_url']
             response_data['transaction_id'] = result['transaction_id']
         except Exception as e:
             logger.error(
-                "Plopplop initiation échouée [%s] ref=%s erreur=%s",
+                "Plopplop initiation échouée [%s] batch_ref=%s erreur=%s",
                 methode_paiement,
-                commandes_creees[0].numero_commande if commandes_creees else '?',
+                batch_ref,
                 e,
                 exc_info=True,
             )
@@ -308,7 +339,7 @@ def commander(request):
                     email_paiement_echec_acheteur,
                     email_paiement_echec_admin,
                 )
-                acheteur_user = premiere_commande.acheteur.user
+                acheteur_user = commandes_creees[0].acheteur.user
                 email_paiement_echec_acheteur(
                     commandes=commandes_creees,
                     methode=methode_paiement,

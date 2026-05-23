@@ -41,6 +41,10 @@ class CommandeService:
             quantite = item['quantite']
             lot      = item.get('lot')
 
+            # Relire depuis DB pour avoir les valeurs à jour (stock peut avoir changé
+            # entre l'ajout au panier et le checkout)
+            produit.refresh_from_db(fields=['stock_disponible', 'stock_reserve'])
+
             logger.debug(
                 "creer_commande: vérification stock — produit=%s (pk=%s) stock_reel=%s "
                 "stock_reserve=%s quantite_demandee=%s lot=%s",

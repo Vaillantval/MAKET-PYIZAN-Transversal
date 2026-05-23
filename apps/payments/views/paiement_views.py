@@ -263,20 +263,29 @@ def plopplop_verify(request):
     trans_status   = result.get('trans_status', 'no')
     id_transaction = result.get('id_transaction', commande_ref)
     methode        = result.get('method', '')
-    commandes_qs   = Commande.objects.filter(numero_commande=commande_ref).select_related(
-        'acheteur__user', 'producteur__user'
-    )
-    commandes_list = list(commandes_qs)
+
+    # Retrouver tous les paiements du même panier via le batch_ref
+    # (multi-producteur : plusieurs commandes, un seul redirect Plopplop)
+    statuts_actifs = [Paiement.Statut.INITIE, Paiement.Statut.EN_ATTENTE]
+    paiements_batch = Paiement.objects.filter(
+        notes=f'BATCH:{commande_ref}',
+        statut__in=statuts_actifs,
+    ).select_related('commande__acheteur__user', 'commande__producteur__user')
+
+    if not paiements_batch.exists():
+        # Fallback : panier à un seul producteur ou ancien format
+        paiements_batch = Paiement.objects.filter(
+            commande__numero_commande=commande_ref,
+            statut__in=statuts_actifs,
+        ).select_related('commande__acheteur__user', 'commande__producteur__user')
+
+    commandes_list = [p.commande for p in paiements_batch]
 
     if trans_status == 'ok':
         from apps.orders.services.commande_service import CommandeService
 
-        paiements_a_confirmer = Paiement.objects.filter(
-            commande__numero_commande=commande_ref,
-            statut__in=[Paiement.Statut.INITIE, Paiement.Statut.EN_ATTENTE],
-        ).select_related('commande')
-
-        for paiement in paiements_a_confirmer:
+        commandes_confirmees = []
+        for paiement in paiements_batch:
             # 1. Enregistrer l'ID Plopplop avant confirmation
             paiement.id_transaction = id_transaction
             paiement.save(update_fields=['id_transaction'])
@@ -298,13 +307,18 @@ def plopplop_verify(request):
                     paiement.commande.numero_commande, e,
                 )
 
+            commandes_confirmees.append({
+                'numero_commande': paiement.commande.numero_commande,
+                'total':           str(paiement.commande.total),
+            })
+
         return Response({
             'success':     True,
             'confirme':    True,
             'montant':     result.get('montant', ''),
             'method':      methode,
             'transaction': id_transaction,
-            'commandes':   list(commandes_qs.values('numero_commande', 'total')),
+            'commandes':   commandes_confirmees,
         })
 
     # Paiement non confirmé — notifier l'acheteur et les admins (async)
