@@ -187,7 +187,7 @@ function collecteursOptions(sel) {
 }
 
 async function pointsOptions(zoneId, selPt) {
-  if (!zoneId) return '<option value="">{% trans "-- Choisir zone d\'abord --" %}</option>';
+  if (!zoneId) return `<option value="">-- Choisir zone d'abord --</option>`;
   const pts = await fetch(`/api/admin/options/?type=points&zone_id=${zoneId}`, { headers: H }).then(r => r.json()).then(j => j.data || []);
   return '<option value="">{% trans "-- Aucun --" %}</option>' + pts.map(p => `<option value="${p.id}"${selPt==p.id?' selected':''}>{% trans "${p.label}" %}</option>`).join('');
 }
