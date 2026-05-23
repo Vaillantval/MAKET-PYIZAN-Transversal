@@ -392,20 +392,16 @@ async function submitEdit() {
     heure_fin:         document.getElementById('f-heure_fin').value || null,
     notes:             document.getElementById('f-notes').value,
     rapport:           document.getElementById('f-rapport').value,
+    statut:            document.getElementById('f-statut').value,
   };
-  const statut = document.getElementById('f-statut').value;
 
-  // Patch edit fields
-  let r = await fetch(`/api/admin/collectes/${_currentId}/edit/`, { method:'PATCH', headers: H, body: JSON.stringify(body) });
-  if (!r.ok) { const d = await r.json(); showToast(d.error||'Erreur', 'error'); return; }
-
-  // Patch statut separately
-  r = await fetch(`/api/admin/collectes/${_currentId}/statut/`, { method:'PATCH', headers: H, body: JSON.stringify({ statut }) });
+  const r = await fetch(`/api/admin/collectes/${_currentId}/`, { method:'PATCH', headers: H, body: JSON.stringify(body) });
+  const d = await r.json();
   if (r.ok) {
     showToast('Collecte mise à jour !');
     closeDrawer(); load();
   } else {
-    const d = await r.json(); showToast(d.error||'Erreur statut', 'error');
+    showToast(d.error||'Erreur', 'error');
   }
 }
 

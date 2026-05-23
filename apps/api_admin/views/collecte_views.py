@@ -14,20 +14,52 @@ from apps.accounts.models import Producteur
 from django.utils.translation import gettext as _
 
 
-def _collecte_data(c):
-    """Sérialisation basique d'une collecte."""
+def _participation_data(p):
     return {
+        'id':                 p.pk,
+        'producteur_id':      p.producteur_id,
+        'producteur_nom':     p.producteur.user.get_full_name(),
+        'producteur_code':    p.producteur.code_producteur,
+        'producteur_commune': getattr(p.producteur, 'commune', '') or '',
+        'statut':             p.statut,
+        'statut_label':       p.get_statut_display(),
+        'quantite_prevue':    p.quantite_prevue,
+        'quantite_collectee': p.quantite_collectee,
+    }
+
+
+def _collecte_data(c, with_participations=False):
+    """Sérialisation complète d'une collecte."""
+    data = {
         'id':             c.pk,
         'reference':      c.reference,
         'statut':         c.statut,
+        'statut_label':   c.get_statut_display(),
+        'est_en_retard':  c.est_en_retard,
+        'zone_id':        c.zone_id,
         'zone':           c.zone.nom if c.zone else None,
-        'point_collecte': c.point_collecte.nom if c.point_collecte else None,
-        'date_planifiee': str(c.date_planifiee),
+        'departement':    c.zone.get_departement_display() if c.zone else None,
+        'point_id':       c.point_collecte_id,
+        'point':          c.point_collecte.nom if c.point_collecte else None,
+        'commune':        c.point_collecte.commune if c.point_collecte else None,
+        'collecteur_id':  c.collecteur_id,
         'collecteur':     c.collecteur.get_full_name() if c.collecteur else None,
+        'date_planifiee': str(c.date_planifiee),
+        'heure_debut':    str(c.heure_debut) if c.heure_debut else None,
+        'heure_fin':      str(c.heure_fin) if c.heure_fin else None,
         'nb_producteurs': c.participations.count(),
+        'montant_total':  c.montant_total,
         'notes':          c.notes,
+        'rapport':        c.rapport,
         'created_at':     c.created_at.isoformat(),
+        'participations': [],
     }
+    if with_participations:
+        data['participations'] = [
+            _participation_data(p)
+            for p in c.participations.select_related('producteur__user').all()
+        ]
+    return data
 
 
 # ── GET /api/admin/collectes/ ────────────────────────────────────
@@ -65,7 +97,7 @@ def collecte_create(request):
     ) if point_id else None
 
     collecteur = None
-    agent_id   = request.data.get('agent_id')
+    agent_id   = request.data.get('collecteur_id') or request.data.get('agent_id')
     if agent_id:
         from apps.accounts.models import CustomUser
         collecteur = get_object_or_404(CustomUser, pk=agent_id)
@@ -76,8 +108,8 @@ def collecte_create(request):
             point_collecte=point_collecte,
             date_planifiee=request.data.get('date_planifiee') or request.data.get('date_prevue'),
             collecteur=collecteur,
-            heure_debut=request.data.get('heure_debut'),
-            heure_fin=request.data.get('heure_fin'),
+            heure_debut=request.data.get('heure_debut') or None,
+            heure_fin=request.data.get('heure_fin') or None,
             notes=request.data.get('notes', '') or request.data.get('instructions', ''),
         )
     except Exception as e:
@@ -86,7 +118,6 @@ def collecte_create(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Inscrire les producteurs si fournis
     for item in request.data.get('producteurs', []):
         p = Producteur.objects.filter(pk=item.get('producteur_id')).first()
         if p:
@@ -102,45 +133,103 @@ def collecte_create(request):
     )
 
 
-# ── GET /api/admin/collectes/<id>/ ──────────────────────────────
+# ── GET / PATCH /api/admin/collectes/<id>/ ──────────────────────
 @extend_schema(operation_id='admin_collecte_detail', tags=['Admin — Collectes'])
-@api_view(['GET'])
+@api_view(['GET', 'PATCH'])
 @permission_classes([IsSuperAdmin])
 def collecte_detail(request, pk):
-    collecte = get_object_or_404(Collecte, pk=pk)
-    return Response({'success': True, 'data': _collecte_data(collecte)})
+    collecte = get_object_or_404(
+        Collecte.objects.select_related('zone', 'point_collecte', 'collecteur'),
+        pk=pk,
+    )
+
+    if request.method == 'GET':
+        return Response({'success': True, 'data': _collecte_data(collecte, with_participations=True)})
+
+    # PATCH — mise à jour des champs éditables (admin override direct, sans service)
+    update_fields = []
+
+    zone_id = request.data.get('zone_id')
+    if zone_id:
+        collecte.zone = get_object_or_404(ZoneCollecte, pk=zone_id)
+        update_fields.append('zone')
+
+    if 'point_collecte_id' in request.data:
+        point_collecte_id = request.data['point_collecte_id']
+        collecte.point_collecte = (
+            get_object_or_404(PointCollecte, pk=point_collecte_id)
+            if point_collecte_id else None
+        )
+        update_fields.append('point_collecte')
+
+    if 'collecteur_id' in request.data:
+        collecteur_id = request.data['collecteur_id']
+        if collecteur_id:
+            from apps.accounts.models import CustomUser
+            collecte.collecteur = get_object_or_404(CustomUser, pk=collecteur_id)
+        else:
+            collecte.collecteur = None
+        update_fields.append('collecteur')
+
+    if 'date_planifiee' in request.data and request.data['date_planifiee']:
+        collecte.date_planifiee = request.data['date_planifiee']
+        update_fields.append('date_planifiee')
+
+    for field in ('heure_debut', 'heure_fin'):
+        if field in request.data:
+            setattr(collecte, field, request.data[field] or None)
+            update_fields.append(field)
+
+    for field in ('notes', 'rapport'):
+        if field in request.data:
+            setattr(collecte, field, request.data[field] or '')
+            update_fields.append(field)
+
+    STATUTS_VALIDES = [s[0] for s in Collecte.Statut.choices]
+    if 'statut' in request.data and request.data['statut'] in STATUTS_VALIDES:
+        collecte.statut = request.data['statut']
+        update_fields.append('statut')
+
+    if update_fields:
+        collecte.save(update_fields=update_fields)
+        collecte.refresh_from_db()
+
+    return Response({'success': True, 'data': _collecte_data(collecte, with_participations=True)})
 
 
 # ── PATCH /api/admin/collectes/<id>/statut/ ─────────────────────
 @api_view(['PATCH'])
 @permission_classes([IsSuperAdmin])
 def collecte_statut(request, pk):
-    """Démarrer, terminer ou annuler une collecte."""
+    """Changer le statut d'une collecte (avec logique de service pour les transitions clés)."""
     collecte = get_object_or_404(Collecte, pk=pk)
-    action   = request.data.get('action')
+    statut   = request.data.get('statut')
+
+    STATUTS_VALIDES = [s[0] for s in Collecte.Statut.choices]
+    if statut not in STATUTS_VALIDES:
+        return Response(
+            {'success': False, 'error': _("Statut invalide : planifiee|en_cours|terminee|annulee|reportee")},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     try:
-        if action == 'demarrer':
+        if statut == Collecte.Statut.EN_COURS and collecte.statut == Collecte.Statut.PLANIFIEE:
             CollecteService.demarrer_collecte(collecte, request.user)
-        elif action == 'terminer':
+        elif statut == Collecte.Statut.TERMINEE and collecte.statut == Collecte.Statut.EN_COURS:
             CollecteService.terminer_collecte(
                 collecte,
                 rapport=request.data.get('rapport', ''),
             )
-        elif action == 'annuler':
-            collecte.statut = Collecte.Statut.ANNULEE
-            collecte.save()
         else:
-            return Response(
-                {'success': False, 'error': _("Action : demarrer|terminer|annuler")},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            collecte.statut = statut
+            collecte.save()
     except ValueError as e:
         return Response(
             {'success': False, 'error': str(e)},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
+    collecte.refresh_from_db()
     return Response({'success': True, 'data': _collecte_data(collecte)})
 
 
@@ -156,19 +245,17 @@ def collecte_add_participation(request, pk):
     part, created = ParticipationCollecte.objects.get_or_create(
         collecte=collecte,
         producteur=producteur,
-        defaults={
-            'statut': ParticipationCollecte.Statut.INSCRIT,
-        }
+        defaults={'statut': ParticipationCollecte.Statut.INSCRIT},
     )
 
     return Response(
         {
             'success': True,
             'data': {
-                'id':         part.pk,
-                'producteur': producteur.user.get_full_name(),
-                'statut':     part.statut,
-                'created':    created,
+                'id':             part.pk,
+                'producteur_nom': producteur.user.get_full_name(),
+                'statut':         part.statut,
+                'created':        created,
             }
         },
         status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
@@ -183,7 +270,7 @@ def participation_statut(request, pk):
     part   = get_object_or_404(ParticipationCollecte, pk=pk)
     statut = request.data.get('statut')
 
-    STATUTS = ['inscrit', 'confirme', 'present', 'absent', 'annule']
+    STATUTS = [s[0] for s in ParticipationCollecte.Statut.choices]
     if statut not in STATUTS:
         return Response(
             {'success': False, 'error': f"Statut invalide : {STATUTS}"},
@@ -194,7 +281,7 @@ def participation_statut(request, pk):
     part.save()
     return Response({
         'success': True,
-        'data': {'id': part.pk, 'statut': part.statut}
+        'data': {'id': part.pk, 'statut': part.statut, 'statut_label': part.get_statut_display()}
     })
 
 
@@ -205,10 +292,7 @@ def participation_delete(request, pk):
     """Retirer un producteur d'une collecte."""
     part = get_object_or_404(ParticipationCollecte, pk=pk)
     part.delete()
-    return Response({
-        'success': True,
-        'data': {'message': _('Participation supprimée.')}
-    })
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # ── GET /api/admin/zones/ ────────────────────────────────────────
