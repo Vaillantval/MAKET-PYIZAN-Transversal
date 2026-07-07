@@ -1,0 +1,313 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block title %}Mon portefeuille{% endblock %}
+
+{% block sidebar_nav %}
+  <div class="nav-section-label">{% trans "Navigation" %}</div>
+  <a href="/dashboard/producteur/" class="nav-item">
+    <i class="fas fa-th-large"></i> {% trans "Vue d'ensemble" %}
+  </a>
+  <a href="/dashboard/producteur/collectes/" class="nav-item">
+    <i class="fas fa-truck"></i> {% trans "Mes collectes" %}
+  </a>
+  <a href="/dashboard/producteur/catalogue/" class="nav-item">
+    <i class="fas fa-seedling"></i> {% trans "Mon catalogue" %}
+  </a>
+  <a href="/dashboard/producteur/wallet/" class="nav-item active">
+    <i class="fas fa-wallet"></i> {% trans "Mon portefeuille" %}
+  </a>
+  <a href="/" class="nav-item">
+    <i class="fas fa-store"></i> {% trans "Catalogue public" %}
+  </a>
+
+  <div class="nav-section-label">{% trans "Compte" %}</div>
+  <a href="/dashboard/producteur/profil/" class="nav-item">
+    <i class="fas fa-user-edit"></i> {% trans "Mon profil" %}
+  </a>
+  <a href="/dashboard/producteur/rapport/" class="nav-item">
+    <i class="fas fa-file-alt"></i> {% trans "Mon rapport" %}
+  </a>
+{% endblock %}
+
+{% block page_title %}Mon portefeuille{% endblock %}
+{% block page_subtitle %}Vos ventes créditées et vos retraits MonCash/NatCash{% endblock %}
+
+{% block extra_css %}
+<style>
+  .w-hero {
+    background: linear-gradient(120deg, #1a6b2f, #27ae60);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    color: #fff;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .w-hero-label { font-size: 12px; opacity: .85; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+  .w-hero-solde { font-size: 38px; font-weight: 800; line-height: 1.15; }
+  .w-hero-solde small { font-size: 16px; font-weight: 600; opacity: .8; }
+  .w-btn {
+    padding: 11px 20px; border-radius: 9px; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: none; font-family: inherit; transition: all .15s;
+  }
+  .w-btn-light { background: #fff; color: #1a6b2f; }
+  .w-btn-light:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  .w-btn-green { background: var(--green-mid); color: #fff; }
+  .w-btn-green:hover { filter: brightness(1.06); }
+  .w-btn:disabled { opacity: .55; cursor: wait; }
+
+  .w-panel {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 22px 24px; margin-bottom: 22px; display: none;
+  }
+  .w-panel.open { display: block; }
+  .w-panel h3 { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
+  .w-form { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .w-field { display: flex; flex-direction: column; gap: 5px; }
+  .w-field label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .w-field input, .w-field select {
+    padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 13px; font-family: inherit; background: var(--bg); color: var(--text); min-width: 170px;
+  }
+  .w-field input:focus, .w-field select:focus { outline: none; border-color: var(--green-mid); }
+  .w-hint {
+    margin-top: 12px; background: #f0faf4; border-left: 3px solid var(--green-mid);
+    border-radius: 8px; padding: 11px 13px; font-size: 12px; color: #1a6b2f; line-height: 1.7;
+  }
+  .w-msg { margin-top: 12px; font-size: 13px; font-weight: 600; display: none; }
+  .w-msg.ok  { color: #1a6b2f; display: block; }
+  .w-msg.err { color: #e74c3c; display: block; }
+
+  .w-table-card {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 20px 22px; margin-bottom: 22px;
+  }
+  .w-table-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 14px; color: var(--text); }
+  .w-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .w-table th {
+    text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .05em; border-bottom: 1.5px solid var(--border);
+  }
+  .w-table td { padding: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .w-montant-plus  { color: #1a6b2f; font-weight: 700; }
+  .w-montant-moins { color: #e74c3c; font-weight: 700; }
+  .w-type-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; background: var(--bg); color: var(--text-muted);
+  }
+  .badge-demande { background: #fff4e6; color: #e67e22; }
+  .badge-paye    { background: #e8f8ee; color: #1a6b2f; }
+  .badge-rejete  { background: #fde8e8; color: #e74c3c; }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-state i { font-size: 36px; opacity: .18; display: block; margin-bottom: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+  <!-- Solde -->
+  <div class="w-hero">
+    <div>
+      <div class="w-hero-label">{% trans "Solde disponible" %}</div>
+      <div class="w-hero-solde"><span id="w-solde">—</span> <small>HTG</small></div>
+      <p style="font-size:12px;opacity:.85;margin-top:6px">
+        {% trans "Vos ventes livrées sont créditées ici automatiquement." %}
+      </p>
+    </div>
+    <div>
+      <button class="w-btn w-btn-light" onclick="togglePanel('panel-retrait')">
+        <i class="fas fa-money-bill-wave"></i> {% trans "Demander un retrait" %}
+      </button>
+    </div>
+  </div>
+
+  <!-- Panneau retrait -->
+  <div class="w-panel" id="panel-retrait">
+    <h3><i class="fas fa-money-bill-wave"></i> {% trans "Demander un retrait" %}</h3>
+    <div class="w-form">
+      <div class="w-field">
+        <label>{% trans "Montant (HTG, 100 min)" %}</label>
+        <input type="number" id="rt-montant" min="100" step="0.01" placeholder="1000">
+      </div>
+      <div class="w-field">
+        <label>{% trans "Canal" %}</label>
+        <select id="rt-canal">
+          <option value="moncash">MonCash</option>
+          <option value="natcash">NatCash</option>
+        </select>
+      </div>
+      <div class="w-field">
+        <label>{% trans "Numéro qui recevra le transfert" %}</label>
+        <input type="tel" id="rt-numero" placeholder="+509 XXXX XXXX">
+      </div>
+      <button class="w-btn w-btn-green" id="rt-submit" onclick="demanderRetrait()">
+        {% trans "Envoyer la demande" %}
+      </button>
+    </div>
+    <div class="w-hint">
+      {% trans "Le montant est réservé (débité) dès la demande. Notre équipe effectue le transfert sur votre compte, généralement sous 24-48 h ouvrées. Si la demande est rejetée, le montant est re-crédité intégralement." %}
+    </div>
+    <div class="w-msg" id="rt-msg"></div>
+  </div>
+
+  <!-- Mes retraits -->
+  <div class="w-table-card">
+    <h3><i class="fas fa-money-check-alt"></i> {% trans "Mes retraits" %}</h3>
+    <table class="w-table" id="rt-table" style="display:none">
+      <thead>
+        <tr>
+          <th>{% trans "Date" %}</th>
+          <th>{% trans "Montant" %}</th>
+          <th>{% trans "Canal" %}</th>
+          <th>{% trans "Numéro" %}</th>
+          <th>{% trans "Statut" %}</th>
+        </tr>
+      </thead>
+      <tbody id="rt-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="rt-empty">
+      <i class="fas fa-money-check-alt"></i>
+      <p>{% trans "Aucune demande de retrait pour l'instant." %}</p>
+    </div>
+  </div>
+
+  <!-- Transactions -->
+  <div class="w-table-card">
+    <h3><i class="fas fa-history"></i> {% trans "Historique" %}</h3>
+    <div class="empty-state" id="w-loading">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>{% trans "Chargement…" %}</p>
+    </div>
+    <table class="w-table" id="w-table" style="display:none">
+      <thead>
+        <tr>
+          <th>{% trans "Date" %}</th>
+          <th>{% trans "Opération" %}</th>
+          <th>{% trans "Détail" %}</th>
+          <th style="text-align:right">{% trans "Montant" %}</th>
+          <th style="text-align:right">{% trans "Solde" %}</th>
+        </tr>
+      </thead>
+      <tbody id="w-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="w-empty" style="display:none">
+      <i class="fas fa-wallet"></i>
+      <p>{% trans "Aucune transaction pour l'instant. Vos ventes livrées apparaîtront ici." %}</p>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block page_script %}
+
+  let _headers = {};
+
+  function togglePanel(id) {
+    const p = document.getElementById(id);
+    p.classList.toggle('open');
+  }
+
+  function showMsg(id, texte, ok) {
+    const el = document.getElementById(id);
+    el.textContent = texte;
+    el.className = 'w-msg ' + (ok ? 'ok' : 'err');
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+  }
+  function fmtHTG(v) { return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 2 }); }
+
+  function apiError(data) {
+    const e = data && data.error;
+    if (!e) return "Une erreur est survenue.";
+    if (typeof e === 'string') return e;
+    return Object.values(e).flat().join(' ');
+  }
+
+  async function loadWallet() {
+    const r = await fetch('/api/wallet/', { headers: _headers });
+    if (!r.ok) return;
+    const d = (await r.json()).data;
+    document.getElementById('w-solde').textContent = fmtHTG(d.solde);
+  }
+
+  async function loadRetraits() {
+    const r = await fetch('/api/wallet/retraits/', { headers: _headers });
+    if (!r.ok) return;
+    const rows = (await r.json()).results || [];
+    if (!rows.length) return;
+    document.getElementById('rt-empty').style.display = 'none';
+    document.getElementById('rt-tbody').innerHTML = rows.map(x => `
+      <tr>
+        <td>${fmtDate(x.created_at)}</td>
+        <td style="font-weight:700">${fmtHTG(x.montant)} HTG</td>
+        <td>${x.canal_display}</td>
+        <td>${x.numero_telephone}</td>
+        <td><span class="w-type-badge badge-${x.statut}">${x.statut_display}</span></td>
+      </tr>`).join('');
+    document.getElementById('rt-table').style.display = 'table';
+  }
+
+  async function loadTransactions() {
+    const r = await fetch('/api/wallet/transactions/', { headers: _headers });
+    document.getElementById('w-loading').style.display = 'none';
+    if (!r.ok) { document.getElementById('w-empty').style.display = 'block'; return; }
+    const rows = (await r.json()).results || [];
+    if (!rows.length) { document.getElementById('w-empty').style.display = 'block'; return; }
+    document.getElementById('w-tbody').innerHTML = rows.map(t => {
+      const plus = parseFloat(t.montant) >= 0;
+      return `<tr>
+        <td>${fmtDate(t.created_at)}</td>
+        <td><span class="w-type-badge">${t.type_display}</span></td>
+        <td style="color:var(--text-muted)">${t.description || t.commande_numero || ''}</td>
+        <td style="text-align:right" class="${plus ? 'w-montant-plus' : 'w-montant-moins'}">
+          ${plus ? '+' : ''}${fmtHTG(t.montant)}
+        </td>
+        <td style="text-align:right">${fmtHTG(t.solde_apres)}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('w-table').style.display = 'table';
+  }
+
+  async function demanderRetrait() {
+    const btn = document.getElementById('rt-submit');
+    const montant = document.getElementById('rt-montant').value;
+    const canal   = document.getElementById('rt-canal').value;
+    const numero  = document.getElementById('rt-numero').value.trim();
+    if (!montant || !numero) {
+      showMsg('rt-msg', 'Indiquez le montant et le numéro.', false);
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/wallet/retrait/', {
+        method: 'POST',
+        headers: { ..._headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ montant, canal, numero_telephone: numero }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        showMsg('rt-msg', 'Demande envoyée ! Le montant est réservé, vous serez notifié après le transfert.', true);
+        loadWallet(); loadRetraits(); loadTransactions();
+      } else {
+        showMsg('rt-msg', apiError(data), false);
+      }
+    } catch (_) { showMsg('rt-msg', 'Erreur réseau. Réessayez.', false); }
+    btn.disabled = false;
+  }
+
+  mpAuthCheck('producteur').then(user => {
+    if (user) {
+      _headers = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
+      loadWallet();
+      loadRetraits();
+      loadTransactions();
+    }
+  });
+
+{% endblock %}

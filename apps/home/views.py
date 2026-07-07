@@ -185,6 +185,9 @@ def dashboard_acheteur_profil(request):
 def dashboard_acheteur_vouchers(request):
     return render(request, 'dashboard/acheteur_vouchers.html')
 
+def dashboard_acheteur_wallet(request):
+    return render(request, 'dashboard/acheteur_wallet.html')
+
 
 def dashboard_producteur(request):
     return render(request, 'dashboard/producteur.html')
@@ -200,6 +203,9 @@ def dashboard_producteur_catalogue(request):
 
 def dashboard_producteur_profil(request):
     return render(request, 'dashboard/producteur_profil.html')
+
+def dashboard_producteur_wallet(request):
+    return render(request, 'dashboard/producteur_wallet.html')
 
 def dashboard_producteur_en_attente(request):
     return render(request, 'dashboard/producteur_en_attente.html')

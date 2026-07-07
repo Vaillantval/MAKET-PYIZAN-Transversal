@@ -35,10 +35,18 @@
 - Navigation dans le catalogue (filtres par catégorie, localisation, disponibilité)
 - Panier persistant multi-vendeurs
 - Checkout avec choix du mode de livraison (domicile / retrait / collecte)
-- Paiement via MonCash, NatCash, virement bancaire, cash ou e-voucher
+- Paiement via MonCash, NatCash, virement bancaire, cash, e-voucher ou wallet
 - Suivi des commandes en temps réel
 - Gestion des adresses de livraison multiples
 - Système de vouchers et bons de réduction
+
+### Portefeuille (wallet) — acheteurs & producteurs
+- Solde prépayé HTG avec ledger immuable (voir `docs/WALLET.md`)
+- Recharges MonCash/NatCash (Plopplop) ou dépôt hors ligne avec preuve
+- Paiement de commande total ou partiel (complément Plopplop, réserve libérée après 24 h)
+- Ventes créditées automatiquement au producteur à la livraison (commission configurable)
+- Retraits MonCash/NatCash validés par l'admin (preuve de transfert)
+- Cashback fidélité, parrainage (bonus parrain + filleul) et bons cadeaux — le tout activable dans la configuration du site
 
 ### Pour les administrateurs
 - Interface d'administration Jazzmin (Django Admin stylisé)
@@ -95,7 +103,8 @@ maket_peyizan/
 │   ├── emails/              # Service email (Resend) + notifications FCM
 │   ├── home/                # Pages publiques et tableaux de bord utilisateurs
 │   ├── geo/                 # Données géographiques (départements, communes)
-│   └── api_admin/           # Endpoints API réservés aux administrateurs
+│   ├── api_admin/           # Endpoints API réservés aux administrateurs
+│   └── wallet/              # Portefeuille : soldes, recharges, retraits, bons cadeaux
 ├── templates/               # Templates HTML (Jinja2 / DTL)
 ├── static/                  # CSS, JS, images statiques
 ├── media/                   # Fichiers uploadés (images produits, QR codes, preuves)
@@ -207,6 +216,10 @@ L'application sera accessible sur [http://localhost:8000](http://localhost:8000)
 | `POST` | `/api/orders/commander/` | Passer une commande |
 | `POST` | `/api/payments/initier/` | Initier un paiement (retourne redirect_url) |
 | `POST` | `/api/payments/preuve/` | Soumettre une preuve de paiement |
+| `GET` | `/api/wallet/` | Solde et dernières transactions du portefeuille |
+| `POST` | `/api/wallet/recharge/initier/` | Recharger le wallet (MonCash/NatCash) |
+| `POST` | `/api/wallet/payer/` | Payer une commande avec le solde wallet |
+| `POST` | `/api/wallet/retrait/` | Demander un retrait (producteur) |
 | `GET` | `/api/schema/swagger-ui/` | Documentation Swagger |
 | `GET` | `/health/` | Health check |
 

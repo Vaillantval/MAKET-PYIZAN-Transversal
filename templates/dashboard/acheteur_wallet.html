@@ -1,0 +1,477 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block title %}Mon portefeuille{% endblock %}
+
+{% block sidebar_nav %}
+  <div class="nav-section-label">{% trans "Navigation" %}</div>
+  <a href="/dashboard/acheteur/" class="nav-item">
+    <i class="fas fa-th-large"></i> {% trans "Vue d'ensemble" %}
+  </a>
+  <a href="/dashboard/acheteur/commandes/" class="nav-item">
+    <i class="fas fa-clipboard-list"></i> {% trans "Mes commandes" %}
+  </a>
+  <a href="/dashboard/acheteur/adresses/" class="nav-item">
+    <i class="fas fa-map-marker-alt"></i> {% trans "Mes adresses" %}
+  </a>
+  <a href="/dashboard/acheteur/vouchers/" class="nav-item">
+    <i class="fas fa-ticket-alt"></i> {% trans "Mes vouchers" %}
+  </a>
+  <a href="/dashboard/acheteur/wallet/" class="nav-item active">
+    <i class="fas fa-wallet"></i> {% trans "Mon portefeuille" %}
+  </a>
+  <a href="/" class="nav-item">
+    <i class="fas fa-store"></i> {% trans "Catalogue" %}
+  </a>
+  <div class="nav-section-label">{% trans "Compte" %}</div>
+  <a href="/dashboard/acheteur/profil/" class="nav-item">
+    <i class="fas fa-user-edit"></i> {% trans "Mon profil" %}
+  </a>
+{% endblock %}
+
+{% block page_title %}Mon portefeuille{% endblock %}
+{% block page_subtitle %}Solde, recharges, bons cadeaux et historique{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Bannière solde ── */
+  .w-hero {
+    background: linear-gradient(120deg, #1a6b2f, #27ae60);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    color: #fff;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .w-hero-label { font-size: 12px; opacity: .85; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+  .w-hero-solde { font-size: 38px; font-weight: 800; line-height: 1.15; }
+  .w-hero-solde small { font-size: 16px; font-weight: 600; opacity: .8; }
+  .w-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .w-btn {
+    padding: 11px 20px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: all .15s;
+  }
+  .w-btn-light { background: #fff; color: #1a6b2f; }
+  .w-btn-light:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  .w-btn-ghost { background: rgba(255,255,255,.16); color: #fff; border: 1.5px solid rgba(255,255,255,.45); }
+  .w-btn-ghost:hover { background: rgba(255,255,255,.28); }
+  .w-btn-green { background: var(--green-mid); color: #fff; }
+  .w-btn-green:hover { filter: brightness(1.06); }
+  .w-btn:disabled { opacity: .55; cursor: wait; }
+
+  /* ── Panneaux formulaires ── */
+  .w-panel {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px 24px;
+    margin-bottom: 22px;
+    display: none;
+  }
+  .w-panel.open { display: block; }
+  .w-panel h3 { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
+  .w-form { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .w-field { display: flex; flex-direction: column; gap: 5px; }
+  .w-field label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .w-field input, .w-field select, .w-field textarea {
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    min-width: 170px;
+  }
+  .w-field input:focus, .w-field select:focus { outline: none; border-color: var(--green-mid); }
+  .w-hint {
+    margin-top: 12px;
+    background: #f0faf4;
+    border-left: 3px solid var(--green-mid);
+    border-radius: 8px;
+    padding: 11px 13px;
+    font-size: 12px;
+    color: #1a6b2f;
+    line-height: 1.7;
+  }
+  .w-msg { margin-top: 12px; font-size: 13px; font-weight: 600; display: none; }
+  .w-msg.ok  { color: #1a6b2f; display: block; }
+  .w-msg.err { color: #e74c3c; display: block; }
+
+  /* ── Parrainage ── */
+  .w-parrainage {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 22px;
+    margin-bottom: 22px;
+    display: none;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .w-parrainage-code {
+    font-family: monospace;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--green);
+    background: #f0faf4;
+    border: 2px dashed var(--green-mid);
+    border-radius: 10px;
+    padding: 8px 18px;
+  }
+
+  /* ── Transactions ── */
+  .w-table-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+  }
+  .w-table-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 14px; color: var(--text); }
+  .w-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .w-table th {
+    text-align: left; padding: 8px 10px; font-size: 11px;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .w-table td { padding: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .w-montant-plus  { color: #1a6b2f; font-weight: 700; }
+  .w-montant-moins { color: #e74c3c; font-weight: 700; }
+  .w-type-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; background: var(--bg); color: var(--text-muted);
+  }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-state i { font-size: 36px; opacity: .18; display: block; margin-bottom: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+  <!-- Solde -->
+  <div class="w-hero">
+    <div>
+      <div class="w-hero-label">{% trans "Solde disponible" %}</div>
+      <div class="w-hero-solde"><span id="w-solde">—</span> <small>HTG</small></div>
+    </div>
+    <div class="w-hero-actions">
+      <button class="w-btn w-btn-light" onclick="togglePanel('panel-recharge')">
+        <i class="fas fa-plus-circle"></i> {% trans "Recharger" %}
+      </button>
+      <button class="w-btn w-btn-ghost" onclick="togglePanel('panel-code')">
+        <i class="fas fa-gift"></i> {% trans "Encaisser un code" %}
+      </button>
+      <button class="w-btn w-btn-ghost" onclick="togglePanel('panel-bon')">
+        <i class="fas fa-hand-holding-heart"></i> {% trans "Offrir un bon" %}
+      </button>
+    </div>
+  </div>
+
+  <!-- Parrainage -->
+  <div class="w-parrainage" id="w-parrainage">
+    <div>
+      <strong>{% trans "🤝 Parrainez vos proches" %}</strong>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:3px" id="w-parrainage-txt"></p>
+    </div>
+    <div class="w-parrainage-code" id="w-parrainage-code">—</div>
+    <button class="w-btn w-btn-green" onclick="copierParrainage(this)">{% trans "Copier" %}</button>
+  </div>
+
+  <!-- Panneau recharge -->
+  <div class="w-panel" id="panel-recharge">
+    <h3><i class="fas fa-plus-circle"></i> {% trans "Recharger mon portefeuille" %}</h3>
+    <div class="w-form">
+      <div class="w-field">
+        <label>{% trans "Montant (HTG)" %}</label>
+        <input type="number" id="r-montant" min="25" step="0.01" placeholder="500">
+      </div>
+      <div class="w-field">
+        <label>{% trans "Méthode" %}</label>
+        <select id="r-methode">
+          <option value="moncash">MonCash</option>
+          <option value="natcash">NatCash</option>
+          <option value="hors_ligne">{% trans "Dépôt hors ligne (preuve)" %}</option>
+        </select>
+      </div>
+      <div class="w-field" id="r-preuve-field" style="display:none">
+        <label>{% trans "Preuve de dépôt (JPG/PNG)" %}</label>
+        <input type="file" id="r-preuve" accept="image/jpeg,image/png">
+      </div>
+      <button class="w-btn w-btn-green" id="r-submit" onclick="recharger()">
+        {% trans "Continuer" %}
+      </button>
+    </div>
+    <div class="w-hint" id="r-hint" style="display:none">
+      <strong>{% trans "Comment faire un dépôt hors ligne ?" %}</strong><br>
+      {% trans "1. Envoyez le montant sur l'un des comptes de la plateforme :" %}
+      <span id="r-numeros">—</span><br>
+      {% trans "2. Prenez une capture de la confirmation et joignez-la ci-dessus." %}<br>
+      {% trans "3. Votre solde est crédité dès validation par notre équipe." %}
+    </div>
+    <div class="w-msg" id="r-msg"></div>
+  </div>
+
+  <!-- Panneau encaisser code -->
+  <div class="w-panel" id="panel-code">
+    <h3><i class="fas fa-gift"></i> {% trans "Encaisser un bon cadeau" %}</h3>
+    <div class="w-form">
+      <div class="w-field">
+        <label>{% trans "Code (MKP-XXXX-XXXX-XXXX)" %}</label>
+        <input type="text" id="c-code" placeholder="MKP-…" style="min-width:240px;font-family:monospace">
+      </div>
+      <button class="w-btn w-btn-green" id="c-submit" onclick="encaisser()">{% trans "Encaisser" %}</button>
+    </div>
+    <div class="w-msg" id="c-msg"></div>
+  </div>
+
+  <!-- Panneau offrir un bon -->
+  <div class="w-panel" id="panel-bon">
+    <h3><i class="fas fa-hand-holding-heart"></i> {% trans "Offrir un bon cadeau (payé avec mon solde)" %}</h3>
+    <div class="w-form">
+      <div class="w-field">
+        <label>{% trans "Montant (HTG, 100 min)" %}</label>
+        <input type="number" id="b-montant" min="100" step="0.01" placeholder="500">
+      </div>
+      <div class="w-field">
+        <label>{% trans "Email du destinataire (optionnel)" %}</label>
+        <input type="email" id="b-email" placeholder="ami@exemple.ht">
+      </div>
+      <div class="w-field">
+        <label>{% trans "Message (optionnel)" %}</label>
+        <input type="text" id="b-message" maxlength="255" placeholder="{% trans 'Bòn fèt !' %}">
+      </div>
+      <button class="w-btn w-btn-green" id="b-submit" onclick="offrirBon()">{% trans "Acheter" %}</button>
+    </div>
+    <div class="w-msg" id="b-msg"></div>
+  </div>
+
+  <!-- Transactions -->
+  <div class="w-table-card">
+    <h3><i class="fas fa-history"></i> {% trans "Historique" %}</h3>
+    <div class="empty-state" id="w-loading">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>{% trans "Chargement…" %}</p>
+    </div>
+    <table class="w-table" id="w-table" style="display:none">
+      <thead>
+        <tr>
+          <th>{% trans "Date" %}</th>
+          <th>{% trans "Opération" %}</th>
+          <th>{% trans "Détail" %}</th>
+          <th style="text-align:right">{% trans "Montant" %}</th>
+          <th style="text-align:right">{% trans "Solde" %}</th>
+        </tr>
+      </thead>
+      <tbody id="w-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="w-empty" style="display:none">
+      <i class="fas fa-wallet"></i>
+      <p>{% trans "Aucune transaction pour l'instant. Rechargez votre portefeuille pour commencer !" %}</p>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block page_script %}
+
+  let _headers = {};
+
+  function togglePanel(id) {
+    document.querySelectorAll('.w-panel').forEach(p => {
+      p.classList.toggle('open', p.id === id && !p.classList.contains('open'));
+    });
+  }
+
+  function showMsg(id, texte, ok) {
+    const el = document.getElementById(id);
+    el.textContent = texte;
+    el.className = 'w-msg ' + (ok ? 'ok' : 'err');
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+  }
+  function fmtHTG(v) { return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 2 }); }
+
+  function apiError(data) {
+    const e = data && data.error;
+    if (!e) return "Une erreur est survenue.";
+    if (typeof e === 'string') return e;
+    return Object.values(e).flat().join(' ');
+  }
+
+  // ── Solde + infos ──
+  async function loadWallet() {
+    const r = await fetch('/api/wallet/', { headers: _headers });
+    if (!r.ok) return;
+    const d = (await r.json()).data;
+    document.getElementById('w-solde').textContent = fmtHTG(d.solde);
+
+    const dep = d.depot_hors_ligne || {};
+    const nums = [
+      dep.numero_moncash ? `MonCash : ${dep.numero_moncash}` : null,
+      dep.numero_natcash ? `NatCash : ${dep.numero_natcash}` : null,
+    ].filter(Boolean).join(' · ') || '{% trans "numéros à venir — contactez-nous" %}';
+    document.getElementById('r-numeros').textContent = nums;
+
+    if (d.parrainage) {
+      document.getElementById('w-parrainage').style.display = 'flex';
+      document.getElementById('w-parrainage-code').textContent = d.parrainage.code;
+      document.getElementById('w-parrainage-txt').textContent =
+        `Partagez ce code : vous recevez chacun ${d.parrainage.taux_bonus}% de sa première commande.`;
+    }
+  }
+
+  function copierParrainage(btn) {
+    const code = document.getElementById('w-parrainage-code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = '✓ Copié';
+      setTimeout(() => { btn.textContent = 'Copier'; }, 1800);
+    });
+  }
+
+  // ── Transactions ──
+  async function loadTransactions() {
+    const r = await fetch('/api/wallet/transactions/', { headers: _headers });
+    document.getElementById('w-loading').style.display = 'none';
+    if (!r.ok) { document.getElementById('w-empty').style.display = 'block'; return; }
+    const rows = (await r.json()).results || [];
+    if (!rows.length) { document.getElementById('w-empty').style.display = 'block'; return; }
+
+    const tbody = document.getElementById('w-tbody');
+    tbody.innerHTML = rows.map(t => {
+      const plus = parseFloat(t.montant) >= 0;
+      return `<tr>
+        <td>${fmtDate(t.created_at)}</td>
+        <td><span class="w-type-badge">${t.type_display}</span></td>
+        <td style="color:var(--text-muted)">${t.description || t.commande_numero || ''}</td>
+        <td style="text-align:right" class="${plus ? 'w-montant-plus' : 'w-montant-moins'}">
+          ${plus ? '+' : ''}${fmtHTG(t.montant)}
+        </td>
+        <td style="text-align:right">${fmtHTG(t.solde_apres)}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('w-table').style.display = 'table';
+  }
+
+  // ── Recharge ──
+  document.getElementById('r-methode').addEventListener('change', function () {
+    const horsLigne = this.value === 'hors_ligne';
+    document.getElementById('r-preuve-field').style.display = horsLigne ? 'flex' : 'none';
+    document.getElementById('r-hint').style.display = horsLigne ? 'block' : 'none';
+  });
+
+  async function recharger() {
+    const btn = document.getElementById('r-submit');
+    const montant = document.getElementById('r-montant').value;
+    const methode = document.getElementById('r-methode').value;
+    if (!montant) { showMsg('r-msg', 'Indiquez un montant.', false); return; }
+    btn.disabled = true;
+
+    try {
+      if (methode === 'hors_ligne') {
+        const preuve = document.getElementById('r-preuve').files[0];
+        if (!preuve) { showMsg('r-msg', 'Joignez la preuve de dépôt.', false); btn.disabled = false; return; }
+        const fd = new FormData();
+        fd.append('montant', montant);
+        fd.append('preuve_image', preuve);
+        const r = await fetch('/api/wallet/recharge/hors-ligne/', {
+          method: 'POST', headers: _headers, body: fd,
+        });
+        const data = await r.json();
+        if (r.ok) showMsg('r-msg', data.data.message, true);
+        else showMsg('r-msg', apiError(data), false);
+      } else {
+        const r = await fetch('/api/wallet/recharge/initier/', {
+          method: 'POST',
+          headers: { ..._headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ montant, methode }),
+        });
+        const data = await r.json();
+        if (r.ok && data.data.redirect_url) {
+          window.location.href = data.data.redirect_url;
+          return;
+        }
+        showMsg('r-msg', apiError(data), false);
+      }
+    } catch (_) {
+      showMsg('r-msg', 'Erreur réseau. Réessayez.', false);
+    }
+    btn.disabled = false;
+  }
+
+  // ── Encaisser un code ──
+  async function encaisser() {
+    const btn = document.getElementById('c-submit');
+    const code = document.getElementById('c-code').value.trim();
+    if (!code) return;
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/wallet/bon/encaisser/', {
+        method: 'POST',
+        headers: { ..._headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        showMsg('c-msg', `${fmtHTG(data.data.montant)} HTG crédités sur votre portefeuille !`, true);
+        loadWallet(); loadTransactions();
+      } else {
+        showMsg('c-msg', apiError(data), false);
+      }
+    } catch (_) { showMsg('c-msg', 'Erreur réseau. Réessayez.', false); }
+    btn.disabled = false;
+  }
+
+  // ── Offrir un bon ──
+  async function offrirBon() {
+    const btn = document.getElementById('b-submit');
+    const montant = document.getElementById('b-montant').value;
+    if (!montant) { showMsg('b-msg', 'Indiquez un montant.', false); return; }
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/wallet/bon/acheter/', {
+        method: 'POST',
+        headers: { ..._headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          montant,
+          methode: 'wallet',
+          email_destinataire: document.getElementById('b-email').value.trim(),
+          message: document.getElementById('b-message').value.trim(),
+        }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        const bon = data.data.bon;
+        showMsg('b-msg',
+          `Bon cadeau ${bon.code} activé ! Le code a été envoyé par email` +
+          (bon.email_destinataire ? ' au destinataire.' : '.'), true);
+        loadWallet(); loadTransactions();
+      } else {
+        showMsg('b-msg', apiError(data), false);
+      }
+    } catch (_) { showMsg('b-msg', 'Erreur réseau. Réessayez.', false); }
+    btn.disabled = false;
+  }
+
+  mpAuthCheck(['acheteur', 'collecteur']).then(user => {
+    if (user) {
+      _headers = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
+      loadWallet();
+      loadTransactions();
+    }
+  });
+
+{% endblock %}
