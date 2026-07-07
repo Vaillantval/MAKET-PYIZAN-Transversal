@@ -759,6 +759,111 @@ class WalletService:
     # ── Bons cadeaux ─────────────────────────────────────────────────────────
 
     DUREE_VALIDITE_BON_JOURS = 365  # 12 mois
+    MONTANT_BON_MIN = Decimal('100')
+    MONTANT_BON_MAX = Decimal('100000')
+
+    @classmethod
+    def _valider_montant_bon(cls, montant) -> Decimal:
+        montant = _en_montant(montant)
+        if not (cls.MONTANT_BON_MIN <= montant <= cls.MONTANT_BON_MAX):
+            raise WalletError(
+                f"Le montant d'un bon cadeau doit être compris entre "
+                f"{cls.MONTANT_BON_MIN} et {cls.MONTANT_BON_MAX} HTG."
+            )
+        return montant
+
+    @classmethod
+    def creer_et_acheter_bon_wallet(cls, user, montant, email_destinataire='',
+                                    message=''):
+        """
+        Crée un bon cadeau et le paie immédiatement avec le solde wallet.
+        Le bon est annulé si le débit échoue (pas de bon orphelin en attente).
+        """
+        from apps.wallet.models import BonCadeau
+
+        montant = cls._valider_montant_bon(montant)
+        bon = BonCadeau.objects.create(
+            montant=montant,
+            achete_par=user,
+            email_destinataire=(email_destinataire or '').strip(),
+            message_destinataire=(message or '').strip()[:255],
+        )
+        try:
+            cls.acheter_bon_cadeau_avec_wallet(user, bon)
+        except WalletError:
+            bon.statut = BonCadeau.Statut.ANNULE
+            bon.save(update_fields=['statut', 'updated_at'])
+            raise
+        return bon
+
+    @classmethod
+    def initier_bon_cadeau_plopplop(cls, user, montant, methode,
+                                    email_destinataire='', message=''):
+        """
+        Crée un bon cadeau en attente de paiement et initie le paiement
+        MonCash/NatCash via Plopplop. Retourne (bon, redirect_url).
+        """
+        import uuid
+
+        from apps.payments.services.plopplop_service import PlopplopService
+        from apps.wallet.models import BonCadeau
+
+        montant = cls._valider_montant_bon(montant)
+
+        plopplop = PlopplopService()
+        if not plopplop.is_configured():
+            raise WalletError("La passerelle de paiement n'est pas configurée.")
+
+        bon = BonCadeau.objects.create(
+            montant=montant,
+            achete_par=user,
+            email_destinataire=(email_destinataire or '').strip(),
+            message_destinataire=(message or '').strip()[:255],
+        )
+        bon.reference_plopplop = f"GFT{bon.pk}-{uuid.uuid4().hex[:8]}"
+        bon.save(update_fields=['reference_plopplop'])
+
+        try:
+            result = plopplop.initier_paiement(
+                commande_ref=bon.reference_plopplop,
+                montant=float(montant),
+                payment_method=methode,
+            )
+        except Exception as e:
+            logger.error("Achat bon cadeau Plopplop #%s échoué : %s", bon.pk, e)
+            bon.statut = BonCadeau.Statut.ANNULE
+            bon.save(update_fields=['statut', 'updated_at'])
+            raise WalletError(f"Erreur de la passerelle de paiement : {e}")
+
+        return bon, result['redirect_url']
+
+    @classmethod
+    def verifier_bon_cadeau_plopplop(cls, bon) -> bool:
+        """
+        Vérifie le paiement du bon auprès de Plopplop et l'active si la
+        transaction est confirmée. Retourne True si le bon est actif (ou
+        déjà activé/utilisé lors d'un appel précédent).
+        """
+        from apps.payments.services.plopplop_service import PlopplopService
+        from apps.wallet.models import BonCadeau
+
+        if bon.statut in (BonCadeau.Statut.ACTIF, BonCadeau.Statut.UTILISE):
+            return True
+        if bon.statut != BonCadeau.Statut.ATTENTE_PAIEMENT:
+            return False
+        if not bon.reference_plopplop:
+            raise WalletError("Ce bon n'a pas été initié via Plopplop.")
+
+        plopplop = PlopplopService()
+        result = plopplop.verifier_paiement(bon.reference_plopplop)
+        if result.get('trans_status') != 'ok':
+            return False
+
+        cls.activer_bon_cadeau(
+            bon,
+            reference=result.get('id_transaction', '') or bon.reference_plopplop,
+        )
+        return True
 
     @classmethod
     def activer_bon_cadeau(cls, bon, reference='') -> bool:
