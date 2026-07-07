@@ -156,6 +156,47 @@ class SiteSettings(models.Model):
         help_text=_('Message affiché pendant la maintenance'),
     )
 
+    # ── Portefeuille (wallet) ───────────────────────────────────
+    wallet_enabled  = models.BooleanField(
+        default=False,
+        verbose_name=_('Activer le portefeuille'),
+        help_text=_('Active le wallet (recharges, paiements, retraits) pour les acheteurs et producteurs.'),
+    )
+    taux_commission = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        verbose_name=_('Commission plateforme (%)'),
+        help_text=_('Pourcentage prélevé sur les ventes créditées au wallet des producteurs. 0 = pas de commission.'),
+    )
+    cashback_enabled = models.BooleanField(
+        default=False,
+        verbose_name=_('Activer le cashback'),
+        help_text=_('Crédite un pourcentage de chaque commande payée sur le wallet de l\'acheteur.'),
+    )
+    taux_cashback   = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        verbose_name=_('Taux de cashback (%)'),
+    )
+    parrainage_enabled = models.BooleanField(
+        default=False,
+        verbose_name=_('Activer le parrainage'),
+        help_text=_('Bonus wallet au parrain et au filleul à la première commande payée du filleul.'),
+    )
+    taux_bonus_parrainage = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        verbose_name=_('Bonus parrainage (%)'),
+        help_text=_('Pourcentage du montant de la première commande, crédité au parrain ET au filleul.'),
+    )
+    numero_moncash_depot = models.CharField(
+        max_length=30, blank=True,
+        verbose_name=_('Numéro MonCash (dépôts hors ligne)'),
+        help_text=_('Compte MonCash de la plateforme où les clients déposent pour recharger leur wallet.'),
+    )
+    numero_natcash_depot = models.CharField(
+        max_length=30, blank=True,
+        verbose_name=_('Numéro NatCash (dépôts hors ligne)'),
+        help_text=_('Compte NatCash de la plateforme où les clients déposent pour recharger leur wallet.'),
+    )
+
     # ── Application Android ─────────────────────────────────────
     android_apk = models.FileField(
         upload_to='android/',
