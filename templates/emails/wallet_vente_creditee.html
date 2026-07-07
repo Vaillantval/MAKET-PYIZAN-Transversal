@@ -1,0 +1,44 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Vente créditée — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }} 👋{% endblocktrans %}</p>
+
+<p class="message">
+  {% blocktrans with montant=tx.montant|floatformat:2 %}
+  Félicitations ! Le produit de votre vente a été crédité sur votre
+  portefeuille : <strong>{{ montant }} HTG</strong>. 🌾
+  {% endblocktrans %}
+</p>
+
+<div class="card">
+  {% if commande %}
+  <div class="card-row">
+    <span class="card-label">{% trans "Commande" %}</span>
+    <span class="card-value">{{ commande.numero_commande }}</span>
+  </div>
+  {% endif %}
+  <div class="card-row">
+    <span class="card-label">{% trans "Montant crédité" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:16px;">{{ tx.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Détail" %}</span>
+    <span class="card-value">{{ tx.description }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Nouveau solde" %}</span>
+    <span class="card-value">{{ tx.solde_apres|floatformat:2 }} HTG</span>
+  </div>
+</div>
+
+<p class="message">
+  {% trans "Vous pouvez utiliser ce solde pour vos achats sur la plateforme ou demander un retrait vers votre compte MonCash/NatCash." %}
+</p>
+
+<div style="text-align:center">
+  <a href="{{ site_url }}" class="btn">{% trans "💰 Voir mon portefeuille" %}</a>
+</div>
+
+{% endblock %}

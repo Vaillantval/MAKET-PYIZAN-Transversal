@@ -444,6 +444,81 @@ class WalletService:
             commande.save(update_fields=['statut_paiement', 'updated_at'])
         return tx
 
+    # ── Vente créditée au producteur ─────────────────────────────────────────
+
+    @classmethod
+    def crediter_vente_producteur(cls, commande) -> WalletTransaction | None:
+        """
+        Crédite le wallet du producteur quand une commande payée est livrée :
+        sous_total − commission plateforme (taux dans SiteSettings). Les
+        frais de livraison ne reviennent pas au producteur ; la remise
+        (voucher) est absorbée par la plateforme. Idempotent.
+        """
+        from apps.core.models import SiteSettings
+        from apps.orders.models import Commande
+
+        if commande.statut != Commande.Statut.LIVREE or not commande.est_payee:
+            return None
+
+        if WalletTransaction.objects.filter(
+            commande=commande, type=WalletTransaction.Type.VENTE,
+        ).exists():
+            return None
+
+        reglages = SiteSettings.get_solo()
+        taux = Decimal(str(reglages.taux_commission or 0))
+        base = _en_montant(commande.sous_total)
+        commission = _en_montant(base * taux / 100)
+        montant = base - commission
+        if montant <= 0:
+            return None
+
+        wallet = cls.get_wallet(commande.producteur.user)
+        description = f"Vente — commande {commande.numero_commande}"
+        if commission > 0:
+            description += f" (commission {taux}% : -{commission} HTG)"
+
+        tx = cls.crediter(
+            wallet,
+            montant,
+            type_tx=WalletTransaction.Type.VENTE,
+            commande=commande,
+            description=description,
+        )
+
+        try:
+            from apps.wallet.tasks import task_notifier_vente_creditee
+            _planifier_apres_commit(task_notifier_vente_creditee, tx.pk)
+        except Exception as e:
+            logger.error("Notification vente créditée non planifiée : %s", e)
+        return tx
+
+    @classmethod
+    def reprendre_vente_producteur(cls, commande) -> WalletTransaction | None:
+        """
+        Reprend le crédit de vente accordé au producteur (commande annulée /
+        remboursée après livraison). Le solde peut passer en négatif si le
+        producteur a déjà dépensé ou retiré le montant. Idempotent.
+        """
+        vente_tx = WalletTransaction.objects.filter(
+            commande=commande, type=WalletTransaction.Type.VENTE,
+        ).first()
+        if not vente_tx:
+            return None
+        if WalletTransaction.objects.filter(
+            commande=commande, type=WalletTransaction.Type.REPRISE_VENTE,
+        ).exists():
+            return None
+
+        return cls._appliquer(
+            vente_tx.wallet,
+            -vente_tx.montant,
+            WalletTransaction.Type.REPRISE_VENTE,
+            commande=commande,
+            description=f"Reprise vente — commande {commande.numero_commande} annulée",
+            autoriser_negatif=True,
+        )
+
     # ── Retraits ─────────────────────────────────────────────────────────────
 
     @classmethod

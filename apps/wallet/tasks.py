@@ -136,6 +136,30 @@ def task_notifier_retrait_rejete(self, retrait_id):
         _retry(self, exc)
 
 
+# ── Ventes producteur ─────────────────────────────────────────────────────────
+
+@shared_task(bind=True, max_retries=3, name='wallet.vente_creditee')
+def task_notifier_vente_creditee(self, transaction_id):
+    """Email + push producteur : vente créditée sur son wallet."""
+    try:
+        from apps.wallet.emails import email_vente_creditee
+        from apps.wallet.models import WalletTransaction
+        tx = WalletTransaction.objects.select_related(
+            'wallet__user', 'commande',
+        ).get(pk=transaction_id)
+        email_vente_creditee(tx)
+        numero = tx.commande.numero_commande if tx.commande else ''
+        _push_wallet(
+            tx.wallet.user,
+            "Vente créditée 💰",
+            f"{tx.montant} HTG crédités sur votre portefeuille pour la commande {numero}.",
+            {"transaction_id": str(tx.pk)},
+        )
+    except Exception as exc:
+        logger.exception("task_notifier_vente_creditee(%s) échec", transaction_id)
+        _retry(self, exc)
+
+
 # ── Réserves de paiement partiel ──────────────────────────────────────────────
 
 @shared_task(name='wallet.liberer_reserves_expirees')

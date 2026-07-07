@@ -107,6 +107,26 @@ def email_retrait_rejete(retrait):
     )
 
 
+# ── Ventes producteur ───────────────────────────────────────────
+
+def email_vente_creditee(tx):
+    """Producteur : le produit d'une vente livrée a été crédité."""
+    user = tx.wallet.user
+    if not user.email:
+        return False
+    return envoyer_email(
+        destinataire=user.email,
+        sujet="💰 Vente créditée sur votre portefeuille — Makèt Peyizan",
+        template="wallet_vente_creditee.html",
+        contexte={
+            "tx":       tx,
+            "commande": tx.commande,
+            "prenom":   user.first_name or user.username,
+            "site_url": settings.SITE_URL,
+        },
+    )
+
+
 # ── Bons cadeaux ────────────────────────────────────────────────
 
 def email_bon_cadeau(bon):

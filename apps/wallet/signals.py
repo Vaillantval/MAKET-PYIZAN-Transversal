@@ -44,6 +44,9 @@ def wallet_commande_post_save(sender, instance, created, **kwargs):
 
     try:
         ancien_statut = getattr(instance, '_wallet_ancien_statut', None)
+        ancien_statut_paiement = getattr(instance, '_wallet_ancien_statut_paiement', None)
+
+        # ── Annulation : rembourser l'acheteur + reprendre la vente ─────────
         if (
             ancien_statut is not None
             and ancien_statut != Commande.Statut.ANNULEE
@@ -61,5 +64,25 @@ def wallet_commande_post_save(sender, instance, created, **kwargs):
                     instance,
                     description=f"Annulation — commande {instance.numero_commande}",
                 )
+            # Si le producteur avait déjà été crédité (annulation après
+            # livraison), reprendre le crédit de vente.
+            WalletService.reprendre_vente_producteur(instance)
+            return
+
+        # ── Livraison d'une commande payée : créditer le producteur ─────────
+        vient_d_etre_livree = (
+            ancien_statut is not None
+            and ancien_statut != Commande.Statut.LIVREE
+            and instance.statut == Commande.Statut.LIVREE
+        )
+        vient_d_etre_payee = (
+            ancien_statut_paiement is not None
+            and ancien_statut_paiement != Commande.StatutPaiement.PAYE
+            and instance.statut_paiement == Commande.StatutPaiement.PAYE
+        )
+        if vient_d_etre_livree or (
+            vient_d_etre_payee and instance.statut == Commande.Statut.LIVREE
+        ):
+            WalletService.crediter_vente_producteur(instance)
     except Exception as e:
         logger.error("Erreur signal wallet (commande #%s) : %s", instance.pk, e)
