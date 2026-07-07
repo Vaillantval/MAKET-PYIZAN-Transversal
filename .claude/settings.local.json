@@ -26,7 +26,26 @@
       "Bash(head -20 grep -n \"await r.json\\(\\)\\\\|\\\\.json\\(\\)\\\\.\\\\|json\\(\\)\\\\.data\\\\|\\\\.forEach\\\\|\\\\.map\\(\" templates/dashboard/superadmin_stocks.html)",
       "Bash(head -20 grep -n \"await r.json\\(\\)\\\\|\\\\.json\\(\\)\\\\.\\\\|json\\(\\)\\\\.data\\\\|\\\\.forEach\\\\|\\\\.map\\(\" templates/dashboard/superadmin_catalogue.html)",
       "Bash(BASE=\"C:/Users/wind/Desktop/TRANSVERSAL/MAKET-PEYIZAN-026/MP_web_2026/maket_peyizan/templates/dashboard\" for f in superadmin_commandes.html superadmin_paiements.html superadmin_producteurs.html superadmin_collectes.html superadmin_stocks.html superadmin_acheteurs.html superadmin_adresses.html superadmin_zones.html superadmin_vouchers.html superadmin_categories.html superadmin_slider.html)",
-      "Bash(do echo:*)"
+      "Bash(do echo:*)",
+      "Bash(git clone *)",
+      "PowerShell(python manage.py makemigrations wallet core; python manage.py check)",
+      "PowerShell(python -m venv venv; .\\\\venv\\\\Scripts\\\\python.exe -m pip install --quiet --upgrade pip; .\\\\venv\\\\Scripts\\\\pip.exe install --quiet -r requirements\\\\development.txt 2>&1 | Select-Object -Last 15)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py makemigrations wallet core)",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py check; .\\\\venv\\\\Scripts\\\\python.exe manage.py migrate --plan 2>&1 | Select-Object -Last 5)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py migrate 2>&1 | Select-Object -Last 6)",
+      "PowerShell(git *)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py makemigrations orders payments; .\\\\venv\\\\Scripts\\\\python.exe manage.py migrate; .\\\\venv\\\\Scripts\\\\python.exe manage.py check)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_phase3.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_phase4.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py makemigrations accounts; .\\\\venv\\\\Scripts\\\\python.exe manage.py migrate accounts; .\\\\venv\\\\Scripts\\\\python.exe manage.py check)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_phase5.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_phase6.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_phase7.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_phase7.py', encoding='utf-8'\\).read\\(\\)\\)\" 2>&1 | Select-Object -Last 6)",
+      "PowerShell(Select-String *)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe \"C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\insert_sidebar_links.py\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py check; .\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"from django.conf import settings; settings.ALLOWED_HOSTS.append\\('testserver'\\); from django.test import Client; c = Client\\(\\); [print\\(u, c.get\\(u\\).status_code\\) for u in ['/dashboard/acheteur/wallet/', '/dashboard/producteur/wallet/', '/dashboard/acheteur/', '/dashboard/producteur/']]\")"
     ]
   }
 }
