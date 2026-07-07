@@ -65,8 +65,11 @@ def wallet_commande_post_save(sender, instance, created, **kwargs):
                     description=f"Annulation — commande {instance.numero_commande}",
                 )
             # Si le producteur avait déjà été crédité (annulation après
-            # livraison), reprendre le crédit de vente.
+            # livraison), reprendre le crédit de vente — puis reprendre le
+            # cashback et les bonus parrainage accordés sur cette commande.
             WalletService.reprendre_vente_producteur(instance)
+            WalletService.reprendre_cashback(instance)
+            WalletService.reprendre_bonus_parrainage(instance)
             return
 
         # ── Livraison d'une commande payée : créditer le producteur ─────────
@@ -84,5 +87,10 @@ def wallet_commande_post_save(sender, instance, created, **kwargs):
             vient_d_etre_payee and instance.statut == Commande.Statut.LIVREE
         ):
             WalletService.crediter_vente_producteur(instance)
+
+        # ── Paiement confirmé : cashback + bonus parrainage acheteur ────────
+        if vient_d_etre_payee:
+            WalletService.appliquer_cashback(instance)
+            WalletService.appliquer_bonus_parrainage(instance)
     except Exception as e:
         logger.error("Erreur signal wallet (commande #%s) : %s", instance.pk, e)

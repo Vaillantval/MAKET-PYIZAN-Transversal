@@ -40,6 +40,9 @@ class RegisterSerializer(serializers.Serializer):
     )
     nom_organisation = serializers.CharField(max_length=200, required=False, default='', allow_blank=True)
 
+    # Parrainage (optionnel) — code d'un utilisateur existant
+    code_parrainage = serializers.CharField(max_length=12, required=False, default='', allow_blank=True)
+
     def validate_username(self, value):
         if CustomUser.objects.filter(username=value).exists():
             raise serializers.ValidationError(_("Ce nom d'utilisateur est déjà pris."))
@@ -48,6 +51,12 @@ class RegisterSerializer(serializers.Serializer):
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError(_("Un compte avec cet email existe déjà."))
+        return value
+
+    def validate_code_parrainage(self, value):
+        value = (value or '').strip().upper()
+        if value and not CustomUser.objects.filter(code_parrainage=value).exists():
+            raise serializers.ValidationError(_("Code de parrainage invalide."))
         return value
 
     def validate(self, data):
@@ -80,6 +89,7 @@ class RegisterSerializer(serializers.Serializer):
             'nom_organisation': validated_data.pop('nom_organisation', ''),
         }
         validated_data.pop('password2')
+        code_parrain = validated_data.pop('code_parrainage', '')
 
         role = validated_data['role']
         user = CustomUser.objects.create_user(
@@ -91,6 +101,12 @@ class RegisterSerializer(serializers.Serializer):
             telephone  = validated_data.get('telephone', ''),
             role       = role,
         )
+
+        if code_parrain:
+            parrain = CustomUser.objects.filter(code_parrainage=code_parrain).first()
+            if parrain:
+                user.parraine_par = parrain
+                user.save(update_fields=['parraine_par'])
 
         if role == 'producteur':
             Producteur.objects.create(user=user, statut='en_attente', **profil_prod_data)

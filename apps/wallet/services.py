@@ -309,13 +309,17 @@ class WalletService:
                 montant=reste,
                 notes=f"Wallet tx #{tx.pk}",
             )
+            # Basculer la méthode AVANT la confirmation : le signal cashback
+            # se déclenche à la transition statut_paiement → PAYE et doit voir
+            # que la commande est payée par wallet (pas de cashback sur son
+            # propre solde).
+            commande.methode_paiement = Commande.MethodePaiement.WALLET
+            commande.save(update_fields=['methode_paiement', 'updated_at'])
             PaiementService.confirmer_paiement(
                 paiement,
                 verifie_par=None,
                 note_verification=f"Payé par wallet — transaction #{tx.pk}",
             )
-            commande.methode_paiement = Commande.MethodePaiement.WALLET
-            commande.save(update_fields=['methode_paiement', 'updated_at'])
 
         # Confirmer la commande (débit stock) — hors du bloc financier : un
         # problème de stock ne doit pas annuler le paiement, l'admin arbitre
@@ -443,6 +447,153 @@ class WalletService:
             commande.statut_paiement = Commande.StatutPaiement.REMBOURSE
             commande.save(update_fields=['statut_paiement', 'updated_at'])
         return tx
+
+    # ── Cashback fidélité ────────────────────────────────────────────────────
+
+    @classmethod
+    def appliquer_cashback(cls, commande) -> WalletTransaction | None:
+        """
+        Crédite le cashback fidélité à l'acheteur d'une commande payée
+        (taux dans SiteSettings). Ignoré si le wallet a financé tout ou
+        partie de la commande — pas de cashback sur son propre solde.
+        Idempotent.
+        """
+        from apps.core.models import SiteSettings
+        from apps.orders.models import Commande
+
+        reglages = SiteSettings.get_solo()
+        if not reglages.cashback_enabled:
+            return None
+        taux = Decimal(str(reglages.taux_cashback or 0))
+        if taux <= 0:
+            return None
+
+        if commande.methode_paiement == Commande.MethodePaiement.WALLET:
+            return None
+        if (commande.montant_wallet_utilise or 0) > 0:
+            return None
+        if WalletTransaction.objects.filter(
+            commande=commande, type=WalletTransaction.Type.CASHBACK,
+        ).exists():
+            return None
+
+        montant = _en_montant(Decimal(str(commande.total)) * taux / 100)
+        if montant <= 0:
+            return None
+
+        wallet = cls.get_wallet(commande.acheteur.user)
+        return cls.crediter(
+            wallet,
+            montant,
+            type_tx=WalletTransaction.Type.CASHBACK,
+            commande=commande,
+            description=f"Cashback {taux}% — commande {commande.numero_commande}",
+        )
+
+    @classmethod
+    def reprendre_cashback(cls, commande) -> WalletTransaction | None:
+        """
+        Reprend le cashback accordé sur une commande (annulation/remboursement).
+        Le solde peut passer en négatif si le client l'a déjà dépensé. Idempotent.
+        """
+        cashback_tx = WalletTransaction.objects.filter(
+            commande=commande, type=WalletTransaction.Type.CASHBACK,
+        ).first()
+        if not cashback_tx:
+            return None
+        if WalletTransaction.objects.filter(
+            commande=commande, type=WalletTransaction.Type.REPRISE_CASHBACK,
+        ).exists():
+            return None
+
+        return cls._appliquer(
+            cashback_tx.wallet,
+            -cashback_tx.montant,
+            WalletTransaction.Type.REPRISE_CASHBACK,
+            commande=commande,
+            description=f"Reprise cashback — commande {commande.numero_commande}",
+            autoriser_negatif=True,
+        )
+
+    # ── Parrainage ───────────────────────────────────────────────────────────
+
+    @classmethod
+    def appliquer_bonus_parrainage(cls, commande) -> None:
+        """
+        Crédite le bonus de parrainage (% du total) au parrain ET au filleul
+        à la première commande payée du filleul. Idempotent via la référence
+        `parrainage-{filleul_id}` — un seul bonus par filleul, à vie.
+        """
+        from apps.core.models import SiteSettings
+
+        reglages = SiteSettings.get_solo()
+        if not reglages.parrainage_enabled:
+            return
+        taux = Decimal(str(reglages.taux_bonus_parrainage or 0))
+        if taux <= 0:
+            return
+
+        filleul = commande.acheteur.user
+        parrain = filleul.parraine_par
+        if not parrain:
+            return
+
+        reference = f"parrainage-{filleul.pk}"
+        if WalletTransaction.objects.filter(
+            type=WalletTransaction.Type.BONUS_PARRAINAGE, reference=reference,
+        ).exists():
+            return
+
+        montant = _en_montant(Decimal(str(commande.total)) * taux / 100)
+        if montant <= 0:
+            return
+
+        cls.crediter(
+            cls.get_wallet(parrain),
+            montant,
+            type_tx=WalletTransaction.Type.BONUS_PARRAINAGE,
+            commande=commande,
+            description=f"Bonus parrainage {taux}% — filleul {filleul.username}",
+            reference=reference,
+        )
+        cls.crediter(
+            cls.get_wallet(filleul),
+            montant,
+            type_tx=WalletTransaction.Type.BONUS_PARRAINAGE,
+            commande=commande,
+            description=f"Bonus de bienvenue {taux}% — parrainé par {parrain.username}",
+            reference=reference,
+        )
+
+    @classmethod
+    def reprendre_bonus_parrainage(cls, commande) -> None:
+        """
+        Reprend les bonus de parrainage accordés sur une commande annulée.
+        Débite les wallets du parrain et du filleul (négatif autorisé).
+        Idempotent par wallet.
+        """
+        bonus_txs = WalletTransaction.objects.filter(
+            commande=commande, type=WalletTransaction.Type.BONUS_PARRAINAGE,
+        )
+        for tx in bonus_txs:
+            deja_reprise = WalletTransaction.objects.filter(
+                wallet=tx.wallet,
+                commande=commande,
+                type=WalletTransaction.Type.REPRISE_BONUS_PARRAINAGE,
+            ).exists()
+            if deja_reprise:
+                continue
+            cls._appliquer(
+                tx.wallet,
+                -tx.montant,
+                WalletTransaction.Type.REPRISE_BONUS_PARRAINAGE,
+                commande=commande,
+                description=(
+                    f"Reprise bonus parrainage — commande "
+                    f"{commande.numero_commande} annulée"
+                ),
+                autoriser_negatif=True,
+            )
 
     # ── Vente créditée au producteur ─────────────────────────────────────────
 
