@@ -1,0 +1,43 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Retrait payé — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }} 👋{% endblocktrans %}</p>
+
+<p class="message">
+  {% blocktrans with montant=retrait.montant|floatformat:2 canal=retrait.get_canal_display numero=retrait.numero_telephone %}
+  Votre retrait de <strong>{{ montant }} HTG</strong> a été payé.
+  Le transfert a été envoyé sur votre compte <strong>{{ canal }}</strong>
+  ({{ numero }}).
+  {% endblocktrans %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Retrait" %}</span>
+    <span class="card-value">#{{ retrait.pk }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Montant" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:16px;">{{ retrait.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Canal" %}</span>
+    <span class="card-value">{{ retrait.get_canal_display }} — {{ retrait.numero_telephone }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Statut" %}</span>
+    <span class="badge badge-vert">{% trans "Payé" %}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Traité le" %}</span>
+    <span class="card-value">{{ retrait.date_traitement|date:"d F Y H:i" }}</span>
+  </div>
+</div>
+
+<p class="message">
+  {% trans "Si vous ne voyez pas le transfert sur votre compte, contactez notre équipe." %}
+</p>
+
+{% endblock %}

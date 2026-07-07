@@ -1,0 +1,35 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Recharge créditée — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }} 👋{% endblocktrans %}</p>
+
+<p class="message">
+  {% trans "Bonne nouvelle ! Votre recharge a été validée et créditée sur votre portefeuille Makèt Peyizan." %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Montant crédité" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:16px;">{{ recharge.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Statut" %}</span>
+    <span class="badge badge-vert">{% trans "Créditée" %}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Date" %}</span>
+    <span class="card-value">{{ recharge.updated_at|date:"d F Y H:i" }}</span>
+  </div>
+</div>
+
+<p class="message">
+  {% trans "Vous pouvez utiliser ce solde dès maintenant pour payer vos commandes." %}
+</p>
+
+<div style="text-align:center">
+  <a href="{{ site_url }}" class="btn">{% trans "💰 Voir mon portefeuille" %}</a>
+</div>
+
+{% endblock %}

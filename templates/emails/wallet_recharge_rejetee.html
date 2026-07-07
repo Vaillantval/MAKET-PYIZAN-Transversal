@@ -1,0 +1,39 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Recharge non validée — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }},{% endblocktrans %}</p>
+
+<p class="message">
+  {% blocktrans with montant=recharge.montant|floatformat:2 %}
+  Votre recharge de <strong>{{ montant }} HTG</strong> n'a pas pu être validée
+  par notre équipe.
+  {% endblocktrans %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Recharge" %}</span>
+    <span class="card-value">#{{ recharge.pk }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Montant" %}</span>
+    <span class="card-value">{{ recharge.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Statut" %}</span>
+    <span class="badge badge-rouge">{% trans "Rejetée" %}</span>
+  </div>
+</div>
+
+<div class="info-box">
+  <strong>{% trans "Que faire maintenant ?" %}</strong><br><br>
+  {% trans "Vérifiez que votre preuve de dépôt est lisible et correspond bien au montant déclaré, puis soumettez une nouvelle recharge. En cas de doute, contactez notre équipe." %}
+</div>
+
+<div style="text-align:center">
+  <a href="{{ site_url }}" class="btn">{% trans "🔁 Réessayer" %}</a>
+</div>
+
+{% endblock %}

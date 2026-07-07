@@ -52,5 +52,33 @@ def create_superadmin():
     print(f'[init_site] Superadmin "{email}" créé avec succès.')
 
 
+def register_wallet_periodic_tasks():
+    """
+    Enregistre les tâches Celery Beat du wallet (scheduler en base de données).
+    Idempotent : get_or_create sur le nom de la tâche.
+    """
+    try:
+        from django_celery_beat.models import CrontabSchedule, PeriodicTask
+    except ImportError:
+        print('[init_site] django_celery_beat absent — tâches wallet non planifiées.')
+        return
+
+    # Tous les jours à 03h00 (heure de Port-au-Prince, cf. TIME_ZONE)
+    schedule, _ = CrontabSchedule.objects.get_or_create(
+        minute='0', hour='3', day_of_week='*', day_of_month='*', month_of_year='*',
+        timezone='America/Port-au-Prince',
+    )
+    _, created = PeriodicTask.objects.get_or_create(
+        name='Wallet — expirer les bons cadeaux',
+        defaults={
+            'task': 'wallet.expirer_bons_cadeaux',
+            'crontab': schedule,
+        },
+    )
+    print(f'[init_site] Tâche "wallet.expirer_bons_cadeaux" '
+          f'{"créée" if created else "déjà planifiée"}.')
+
+
 if __name__ == '__main__':
     create_superadmin()
+    register_wallet_periodic_tasks()

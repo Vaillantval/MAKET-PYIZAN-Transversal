@@ -1,0 +1,41 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Retrait rejeté — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }},{% endblocktrans %}</p>
+
+<p class="message">
+  {% blocktrans with montant=retrait.montant|floatformat:2 %}
+  Votre demande de retrait de <strong>{{ montant }} HTG</strong> a été rejetée.
+  Le montant a été <strong>re-crédité intégralement</strong> sur votre portefeuille.
+  {% endblocktrans %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Retrait" %}</span>
+    <span class="card-value">#{{ retrait.pk }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Montant re-crédité" %}</span>
+    <span class="card-value">{{ retrait.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Statut" %}</span>
+    <span class="badge badge-rouge">{% trans "Rejeté" %}</span>
+  </div>
+  {% if retrait.note_admin %}
+  <div class="card-row">
+    <span class="card-label">{% trans "Motif" %}</span>
+    <span class="card-value">{{ retrait.note_admin }}</span>
+  </div>
+  {% endif %}
+</div>
+
+<div class="info-box">
+  <strong>{% trans "Que faire maintenant ?" %}</strong><br><br>
+  {% trans "Vérifiez que le numéro MonCash/NatCash indiqué est correct et à votre nom, puis soumettez une nouvelle demande. En cas de doute, contactez notre équipe." %}
+</div>
+
+{% endblock %}

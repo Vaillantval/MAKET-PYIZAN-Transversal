@@ -1,0 +1,42 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Recharge wallet à valider — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% trans "Bonjour 👋" %}</p>
+
+<p class="message">
+  {% blocktrans with username=user.get_full_name|default:user.username %}
+  Le client <strong>{{ username }}</strong> a soumis une preuve de dépôt
+  pour recharger son portefeuille. La recharge est en attente de validation.
+  {% endblocktrans %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Recharge" %}</span>
+    <span class="card-value">#{{ recharge.pk }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Client" %}</span>
+    <span class="card-value">{{ user.get_full_name|default:user.username }} ({{ user.email }})</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Montant" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:16px;">{{ recharge.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Statut" %}</span>
+    <span class="badge badge-orange">{% trans "Preuve soumise" %}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Date" %}</span>
+    <span class="card-value">{{ recharge.created_at|date:"d F Y H:i" }}</span>
+  </div>
+</div>
+
+<div style="text-align:center">
+  <a href="{{ admin_url }}" class="btn">{% trans "🔎 Vérifier la preuve et valider" %}</a>
+</div>
+
+{% endblock %}

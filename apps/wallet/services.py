@@ -35,6 +35,20 @@ def _en_montant(valeur) -> Decimal:
     return Decimal(str(valeur)).quantize(DEUX_DECIMALES, rounding=ROUND_HALF_UP)
 
 
+def _planifier_apres_commit(tache, pk):
+    """
+    Planifie une tâche Celery après commit sans jamais faire échouer
+    l'opération métier (broker indisponible, etc.).
+    """
+    def _envoyer():
+        try:
+            tache.delay(pk)
+        except Exception as e:
+            logger.error("Tâche %s(%s) non planifiée : %s", tache.name, pk, e)
+
+    transaction.on_commit(_envoyer)
+
+
 class WalletService:
 
     # ── Accès ────────────────────────────────────────────────────────────────
@@ -105,6 +119,124 @@ class WalletService:
 
     # ── Recharges ────────────────────────────────────────────────────────────
 
+    MONTANT_RECHARGE_MIN = Decimal('25')
+    MONTANT_RECHARGE_MAX = Decimal('1000000')
+    MAX_RECHARGES_HORS_LIGNE_EN_ATTENTE = 3
+
+    @classmethod
+    def initier_recharge_plopplop(cls, user, montant, methode):
+        """
+        Crée une intention de recharge et initie le paiement MonCash/NatCash
+        via Plopplop. Retourne (recharge, redirect_url) — l'utilisateur doit
+        être redirigé vers redirect_url pour payer. La recharge passe en
+        'echouee' si la passerelle refuse.
+        """
+        import uuid
+
+        from apps.payments.services.plopplop_service import PlopplopService
+        from apps.wallet.models import WalletRecharge
+
+        montant = _en_montant(montant)
+        if not (cls.MONTANT_RECHARGE_MIN <= montant <= cls.MONTANT_RECHARGE_MAX):
+            raise WalletError(
+                f"Le montant doit être compris entre {cls.MONTANT_RECHARGE_MIN} "
+                f"et {cls.MONTANT_RECHARGE_MAX} HTG."
+            )
+
+        plopplop = PlopplopService()
+        if not plopplop.is_configured():
+            raise WalletError("La passerelle de paiement n'est pas configurée.")
+
+        wallet = cls.get_wallet(user)
+        if not wallet.is_active:
+            raise WalletError("Ce portefeuille est désactivé.")
+
+        recharge = WalletRecharge.objects.create(
+            wallet=wallet, montant=montant, methode=methode,
+        )
+        recharge.reference_plopplop = f"WAL{recharge.pk}-{uuid.uuid4().hex[:8]}"
+        recharge.save(update_fields=['reference_plopplop'])
+
+        try:
+            result = plopplop.initier_paiement(
+                commande_ref=recharge.reference_plopplop,
+                montant=float(montant),
+                payment_method=methode,
+            )
+        except Exception as e:
+            logger.error("Recharge Plopplop #%s échouée : %s", recharge.pk, e)
+            recharge.statut = WalletRecharge.Statut.ECHOUEE
+            recharge.save(update_fields=['statut', 'updated_at'])
+            raise WalletError(f"Erreur de la passerelle de paiement : {e}")
+
+        return recharge, result['redirect_url']
+
+    @classmethod
+    def verifier_recharge_plopplop(cls, recharge) -> bool:
+        """
+        Vérifie le statut du paiement auprès de Plopplop et crédite le wallet
+        si la transaction est confirmée (trans_status='ok'). Retourne True si
+        la recharge est créditée (maintenant ou lors d'un appel précédent).
+        """
+        from apps.payments.services.plopplop_service import PlopplopService
+        from apps.wallet.models import WalletRecharge
+
+        if recharge.statut == WalletRecharge.Statut.CREDITEE:
+            return True
+        if recharge.methode == WalletRecharge.Methode.HORS_LIGNE:
+            raise WalletError("Une recharge hors ligne se valide par l'admin, pas par Plopplop.")
+
+        plopplop = PlopplopService()
+        result = plopplop.verifier_paiement(recharge.reference_plopplop)
+        if result.get('trans_status') != 'ok':
+            return False
+
+        cls.completer_recharge(
+            recharge,
+            reference=result.get('id_transaction', '') or recharge.reference_plopplop,
+        )
+        return True
+
+    @classmethod
+    def soumettre_recharge_hors_ligne(cls, user, montant, preuve_image):
+        """
+        Enregistre une recharge par dépôt hors ligne (MonCash/NatCash sur le
+        compte de la plateforme) avec preuve à valider par l'admin. Limite le
+        nombre de recharges en attente pour éviter le spam.
+        """
+        from apps.wallet.models import WalletRecharge
+
+        montant = _en_montant(montant)
+        if not (cls.MONTANT_RECHARGE_MIN <= montant <= cls.MONTANT_RECHARGE_MAX):
+            raise WalletError(
+                f"Le montant doit être compris entre {cls.MONTANT_RECHARGE_MIN} "
+                f"et {cls.MONTANT_RECHARGE_MAX} HTG."
+            )
+
+        wallet = cls.get_wallet(user)
+        if not wallet.is_active:
+            raise WalletError("Ce portefeuille est désactivé.")
+
+        en_attente = WalletRecharge.objects.filter(
+            wallet=wallet, statut=WalletRecharge.Statut.PREUVE_SOUMISE,
+        ).count()
+        if en_attente >= cls.MAX_RECHARGES_HORS_LIGNE_EN_ATTENTE:
+            raise WalletError(
+                f"Vous avez déjà {en_attente} recharge(s) en attente de validation. "
+                "Attendez leur traitement avant d'en soumettre une nouvelle."
+            )
+
+        recharge = WalletRecharge.objects.create(
+            wallet=wallet,
+            montant=montant,
+            methode=WalletRecharge.Methode.HORS_LIGNE,
+            statut=WalletRecharge.Statut.PREUVE_SOUMISE,
+            preuve_image=preuve_image,
+        )
+        from apps.wallet.tasks import task_notifier_recharge_preuve_soumise
+        _planifier_apres_commit(task_notifier_recharge_preuve_soumise, recharge.pk)
+        return recharge
+
     @classmethod
     def completer_recharge(cls, recharge, reference='') -> WalletTransaction | None:
         """
@@ -163,6 +295,9 @@ class WalletService:
             )
             retrait.transaction = tx
             retrait.save(update_fields=['transaction', 'updated_at'])
+
+            from apps.wallet.tasks import task_notifier_retrait_demande
+            _planifier_apres_commit(task_notifier_retrait_demande, retrait.pk)
         return retrait
 
     @classmethod

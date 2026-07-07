@@ -1,0 +1,47 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Demande de retrait — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% trans "Bonjour 👋" %}</p>
+
+<p class="message">
+  {% blocktrans with username=user.get_full_name|default:user.username %}
+  <strong>{{ username }}</strong> a demandé un retrait de son portefeuille.
+  Le montant a déjà été réservé (débité) — il reste à effectuer le transfert
+  et à marquer le retrait payé.
+  {% endblocktrans %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Retrait" %}</span>
+    <span class="card-value">#{{ retrait.pk }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Demandeur" %}</span>
+    <span class="card-value">{{ user.get_full_name|default:user.username }} ({{ user.get_role_display }})</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Montant" %}</span>
+    <span class="card-value" style="color:#e67e22;font-size:16px;">{{ retrait.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Canal" %}</span>
+    <span class="card-value">{{ retrait.get_canal_display }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Numéro" %}</span>
+    <span class="card-value">{{ retrait.numero_telephone }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Date" %}</span>
+    <span class="card-value">{{ retrait.created_at|date:"d F Y H:i" }}</span>
+  </div>
+</div>
+
+<div style="text-align:center">
+  <a href="{{ admin_url }}" class="btn">{% trans "💸 Traiter le retrait" %}</a>
+</div>
+
+{% endblock %}

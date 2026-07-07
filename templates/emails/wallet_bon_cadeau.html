@@ -1,0 +1,66 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Vous avez reçu un bon cadeau — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% trans "Bonjour 👋" %}</p>
+
+<p class="message">
+  {% if bon.achete_par %}
+    {% blocktrans with acheteur=bon.achete_par.get_full_name|default:bon.achete_par.username montant=bon.montant|floatformat:2 %}
+    <strong>{{ acheteur }}</strong> vous offre un bon cadeau Makèt Peyizan
+    de <strong>{{ montant }} HTG</strong> ! 🎁
+    {% endblocktrans %}
+  {% else %}
+    {% blocktrans with montant=bon.montant|floatformat:2 %}
+    Vous avez reçu un bon cadeau Makèt Peyizan de <strong>{{ montant }} HTG</strong> ! 🎁
+    {% endblocktrans %}
+  {% endif %}
+</p>
+
+{% if bon.message_destinataire %}
+<div class="info-box" style="font-style:italic;">
+  « {{ bon.message_destinataire }} »
+</div>
+{% endif %}
+
+<!-- Code en évidence -->
+<div style="text-align:center;margin:28px 0">
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:10px;">
+    {% trans "Votre code cadeau" %}
+  </div>
+  <div style="display:inline-block;background:#f0faf4;border:2px dashed #27ae60;border-radius:12px;padding:14px 36px;">
+    <span style="font-family:monospace;font-size:24px;font-weight:700;color:#1a6b2f;letter-spacing:2px;">
+      {{ bon.code }}
+    </span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Valeur" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:16px;">{{ bon.montant|floatformat:2 }} HTG</span>
+  </div>
+  {% if bon.date_expiration %}
+  <div class="card-row">
+    <span class="card-label">{% trans "Valide jusqu'au" %}</span>
+    <span class="card-value">{{ bon.date_expiration|date:"d F Y" }}</span>
+  </div>
+  {% endif %}
+</div>
+
+<div class="info-box">
+  <strong>{% trans "💡 Comment l'utiliser ?" %}</strong>
+  <ol style="margin:12px 0 0 18px;line-height:2">
+    <li>{% trans "Connectez-vous (ou créez un compte) sur Makèt Peyizan" %}</li>
+    <li>{% trans "Ouvrez votre portefeuille et choisissez « Utiliser un code cadeau »" %}</li>
+    <li>{% trans "Saisissez le code ci-dessus — le montant est crédité immédiatement" %}</li>
+    <li>{% trans "Payez vos commandes avec votre solde" %}</li>
+  </ol>
+</div>
+
+<div style="text-align:center">
+  <a href="{{ site_url }}" class="btn">{% trans "🎁 Utiliser mon bon cadeau" %}</a>
+</div>
+
+{% endblock %}
