@@ -31,6 +31,22 @@ urlpatterns = [
     path('paiements/',                  views.paiements_list,  name='paiements_list'),
     path('paiements/<int:pk>/statut/',  views.paiement_statut, name='paiement_statut'),
 
+    # ── Wallet ──────────────────────────────────────────────────
+    path('wallet/stats/',                     views.wallet_stats,        name='wallet_stats'),
+    path('wallet/wallets/',                   views.wallets_list,        name='wallet_wallets'),
+    path('wallet/wallets/<int:pk>/toggle/',   views.wallet_toggle,       name='wallet_toggle'),
+    path('wallet/ajustement/',                views.wallet_ajustement,   name='wallet_ajustement'),
+    path('wallet/transactions/',              views.wallet_transactions, name='wallet_transactions'),
+    path('wallet/recharges/',                 views.recharges_list,      name='wallet_recharges'),
+    path('wallet/recharges/<int:pk>/valider/', views.recharge_valider,   name='wallet_recharge_valider'),
+    path('wallet/recharges/<int:pk>/rejeter/', views.recharge_rejeter,   name='wallet_recharge_rejeter'),
+    path('wallet/retraits/',                  views.retraits_list,       name='wallet_retraits'),
+    path('wallet/retraits/<int:pk>/payer/',   views.retrait_payer,       name='wallet_retrait_payer'),
+    path('wallet/retraits/<int:pk>/rejeter/', views.retrait_rejeter,     name='wallet_retrait_rejeter'),
+    path('wallet/bons/',                      views.bons_list,           name='wallet_bons'),
+    path('wallet/bons/<int:pk>/annuler/',     views.bon_annuler,         name='wallet_bon_annuler'),
+    path('wallet/bons/<int:pk>/renvoyer-email/', views.bon_renvoyer_email, name='wallet_bon_renvoyer'),
+
     # ── Catalogue ───────────────────────────────────────────────
     path('catalogue/',                  views.catalogue_list,   name='catalogue_list'),
     path('catalogue/create/',           views.catalogue_create, name='catalogue_create'),

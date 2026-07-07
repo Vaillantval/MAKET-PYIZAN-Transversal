@@ -36,3 +36,10 @@ from .acheteur_views   import (
     programmes_list, programme_detail,
     adresses_list_admin,
 )
+from .wallet_views     import (
+    wallet_stats, wallets_list, wallet_toggle, wallet_ajustement,
+    wallet_transactions,
+    recharges_list, recharge_valider, recharge_rejeter,
+    retraits_list, retrait_payer, retrait_rejeter,
+    bons_list, bon_annuler, bon_renvoyer_email,
+)

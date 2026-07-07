@@ -158,6 +158,10 @@ Codes format `MKP-XXXX-XXXX-XXXX`, validité 12 mois, envoyés par email
 
 - **Web** : `/dashboard/acheteur/wallet/` (recharges, bons, parrainage,
   historique) et `/dashboard/producteur/wallet/` (retraits, ventes, historique).
+- **Dashboard superadmin custom** : `/dashboard/superadmin/wallet/` — stats
+  (encours, à traiter), 5 onglets (Recharges, Retraits, Portefeuilles,
+  Transactions, Bons cadeaux) avec les mêmes actions que l'admin Django,
+  servi par les endpoints `/api/admin/wallet/…` (permission `IsSuperAdmin`).
 - **Admin Django** : Portefeuilles (solde en lecture seule), Transactions
   (ledger immuable, ajustements via formulaire dédié), Recharges (actions
   valider/rejeter avec lien preuve), Retraits (actions payer/rejeter,

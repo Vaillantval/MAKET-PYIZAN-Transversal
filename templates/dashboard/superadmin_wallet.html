@@ -1,0 +1,497 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+{% block title %}Wallet — Superadmin{% endblock %}
+{% block sidebar_nav %}{% include 'dashboard/superadmin_sidebar.html' with active='wallet' %}{% endblock %}
+{% block page_title %}Wallet{% endblock %}
+{% block page_subtitle %}Portefeuilles, recharges, retraits, ledger et bons cadeaux{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Stats */
+  .w-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; margin-bottom:22px; }
+  .w-stat { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; display:flex; align-items:center; gap:13px; }
+  .w-stat-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .ic-green  { background:#e8f8ee; color:#27ae60; }
+  .ic-orange { background:#fff4e6; color:#e67e22; }
+  .ic-blue   { background:#e8f2ff; color:#2980b9; }
+  .ic-purple { background:#f5e6ff; color:#8e44ad; }
+  .w-stat-value { font-size:20px; font-weight:800; color:var(--text); line-height:1; }
+  .w-stat-label { font-size:11px; color:var(--text-muted); margin-top:3px; }
+
+  /* Onglets */
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .tab-btn { padding:8px 18px; border-radius:20px; font-size:12px; font-weight:700; border:1.5px solid var(--border); background:var(--card); color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all .18s; }
+  .tab-btn.active { background:var(--green-mid); color:#fff; border-color:var(--green-mid); }
+  .tab-btn:hover:not(.active) { border-color:var(--green-mid); color:var(--green-mid); }
+  .tab-badge { display:inline-block; min-width:17px; padding:1px 5px; border-radius:9px; background:#e74c3c; color:#fff; font-size:10px; margin-left:4px; }
+
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+  .filter-btn { padding:6px 13px; border-radius:20px; font-size:12px; font-weight:600; border:1.5px solid var(--border); background:var(--card); color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all .18s; }
+  .filter-btn.active { background:var(--green-mid); color:#fff; border-color:var(--green-mid); }
+  .search-box { padding:8px 13px; border:1.5px solid var(--border); border-radius:20px; font-size:12px; font-family:inherit; background:var(--card); color:var(--text); min-width:220px; outline:none; }
+  .search-box:focus { border-color:var(--green-mid); }
+
+  .table-wrap { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table { width:100%; min-width:640px; border-collapse:collapse; }
+  thead th { background:var(--bg); padding:10px 13px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); border-bottom:1px solid var(--border); }
+  tbody td { padding:10px 13px; font-size:13px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:#fafafa; }
+  .empty-state { text-align:center; padding:44px; color:var(--text-muted); font-size:13px; }
+  .badge { display:inline-block; padding:2px 9px; border-radius:12px; font-size:11px; font-weight:700; }
+  .action-btn { padding:5px 11px; border-radius:6px; font-size:11px; font-weight:700; border:none; cursor:pointer; font-family:inherit; transition:opacity .18s; }
+  .action-btn:hover { opacity:.8; }
+  .btn-ok { background:#e8f8ee; color:#1a6b2f; }
+  .btn-ko { background:#fde8e8; color:#e74c3c; }
+  .btn-detail { background:var(--bg); color:var(--text-muted); border:1px solid var(--border); }
+  .montant-plus  { color:#1a6b2f; font-weight:700; }
+  .montant-moins { color:#e74c3c; font-weight:700; }
+
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:600; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
+  .modal-overlay.open { opacity:1; pointer-events:auto; }
+  .modal-box { background:var(--card); border-radius:14px; padding:26px 30px; width:460px; max-width:95vw; max-height:92vh; overflow-y:auto; box-shadow:0 12px 48px rgba(0,0,0,.18); }
+  .modal-box h3 { font-size:16px; font-weight:700; margin-bottom:16px; }
+  .modal-field { margin-bottom:13px; }
+  .modal-field label { display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--text-muted); }
+  .modal-field input, .modal-field textarea { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; }
+  .modal-field input:focus, .modal-field textarea:focus { border-color:var(--green-mid); }
+  .modal-field textarea { height:66px; resize:vertical; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+  .modal-proof { max-width:100%; border-radius:8px; margin-top:8px; display:block; }
+  .modal-info { background:var(--bg); border-radius:8px; padding:11px 13px; font-size:12.5px; line-height:1.7; margin-bottom:13px; }
+
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:500; color:#fff; box-shadow:0 4px 20px rgba(0,0,0,.15); animation:slideUp .25s ease; }
+  .toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="tc"></div>
+
+<!-- Stats -->
+<div class="w-stats">
+  <div class="w-stat"><div class="w-stat-icon ic-green"><i class="fas fa-wallet"></i></div>
+    <div><div class="w-stat-value" id="st-soldes">—</div><div class="w-stat-label">{% trans "HTG en circulation" %}</div></div></div>
+  <div class="w-stat"><div class="w-stat-icon ic-blue"><i class="fas fa-users"></i></div>
+    <div><div class="w-stat-value" id="st-wallets">—</div><div class="w-stat-label">{% trans "Portefeuilles" %}</div></div></div>
+  <div class="w-stat"><div class="w-stat-icon ic-orange"><i class="fas fa-receipt"></i></div>
+    <div><div class="w-stat-value" id="st-recharges">—</div><div class="w-stat-label">{% trans "Recharges à valider" %}</div></div></div>
+  <div class="w-stat"><div class="w-stat-icon ic-orange"><i class="fas fa-money-bill-wave"></i></div>
+    <div><div class="w-stat-value" id="st-retraits">—</div><div class="w-stat-label">{% trans "Retraits à traiter" %}</div></div></div>
+  <div class="w-stat"><div class="w-stat-icon ic-purple"><i class="fas fa-gift"></i></div>
+    <div><div class="w-stat-value" id="st-bons">—</div><div class="w-stat-label">{% trans "Bons actifs" %}</div></div></div>
+</div>
+
+<!-- Onglets -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="recharges" onclick="setTab(this)">
+    <i class="fas fa-receipt"></i> {% trans "Recharges" %} <span class="tab-badge" id="tb-recharges" style="display:none"></span>
+  </button>
+  <button class="tab-btn" data-tab="retraits" onclick="setTab(this)">
+    <i class="fas fa-money-bill-wave"></i> {% trans "Retraits" %} <span class="tab-badge" id="tb-retraits" style="display:none"></span>
+  </button>
+  <button class="tab-btn" data-tab="wallets" onclick="setTab(this)">
+    <i class="fas fa-wallet"></i> {% trans "Portefeuilles" %}
+  </button>
+  <button class="tab-btn" data-tab="transactions" onclick="setTab(this)">
+    <i class="fas fa-history"></i> {% trans "Transactions" %}
+  </button>
+  <button class="tab-btn" data-tab="bons" onclick="setTab(this)">
+    <i class="fas fa-gift"></i> {% trans "Bons cadeaux" %}
+  </button>
+</div>
+
+<!-- Barre outils (filtres injectés par JS) -->
+<div class="toolbar" id="toolbar"></div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <div class="empty-state" id="tbl-loading"><i class="fas fa-spinner fa-spin"></i> {% trans "Chargement..." %}</div>
+  <table id="tbl" style="display:none">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-state" id="tbl-empty" style="display:none">{% trans "Aucun élément trouvé." %}</div>
+</div>
+
+<!-- Modal retrait : payer -->
+<div class="modal-overlay" id="modal-payer">
+  <div class="modal-box">
+    <h3>{% trans "Marquer le retrait payé" %}</h3>
+    <div class="modal-info" id="mp-info"></div>
+    <div class="modal-field">
+      <label>{% trans "Preuve du transfert (capture MonCash/NatCash, optionnelle)" %}</label>
+      <input type="file" id="mp-preuve" accept="image/jpeg,image/png">
+    </div>
+    <div class="modal-field">
+      <label>{% trans "Note (optionnelle)" %}</label>
+      <textarea id="mp-note" placeholder="{% trans 'Référence du transfert...' %}"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="action-btn btn-detail" onclick="closeModals()">{% trans "Annuler" %}</button>
+      <button class="action-btn btn-ok" id="mp-submit" onclick="submitPayer()"><i class="fas fa-check"></i> {% trans "Confirmer le paiement" %}</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal retrait : rejeter -->
+<div class="modal-overlay" id="modal-rejeter">
+  <div class="modal-box">
+    <h3>{% trans "Rejeter le retrait (re-crédit du wallet)" %}</h3>
+    <div class="modal-info" id="mr-info"></div>
+    <div class="modal-field">
+      <label>{% trans "Motif du rejet" %}</label>
+      <textarea id="mr-motif" placeholder="{% trans 'Ex : numéro MonCash invalide...' %}"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="action-btn btn-detail" onclick="closeModals()">{% trans "Annuler" %}</button>
+      <button class="action-btn btn-ko" id="mr-submit" onclick="submitRejeter()"><i class="fas fa-times"></i> {% trans "Rejeter et re-créditer" %}</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ajustement -->
+<div class="modal-overlay" id="modal-ajust">
+  <div class="modal-box">
+    <h3>{% trans "Ajustement manuel du solde" %}</h3>
+    <div class="modal-info" id="ma-info"></div>
+    <div class="modal-field">
+      <label>{% trans "Montant signé (positif = crédit, négatif = débit)" %}</label>
+      <input type="number" id="ma-montant" step="0.01" placeholder="Ex : 500 ou -250">
+    </div>
+    <div class="modal-field">
+      <label>{% trans "Description (obligatoire pour la traçabilité)" %}</label>
+      <textarea id="ma-desc" placeholder="{% trans 'Motif de l’ajustement...' %}"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="action-btn btn-detail" onclick="closeModals()">{% trans "Annuler" %}</button>
+      <button class="action-btn btn-ok" id="ma-submit" onclick="submitAjust()"><i class="fas fa-check"></i> {% trans "Appliquer" %}</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal image preuve -->
+<div class="modal-overlay" id="modal-img" onclick="closeModals()">
+  <div class="modal-box" style="width:640px" onclick="event.stopPropagation()">
+    <h3>{% trans "Preuve" %}</h3>
+    <img id="mi-img" class="modal-proof" src="">
+    <div class="modal-actions">
+      <button class="action-btn btn-detail" onclick="closeModals()">{% trans "Fermer" %}</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_script %}
+const H  = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
+const HJ = { ...H, 'Content-Type': 'application/json' };
+let _tab = 'recharges', _filter = '', _search = '', _currentId = null;
+
+const BADGES = {
+  en_attente:       { bg:'#fef9e7', c:'#c9a007' },
+  preuve_soumise:   { bg:'#fff4e6', c:'#e67e22' },
+  creditee:         { bg:'#e8f8ee', c:'#1a6b2f' },
+  rejetee:          { bg:'#fde8e8', c:'#e74c3c' },
+  echouee:          { bg:'#f0f0f0', c:'#888' },
+  demande:          { bg:'#fff4e6', c:'#e67e22' },
+  paye:             { bg:'#e8f8ee', c:'#1a6b2f' },
+  rejete:           { bg:'#fde8e8', c:'#e74c3c' },
+  attente_paiement: { bg:'#fef9e7', c:'#c9a007' },
+  actif:            { bg:'#e8f8ee', c:'#1a6b2f' },
+  utilise:          { bg:'#e8f2ff', c:'#2980b9' },
+  expire:           { bg:'#f0f0f0', c:'#888' },
+  annule:           { bg:'#fde8e8', c:'#e74c3c' },
+};
+function badge(statut, label) {
+  const b = BADGES[statut] || { bg:'#eee', c:'#888' };
+  return `<span class="badge" style="background:${b.bg};color:${b.c}">${label}</span>`;
+}
+function fmt(n) { return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2 }); }
+function fdate(iso) { return iso ? new Date(iso).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'}) : '—'; }
+function esc(s) { return String(s ?? '').replace(/</g, '&lt;'); }
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${esc(msg)}`;
+  document.getElementById('tc').appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+function userCell(x) {
+  return `${esc(x.nom)}<br><small style="color:var(--text-muted)">${esc(x.role_label)} · ${esc(x.email)}</small>`;
+}
+function proofCell(url) {
+  return url
+    ? `<a href="#" onclick="openImg('${url}');return false"><img src="${url}" style="width:38px;height:38px;border-radius:6px;object-fit:cover"></a>`
+    : '<span style="color:var(--text-muted)">—</span>';
+}
+function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')); _currentId = null; }
+function openImg(url) { document.getElementById('mi-img').src = url; document.getElementById('modal-img').classList.add('open'); }
+
+// ── Stats ──
+async function loadStats() {
+  const r = await fetch('/api/admin/wallet/stats/', { headers: H });
+  if (!r.ok) return;
+  const d = (await r.json()).data;
+  document.getElementById('st-soldes').textContent    = fmt(d.total_soldes);
+  document.getElementById('st-wallets').textContent   = `${d.nb_actifs}/${d.nb_wallets}`;
+  document.getElementById('st-recharges').textContent = d.recharges_a_valider;
+  document.getElementById('st-retraits').textContent  = d.retraits_a_traiter;
+  document.getElementById('st-bons').textContent      = d.bons_actifs;
+  for (const [id, n] of [['tb-recharges', d.recharges_a_valider], ['tb-retraits', d.retraits_a_traiter]]) {
+    const el = document.getElementById(id);
+    if (n > 0) { el.textContent = n; el.style.display = 'inline-block'; } else el.style.display = 'none';
+  }
+  const sb = document.getElementById('sb-badge-wallet');
+  const total = d.recharges_a_valider + d.retraits_a_traiter;
+  if (sb && total > 0) { sb.textContent = total; sb.style.display = 'inline'; }
+}
+
+// ── Config des onglets ──
+const TABS = {
+  recharges: {
+    filtres: [['', 'Toutes'], ['preuve_soumise', 'À valider'], ['creditee', 'Créditées'], ['rejetee', 'Rejetées'], ['echouee', 'Échouées']],
+    search: false,
+    cols: ['#', 'Client', 'Montant', 'Méthode', 'Preuve', 'Statut', 'Date', 'Actions'],
+    url: () => `/api/admin/wallet/recharges/?statut=${_filter}`,
+    row: x => `<tr>
+      <td style="color:var(--text-muted)">${x.id}</td>
+      <td>${userCell(x)}</td>
+      <td style="font-weight:700">${fmt(x.montant)} HTG</td>
+      <td>${esc(x.methode_label)}</td>
+      <td style="text-align:center">${proofCell(x.preuve_url)}</td>
+      <td>${badge(x.statut, x.statut_label)}</td>
+      <td style="color:var(--text-muted);font-size:12px">${fdate(x.created_at)}</td>
+      <td>${x.statut === 'preuve_soumise' || x.statut === 'en_attente'
+        ? `<button class="action-btn btn-ok" onclick="rechargeValider(${x.id})"><i class="fas fa-check"></i> {% trans "Créditer" %}</button>
+           <button class="action-btn btn-ko" onclick="rechargeRejeter(${x.id})"><i class="fas fa-times"></i></button>`
+        : '—'}</td>
+    </tr>`,
+  },
+  retraits: {
+    filtres: [['', 'Tous'], ['demande', 'À traiter'], ['paye', 'Payés'], ['rejete', 'Rejetés']],
+    search: false,
+    cols: ['#', 'Demandeur', 'Montant', 'Canal', 'Numéro', 'Preuve', 'Statut', 'Date', 'Actions'],
+    url: () => `/api/admin/wallet/retraits/?statut=${_filter}`,
+    row: x => `<tr>
+      <td style="color:var(--text-muted)">${x.id}</td>
+      <td>${userCell(x)}</td>
+      <td style="font-weight:700">${fmt(x.montant)} HTG</td>
+      <td>${esc(x.canal_label)}</td>
+      <td style="font-family:monospace;font-size:12px">${esc(x.numero_telephone)}</td>
+      <td style="text-align:center">${proofCell(x.preuve_url)}</td>
+      <td>${badge(x.statut, x.statut_label)}${x.note_admin ? `<br><small style="color:var(--text-muted)">${esc(x.note_admin)}</small>` : ''}</td>
+      <td style="color:var(--text-muted);font-size:12px">${fdate(x.created_at)}</td>
+      <td>${x.statut === 'demande'
+        ? `<button class="action-btn btn-ok" onclick="openPayer(${x.id}, '${esc(x.nom)}', '${fmt(x.montant)}', '${esc(x.canal_label)}', '${esc(x.numero_telephone)}')"><i class="fas fa-check"></i> {% trans "Payer" %}</button>
+           <button class="action-btn btn-ko" onclick="openRejeter(${x.id}, '${esc(x.nom)}', '${fmt(x.montant)}')"><i class="fas fa-times"></i></button>`
+        : '—'}</td>
+    </tr>`,
+  },
+  wallets: {
+    filtres: [['', 'Tous'], ['true', 'Actifs'], ['false', 'Désactivés']],
+    search: true,
+    cols: ['#', 'Utilisateur', 'Solde', 'État', 'Dernier mouvement', 'Actions'],
+    url: () => `/api/admin/wallet/wallets/?actif=${_filter}&search=${encodeURIComponent(_search)}`,
+    row: x => `<tr>
+      <td style="color:var(--text-muted)">${x.id}</td>
+      <td>${userCell(x)}</td>
+      <td style="font-weight:700" class="${parseFloat(x.solde) < 0 ? 'montant-moins' : ''}">${fmt(x.solde)} HTG</td>
+      <td>${x.is_active ? badge('actif', 'Actif') : badge('rejete', 'Désactivé')}</td>
+      <td style="color:var(--text-muted);font-size:12px">${fdate(x.updated_at)}</td>
+      <td>
+        <button class="action-btn btn-detail" onclick="openAjust(${x.id}, '${esc(x.nom)}', '${fmt(x.solde)}')"><i class="fas fa-sliders-h"></i> {% trans "Ajuster" %}</button>
+        <button class="action-btn ${x.is_active ? 'btn-ko' : 'btn-ok'}" onclick="walletToggle(${x.id})">
+          ${x.is_active ? '<i class="fas fa-ban"></i> {% trans "Désactiver" %}' : '<i class="fas fa-check"></i> {% trans "Activer" %}'}
+        </button>
+      </td>
+    </tr>`,
+  },
+  transactions: {
+    filtres: [['', 'Toutes'], ['recharge', 'Recharges'], ['paiement', 'Paiements'], ['vente', 'Ventes'], ['retrait', 'Retraits'],
+              ['remboursement', 'Remboursements'], ['cashback', 'Cashback'], ['bonus_parrainage', 'Parrainage'], ['ajustement', 'Ajustements']],
+    search: true,
+    cols: ['Date', 'Utilisateur', 'Opération', 'Détail', 'Montant', 'Solde après'],
+    url: () => `/api/admin/wallet/transactions/?type=${_filter}&search=${encodeURIComponent(_search)}`,
+    row: x => {
+      const plus = parseFloat(x.montant) >= 0;
+      return `<tr>
+        <td style="color:var(--text-muted);font-size:12px">${fdate(x.created_at)}</td>
+        <td>${userCell(x)}</td>
+        <td><span class="badge" style="background:var(--bg);color:var(--text-muted)">${esc(x.type_label)}</span></td>
+        <td style="color:var(--text-muted);font-size:12px">${esc(x.description || x.commande_numero || '')}</td>
+        <td class="${plus ? 'montant-plus' : 'montant-moins'}">${plus ? '+' : ''}${fmt(x.montant)}</td>
+        <td style="font-weight:600">${fmt(x.solde_apres)}</td>
+      </tr>`;
+    },
+  },
+  bons: {
+    filtres: [['', 'Tous'], ['actif', 'Actifs'], ['utilise', 'Utilisés'], ['attente_paiement', 'Attente paiement'], ['expire', 'Expirés'], ['annule', 'Annulés']],
+    search: true,
+    cols: ['Code', 'Montant', 'Acheté par', 'Destinataire', 'Encaissé par', 'Statut', 'Expire', 'Actions'],
+    url: () => `/api/admin/wallet/bons/?statut=${_filter}&search=${encodeURIComponent(_search)}`,
+    row: x => `<tr>
+      <td style="font-family:monospace;font-size:12px;color:var(--green-mid)">${esc(x.code)}</td>
+      <td style="font-weight:700">${fmt(x.montant)} HTG</td>
+      <td>${esc(x.achete_par || '—')}</td>
+      <td style="font-size:12px">${esc(x.email_destinataire || '—')}</td>
+      <td>${esc(x.encaisse_par || '—')}</td>
+      <td>${badge(x.statut, x.statut_label)}</td>
+      <td style="color:var(--text-muted);font-size:12px">${fdate(x.date_expiration)}</td>
+      <td>
+        ${x.statut === 'actif' ? `<button class="action-btn btn-detail" onclick="bonRenvoyer(${x.id})"><i class="fas fa-envelope"></i></button>` : ''}
+        ${(x.statut === 'actif' || x.statut === 'attente_paiement')
+          ? `<button class="action-btn btn-ko" onclick="bonAnnuler(${x.id})"><i class="fas fa-ban"></i> {% trans "Annuler" %}</button>` : '—'}
+      </td>
+    </tr>`,
+  },
+};
+
+function setTab(btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _tab = btn.dataset.tab; _filter = ''; _search = '';
+  renderToolbar(); load();
+}
+
+function renderToolbar() {
+  const conf = TABS[_tab];
+  let html = conf.filtres.map(([val, label], i) =>
+    `<button class="filter-btn ${i === 0 ? 'active' : ''}" data-val="${val}" onclick="setFilter(this)">${label}</button>`
+  ).join('');
+  if (conf.search) {
+    html += `<input class="search-box" id="search-input" placeholder="{% trans 'Rechercher (nom, email, code...)' %}"
+             onkeydown="if(event.key==='Enter'){_search=this.value;load();}">`;
+  }
+  document.getElementById('toolbar').innerHTML = html;
+}
+
+function setFilter(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); _filter = btn.dataset.val; load();
+}
+
+async function load() {
+  const conf = TABS[_tab];
+  document.getElementById('tbl-loading').style.display = 'block';
+  document.getElementById('tbl').style.display = 'none';
+  document.getElementById('tbl-empty').style.display = 'none';
+
+  const r = await fetch(conf.url(), { headers: H });
+  document.getElementById('tbl-loading').style.display = 'none';
+  if (!r.ok) { document.getElementById('tbl-empty').style.display = 'block'; return; }
+  const data = (await r.json()).data || [];
+  if (!data.length) { document.getElementById('tbl-empty').style.display = 'block'; return; }
+
+  document.getElementById('thead').innerHTML =
+    '<tr>' + conf.cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  document.getElementById('tbody').innerHTML = data.map(conf.row).join('');
+  document.getElementById('tbl').style.display = 'table';
+}
+
+// ── Actions recharges ──
+async function rechargeValider(id) {
+  if (!confirm('Valider la preuve et créditer le wallet ?')) return;
+  const r = await fetch(`/api/admin/wallet/recharges/${id}/valider/`, { method:'POST', headers:HJ });
+  const d = await r.json();
+  if (r.ok) { showToast('Recharge créditée.'); load(); loadStats(); }
+  else showToast(d.error || 'Erreur', 'error');
+}
+async function rechargeRejeter(id) {
+  if (!confirm('Rejeter cette recharge (preuve invalide) ?')) return;
+  const r = await fetch(`/api/admin/wallet/recharges/${id}/rejeter/`, { method:'POST', headers:HJ });
+  const d = await r.json();
+  if (r.ok) { showToast('Recharge rejetée.'); load(); loadStats(); }
+  else showToast(d.error || 'Erreur', 'error');
+}
+
+// ── Actions retraits ──
+function openPayer(id, nom, montant, canal, numero) {
+  _currentId = id;
+  document.getElementById('mp-info').innerHTML =
+    `Transférer <strong>${montant} HTG</strong> à <strong>${nom}</strong><br>${canal} — <span style="font-family:monospace">${numero}</span>`;
+  document.getElementById('mp-preuve').value = '';
+  document.getElementById('mp-note').value = '';
+  document.getElementById('modal-payer').classList.add('open');
+}
+async function submitPayer() {
+  if (!_currentId) return;
+  const btn = document.getElementById('mp-submit'); btn.disabled = true;
+  const fd = new FormData();
+  const preuve = document.getElementById('mp-preuve').files[0];
+  if (preuve) fd.append('preuve_transfert', preuve);
+  fd.append('note', document.getElementById('mp-note').value);
+  const r = await fetch(`/api/admin/wallet/retraits/${_currentId}/payer/`, { method:'POST', headers:H, body:fd });
+  const d = await r.json(); btn.disabled = false;
+  if (r.ok) { showToast('Retrait marqué payé.'); closeModals(); load(); loadStats(); }
+  else showToast(d.error || 'Erreur', 'error');
+}
+function openRejeter(id, nom, montant) {
+  _currentId = id;
+  document.getElementById('mr-info').innerHTML =
+    `Rejeter la demande de <strong>${montant} HTG</strong> de <strong>${nom}</strong> — le montant sera re-crédité sur son wallet.`;
+  document.getElementById('mr-motif').value = '';
+  document.getElementById('modal-rejeter').classList.add('open');
+}
+async function submitRejeter() {
+  if (!_currentId) return;
+  const btn = document.getElementById('mr-submit'); btn.disabled = true;
+  const r = await fetch(`/api/admin/wallet/retraits/${_currentId}/rejeter/`, {
+    method:'POST', headers:HJ,
+    body: JSON.stringify({ motif: document.getElementById('mr-motif').value }),
+  });
+  const d = await r.json(); btn.disabled = false;
+  if (r.ok) { showToast('Retrait rejeté et re-crédité.'); closeModals(); load(); loadStats(); }
+  else showToast(d.error || 'Erreur', 'error');
+}
+
+// ── Actions wallets ──
+async function walletToggle(id) {
+  const r = await fetch(`/api/admin/wallet/wallets/${id}/toggle/`, { method:'POST', headers:HJ });
+  const d = await r.json();
+  if (r.ok) { showToast(d.data.is_active ? 'Portefeuille activé.' : 'Portefeuille désactivé.'); load(); }
+  else showToast(d.error || 'Erreur', 'error');
+}
+function openAjust(id, nom, solde) {
+  _currentId = id;
+  document.getElementById('ma-info').innerHTML =
+    `Portefeuille de <strong>${nom}</strong> — solde actuel : <strong>${solde} HTG</strong>`;
+  document.getElementById('ma-montant').value = '';
+  document.getElementById('ma-desc').value = '';
+  document.getElementById('modal-ajust').classList.add('open');
+}
+async function submitAjust() {
+  if (!_currentId) return;
+  const montant = document.getElementById('ma-montant').value;
+  const desc    = document.getElementById('ma-desc').value.trim();
+  if (!montant || parseFloat(montant) === 0) { showToast('Indiquez un montant non nul.', 'error'); return; }
+  if (!desc) { showToast('La description est obligatoire.', 'error'); return; }
+  const btn = document.getElementById('ma-submit'); btn.disabled = true;
+  const r = await fetch('/api/admin/wallet/ajustement/', {
+    method:'POST', headers:HJ,
+    body: JSON.stringify({ wallet_id: _currentId, montant, description: desc }),
+  });
+  const d = await r.json(); btn.disabled = false;
+  if (r.ok) { showToast(`Ajustement appliqué — nouveau solde : ${fmt(d.data.solde)} HTG`); closeModals(); load(); loadStats(); }
+  else showToast(d.error || 'Erreur', 'error');
+}
+
+// ── Actions bons ──
+async function bonAnnuler(id) {
+  if (!confirm('Annuler ce bon cadeau ?')) return;
+  const r = await fetch(`/api/admin/wallet/bons/${id}/annuler/`, { method:'POST', headers:HJ });
+  const d = await r.json();
+  if (r.ok) { showToast('Bon annulé.'); load(); loadStats(); }
+  else showToast(d.error || 'Erreur', 'error');
+}
+async function bonRenvoyer(id) {
+  const r = await fetch(`/api/admin/wallet/bons/${id}/renvoyer-email/`, { method:'POST', headers:HJ });
+  const d = await r.json();
+  if (r.ok) showToast('Email du code planifié.');
+  else showToast(d.error || 'Erreur', 'error');
+}
+
+mpAuthCheck('superadmin').then(u => {
+  if (u && u.is_superuser) { renderToolbar(); loadStats(); load(); }
+});
+{% endblock %}
