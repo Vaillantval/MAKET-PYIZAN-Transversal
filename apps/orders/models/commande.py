@@ -26,6 +26,7 @@ class Commande(models.Model):
         CASH       = 'cash',       _('Especes')
         VOUCHER    = 'voucher',    _('e-Voucher')
         HORS_LIGNE = 'hors_ligne', _('Paiement hors ligne')
+        WALLET     = 'wallet',     _('Portefeuille')
 
     class StatutPaiement(models.TextChoices):
         NON_PAYE       = 'non_paye',       _('Non paye')
@@ -45,6 +46,7 @@ class Commande(models.Model):
     preuve_paiement        = models.ImageField(upload_to='commandes/preuves/', null=True, blank=True)
     voucher                = models.ForeignKey('payments.Voucher', on_delete=models.SET_NULL, null=True, blank=True, related_name='commandes')
     reference_paiement     = models.CharField(max_length=100, blank=True)
+    montant_wallet_utilise = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text=_('Solde wallet réservé sur cette commande (paiement partiel) — le complément part vers MonCash/NatCash.'))
     sous_total             = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     frais_livraison        = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     remise                 = models.DecimalField(max_digits=10, decimal_places=2, default=0)

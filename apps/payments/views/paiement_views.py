@@ -91,7 +91,7 @@ def initier_paiement(request):
         try:
             result = plopplop.initier_paiement(
                 commande_ref=commande.numero_commande,
-                montant=float(commande.total),
+                montant=float(paiement.montant),
                 payment_method=type_paiement,
             )
             response_data['redirect_url']   = result['redirect_url']

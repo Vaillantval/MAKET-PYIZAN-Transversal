@@ -78,6 +78,21 @@ def register_wallet_periodic_tasks():
     print(f'[init_site] Tâche "wallet.expirer_bons_cadeaux" '
           f'{"créée" if created else "déjà planifiée"}.')
 
+    # Toutes les heures : libérer les réserves de paiement partiel expirées
+    horaire, _ = CrontabSchedule.objects.get_or_create(
+        minute='15', hour='*', day_of_week='*', day_of_month='*', month_of_year='*',
+        timezone='America/Port-au-Prince',
+    )
+    _, created = PeriodicTask.objects.get_or_create(
+        name='Wallet — libérer les réserves expirées (24h)',
+        defaults={
+            'task': 'wallet.liberer_reserves_expirees',
+            'crontab': horaire,
+        },
+    )
+    print(f'[init_site] Tâche "wallet.liberer_reserves_expirees" '
+          f'{"créée" if created else "déjà planifiée"}.')
+
 
 if __name__ == '__main__':
     create_superadmin()

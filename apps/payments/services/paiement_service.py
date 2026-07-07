@@ -9,7 +9,10 @@ class PaiementService:
     @staticmethod
     @transaction.atomic
     def initier_paiement(commande, type_paiement, numero_expediteur='', notes=''):
-        paiement = Paiement.objects.create(commande=commande, effectue_par=commande.acheteur.user, type_paiement=type_paiement, statut=Paiement.Statut.INITIE, montant=commande.total, numero_expediteur=numero_expediteur, notes=notes)
+        # Si une partie du total est déjà couverte par le wallet (paiement
+        # partiel), le paiement externe ne porte que sur le reste.
+        montant_du = commande.total - (commande.montant_wallet_utilise or 0)
+        paiement = Paiement.objects.create(commande=commande, effectue_par=commande.acheteur.user, type_paiement=type_paiement, statut=Paiement.Statut.INITIE, montant=montant_du, numero_expediteur=numero_expediteur, notes=notes)
         commande.statut_paiement   = Commande.StatutPaiement.EN_ATTENTE
         commande.methode_paiement  = type_paiement
         commande.save(update_fields=['statut_paiement', 'methode_paiement'])

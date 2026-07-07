@@ -10,6 +10,7 @@ class Paiement(models.Model):
         VIREMENT = 'virement', _('Virement bancaire')
         CASH     = 'cash',     _('Especes')
         VOUCHER  = 'voucher',  _('e-Voucher')
+        WALLET   = 'wallet',   _('Portefeuille')
 
     class Statut(models.TextChoices):
         INITIE     = 'initie',     _('Initie')

@@ -136,6 +136,54 @@ def task_notifier_retrait_rejete(self, retrait_id):
         _retry(self, exc)
 
 
+# ── Réserves de paiement partiel ──────────────────────────────────────────────
+
+@shared_task(name='wallet.liberer_reserves_expirees')
+def task_liberer_reserves_expirees():
+    """
+    Libère les montants wallet réservés (paiement partiel) sur les commandes
+    restées impayées plus de 24 h : le complément MonCash/NatCash n'est
+    jamais arrivé, on rend l'argent au client. Planifiée par Celery Beat.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.orders.models import Commande
+    from apps.wallet.services import WalletService
+
+    limite = timezone.now() - timedelta(hours=24)
+    commandes = Commande.objects.filter(
+        montant_wallet_utilise__gt=0,
+        updated_at__lt=limite,
+    ).exclude(
+        statut_paiement__in=(
+            Commande.StatutPaiement.PAYE, Commande.StatutPaiement.REMBOURSE,
+        ),
+    ).exclude(statut=Commande.Statut.ANNULEE)
+
+    liberees = 0
+    for commande in commandes:
+        try:
+            tx = WalletService.liberer_paiement_partiel(
+                commande,
+                description=(
+                    f"Complément non payé sous 24 h — commande {commande.numero_commande}"
+                ),
+            )
+            if tx:
+                liberees += 1
+        except Exception as e:
+            logger.error(
+                "Libération réserve commande %s échouée : %s",
+                commande.numero_commande, e,
+            )
+
+    if liberees:
+        logger.info("%s réservation(s) wallet libérée(s).", liberees)
+    return liberees
+
+
 # ── Bons cadeaux ──────────────────────────────────────────────────────────────
 
 @shared_task(bind=True, max_retries=3, name='wallet.envoyer_bon_cadeau')

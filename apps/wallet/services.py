@@ -265,6 +265,185 @@ class WalletService:
         recharge.statut = WalletRecharge.Statut.CREDITEE
         return tx
 
+    # ── Paiement de commande ─────────────────────────────────────────────────
+
+    @classmethod
+    def payer_commande(cls, user, commande) -> WalletTransaction:
+        """
+        Paie une commande avec le wallet de l'acheteur (la totalité, ou le
+        reste si un paiement partiel a déjà réservé une partie). Crée un
+        Paiement type 'wallet' confirmé — la traçabilité comptable et les
+        notifications existantes (signal Paiement) sont préservées — puis
+        confirme la commande (débit du stock).
+        """
+        from apps.orders.models import Commande
+        from apps.payments.models import Paiement
+        from apps.payments.services.paiement_service import PaiementService
+
+        if commande.acheteur.user_id != user.id:
+            raise WalletError("Cette commande ne vous appartient pas.")
+        if commande.est_payee:
+            raise WalletError("Cette commande est déjà payée.")
+        if commande.statut == Commande.Statut.ANNULEE:
+            raise WalletError("Cette commande est annulée.")
+
+        reste = _en_montant(commande.total) - _en_montant(commande.montant_wallet_utilise or 0)
+        if reste <= 0:
+            raise WalletError("Le montant restant à payer est nul.")
+
+        wallet = cls.get_wallet(user)
+
+        with transaction.atomic():
+            tx = cls.debiter(
+                wallet,
+                reste,
+                type_tx=WalletTransaction.Type.PAIEMENT,
+                commande=commande,
+                description=f"Paiement commande {commande.numero_commande}",
+            )
+            paiement = Paiement.objects.create(
+                commande=commande,
+                effectue_par=user,
+                type_paiement=Paiement.TypePaiement.WALLET,
+                statut=Paiement.Statut.INITIE,
+                montant=reste,
+                notes=f"Wallet tx #{tx.pk}",
+            )
+            PaiementService.confirmer_paiement(
+                paiement,
+                verifie_par=None,
+                note_verification=f"Payé par wallet — transaction #{tx.pk}",
+            )
+            commande.methode_paiement = Commande.MethodePaiement.WALLET
+            commande.save(update_fields=['methode_paiement', 'updated_at'])
+
+        # Confirmer la commande (débit stock) — hors du bloc financier : un
+        # problème de stock ne doit pas annuler le paiement, l'admin arbitre
+        # (même comportement que la confirmation Plopplop).
+        from apps.orders.services.commande_service import CommandeService
+        try:
+            if commande.statut == Commande.Statut.EN_ATTENTE:
+                CommandeService.confirmer_commande(commande)
+        except Exception as e:
+            logger.warning(
+                "payer_commande : confirmer_commande échoué pour %s : %s",
+                commande.numero_commande, e,
+            )
+        return tx
+
+    # ── Paiement partiel (wallet + complément MonCash/NatCash) ──────────────
+
+    @classmethod
+    def appliquer_paiement_partiel(cls, user, commande) -> WalletTransaction | None:
+        """
+        Réserve le solde disponible sur la commande : débite le wallet de
+        min(solde, total) et l'enregistre dans commande.montant_wallet_utilise.
+        Le complément part vers MonCash/NatCash (Plopplop). No-op si un
+        montant est déjà réservé.
+        """
+        if commande.acheteur.user_id != user.id:
+            raise WalletError("Cette commande ne vous appartient pas.")
+        if commande.est_payee:
+            raise WalletError("Cette commande est déjà payée.")
+        if commande.montant_wallet_utilise and commande.montant_wallet_utilise > 0:
+            return None  # déjà réservé
+
+        wallet = cls.get_wallet(user)
+        total = _en_montant(commande.total)
+        reserve = min(wallet.solde, total)
+        if reserve <= 0:
+            raise SoldeInsuffisant("Aucun solde disponible à utiliser.")
+
+        with transaction.atomic():
+            tx = cls.debiter(
+                wallet,
+                reserve,
+                type_tx=WalletTransaction.Type.PAIEMENT,
+                commande=commande,
+                description=f"Paiement partiel commande {commande.numero_commande}",
+            )
+            commande.montant_wallet_utilise = reserve
+            commande.save(update_fields=['montant_wallet_utilise', 'updated_at'])
+        return tx
+
+    @classmethod
+    def liberer_paiement_partiel(cls, commande, description='') -> WalletTransaction | None:
+        """
+        Re-crédite le montant réservé d'une commande non payée (complément
+        jamais arrivé, commande annulée...). Idempotent : le champ
+        montant_wallet_utilise est remis à zéro dans la même transaction.
+        """
+        from apps.orders.models import Commande
+
+        with transaction.atomic():
+            verrouillee = Commande.objects.select_for_update().get(pk=commande.pk)
+            reserve = _en_montant(verrouillee.montant_wallet_utilise or 0)
+            if reserve <= 0 or verrouillee.est_payee:
+                return None
+
+            wallet = cls.get_wallet(verrouillee.acheteur.user)
+            tx = cls.crediter(
+                wallet,
+                reserve,
+                # Type distinct de REMBOURSEMENT : rembourser_commande s'appuie
+                # sur l'absence de transaction REMBOURSEMENT pour son
+                # idempotence — une libération de réserve ne doit pas bloquer
+                # un vrai remboursement ultérieur.
+                type_tx=WalletTransaction.Type.LIBERATION_RESERVE,
+                commande=verrouillee,
+                description=description or (
+                    f"Libération du solde réservé — commande {verrouillee.numero_commande}"
+                ),
+            )
+            verrouillee.montant_wallet_utilise = Decimal('0')
+            verrouillee.save(update_fields=['montant_wallet_utilise', 'updated_at'])
+
+        commande.montant_wallet_utilise = Decimal('0')
+        return tx
+
+    # ── Remboursement ────────────────────────────────────────────────────────
+
+    @classmethod
+    def rembourser_commande(cls, commande, description='') -> WalletTransaction | None:
+        """
+        Crédite le wallet de l'acheteur du total de la commande payée
+        (annulation/litige) et passe le paiement en 'remboursé'. Idempotent :
+        ne fait rien si un remboursement existe déjà pour cette commande.
+        """
+        from apps.orders.models import Commande
+
+        # Idempotence d'abord : un remboursement déjà passé (statut REMBOURSE
+        # ou transaction existante) est un no-op, pas une erreur — le signal
+        # d'annulation peut être rejoué.
+        if WalletTransaction.objects.filter(
+            commande=commande, type=WalletTransaction.Type.REMBOURSEMENT,
+        ).exists():
+            logger.info(
+                "Commande %s déjà remboursée vers le wallet — ignoré.",
+                commande.numero_commande,
+            )
+            return None
+
+        if not commande.est_payee:
+            if commande.statut_paiement == Commande.StatutPaiement.REMBOURSE:
+                return None
+            raise WalletError("Impossible de rembourser une commande non payée.")
+
+        wallet = cls.get_wallet(commande.acheteur.user)
+        with transaction.atomic():
+            tx = cls.crediter(
+                wallet,
+                _en_montant(commande.total),
+                type_tx=WalletTransaction.Type.REMBOURSEMENT,
+                commande=commande,
+                description=description or (
+                    f"Remboursement commande {commande.numero_commande}"
+                ),
+            )
+            commande.statut_paiement = Commande.StatutPaiement.REMBOURSE
+            commande.save(update_fields=['statut_paiement', 'updated_at'])
+        return tx
+
     # ── Retraits ─────────────────────────────────────────────────────────────
 
     @classmethod
