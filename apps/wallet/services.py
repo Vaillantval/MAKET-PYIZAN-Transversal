@@ -672,6 +672,9 @@ class WalletService:
 
     # ── Retraits ─────────────────────────────────────────────────────────────
 
+    MONTANT_RETRAIT_MIN = Decimal('100')
+    MONTANT_RETRAIT_MAX = Decimal('1000000')
+
     @classmethod
     def demander_retrait(cls, user, montant, canal, numero_telephone):
         """
@@ -682,6 +685,14 @@ class WalletService:
         from apps.wallet.models import WalletRetrait
 
         montant = _en_montant(montant)
+        if not (cls.MONTANT_RETRAIT_MIN <= montant <= cls.MONTANT_RETRAIT_MAX):
+            raise WalletError(
+                f"Le montant d'un retrait doit être compris entre "
+                f"{cls.MONTANT_RETRAIT_MIN} et {cls.MONTANT_RETRAIT_MAX} HTG."
+            )
+        numero_telephone = (numero_telephone or '').strip()
+        if not numero_telephone:
+            raise WalletError("Le numéro MonCash/NatCash est obligatoire.")
         wallet = cls.get_wallet(user)
 
         with transaction.atomic():
