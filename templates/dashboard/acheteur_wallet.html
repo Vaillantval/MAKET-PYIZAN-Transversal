@@ -431,6 +431,10 @@
         });
         const data = await r.json();
         if (r.ok && data.data.redirect_url) {
+          // Marqueur pour la page de retour Plopplop — distingue une recharge
+          // wallet d'un paiement de commande (même page de callback pour les deux).
+          localStorage.setItem('mp_pending_wallet_recharge_id', data.data.recharge_id);
+          localStorage.setItem('mp_pending_method', methode);
           window.location.href = data.data.redirect_url;
           return;
         }

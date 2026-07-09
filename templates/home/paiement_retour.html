@@ -134,8 +134,8 @@
       <div class="orders-box" id="success-orders" style="display:none"></div>
       <div class="orders-box" id="success-meta" style="display:none;margin-bottom:16px"></div>
       <div class="btns">
-        <a href="/dashboard/acheteur/commandes/" class="btn btn-primary">
-          <i class="fas fa-list-alt"></i> {% trans "Mes commandes" %}
+        <a href="/dashboard/acheteur/commandes/" class="btn btn-primary" id="success-btn-1">
+          <i class="fas fa-list-alt" id="success-btn-1-icon"></i> <span id="success-btn-1-label">{% trans "Mes commandes" %}</span>
         </a>
         <a href="/" class="btn btn-outline">
           <i class="fas fa-store"></i> {% trans "Catalogue" %}
@@ -147,9 +147,9 @@
     <div id="state-pending">
       <div class="icon-wrap pending"><i class="fas fa-exclamation-triangle"></i></div>
       <div class="card-title pending">{% trans "Paiement non confirmé" %}</div>
-      <div class="card-sub">Votre paiement n'a pas été confirmé par la passerelle.<br>Votre commande est enregistrée — vous pouvez régulariser la situation ci-dessous.</div>
+      <div class="card-sub" id="pending-sub">Votre paiement n'a pas été confirmé par la passerelle.<br>Votre commande est enregistrée — vous pouvez régulariser la situation ci-dessous.</div>
 
-      <div style="text-align:left; margin-bottom:20px">
+      <div style="text-align:left; margin-bottom:20px" id="pending-order-advice">
         <div style="background:#fffbeb; border-left:4px solid #f59e0b; border-radius:0 8px 8px 0; padding:14px 16px; margin-bottom:12px; font-size:14px; color:#92400e;">
           <strong>{% trans "Option 1 — Recharger votre compte et réessayer" %}</strong><br>
           Vérifiez que votre compte <span id="pending-method-name">{% trans "MonCash/NatCash" %}</span> est suffisamment approvisionné, puis repassez commande depuis votre panier.
@@ -161,15 +161,22 @@
         </div>
       </div>
 
-      <div class="orders-box pending-box" style="margin-bottom:20px">
+      <div style="text-align:left; margin-bottom:20px; display:none" id="pending-wallet-advice">
+        <div style="background:#fffbeb; border-left:4px solid #f59e0b; border-radius:0 8px 8px 0; padding:14px 16px; font-size:14px; color:#92400e;">
+          <strong>{% trans "La passerelle n'a pas encore confirmé ce paiement." %}</strong><br>
+          {% trans "Si votre compte a bien été débité, patientez quelques minutes puis retournez sur votre portefeuille : le crédit apparaîtra automatiquement dès confirmation. Si rien ne se passe après 30 minutes, contactez le support avec la référence ci-dessous." %}
+        </div>
+      </div>
+
+      <div class="orders-box pending-box" style="margin-bottom:20px" id="pending-email-box">
         <div class="meta-line"><i class="fas fa-envelope" style="color:#f59e0b"></i> {% trans "Un email avec ces instructions vous a été envoyé." %}</div>
       </div>
       <div class="btns">
-        <a href="/dashboard/acheteur/commandes/" class="btn btn-warn">
-          <i class="fas fa-list-alt"></i> {% trans "Mes commandes" %}
+        <a href="/dashboard/acheteur/commandes/" class="btn btn-warn" id="pending-btn-1">
+          <i class="fas fa-list-alt" id="pending-btn-1-icon"></i> <span id="pending-btn-1-label">{% trans "Mes commandes" %}</span>
         </a>
-        <a href="/commander/" class="btn btn-outline">
-          <i class="fas fa-redo"></i> {% trans "Réessayer" %}
+        <a href="/commander/" class="btn btn-outline" id="pending-btn-2">
+          <i class="fas fa-redo" id="pending-btn-2-icon"></i> <span id="pending-btn-2-label">{% trans "Réessayer" %}</span>
         </a>
       </div>
     </div>
@@ -181,7 +188,7 @@
       <div class="card-sub">Nous n'avons pas pu contacter la passerelle de paiement.<br>Si votre compte a été débité, contactez le support avec votre référence.</div>
       <div class="orders-box error-box" id="error-box" style="display:none;margin-bottom:16px"></div>
 
-      <div style="text-align:left; margin-bottom:20px">
+      <div style="text-align:left; margin-bottom:20px" id="error-order-advice">
         <div style="background:#f5f3ff; border-left:4px solid #8b5cf6; border-radius:0 8px 8px 0; padding:14px 16px; font-size:14px; color:#5b21b6;">
           <strong>{% trans "Solution rapide — Paiement hors ligne" %}</strong><br>
           Allez dans <strong>{% trans "« Mes commandes »" %}</strong>, uploadez une preuve de virement ou de transfert, et l'équipe confirmera votre commande.
@@ -189,11 +196,11 @@
       </div>
 
       <div class="btns">
-        <a href="/dashboard/acheteur/commandes/" class="btn btn-danger">
-          <i class="fas fa-list-alt"></i> {% trans "Mes commandes" %}
+        <a href="/dashboard/acheteur/commandes/" class="btn btn-danger" id="error-btn-1">
+          <i class="fas fa-list-alt" id="error-btn-1-icon"></i> <span id="error-btn-1-label">{% trans "Mes commandes" %}</span>
         </a>
-        <a href="/commander/" class="btn btn-outline">
-          <i class="fas fa-redo"></i> {% trans "Réessayer" %}
+        <a href="/commander/" class="btn btn-outline" id="error-btn-2">
+          <i class="fas fa-redo" id="error-btn-2-icon"></i> <span id="error-btn-2-label">{% trans "Réessayer" %}</span>
         </a>
       </div>
     </div>
@@ -217,7 +224,32 @@
     return Number(n).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' HTG';
   }
 
+  // Bascule l'affichage (boutons, textes) selon le contexte : recharge
+  // wallet ou paiement de commande — la page de retour Plopplop est partagée.
+  function applyWalletContext() {
+    document.getElementById('success-sub').textContent =
+      "Votre recharge a été vérifiée avec succès et créditée sur votre portefeuille.";
+    document.getElementById('success-btn-1').href = '/dashboard/acheteur/wallet/';
+    document.getElementById('success-btn-1-icon').className = 'fas fa-wallet';
+    document.getElementById('success-btn-1-label').textContent = 'Mon portefeuille';
+
+    document.getElementById('pending-order-advice').style.display = 'none';
+    document.getElementById('pending-wallet-advice').style.display = 'block';
+    document.getElementById('pending-email-box').style.display = 'none';
+    document.getElementById('pending-btn-1').href = '/dashboard/acheteur/wallet/';
+    document.getElementById('pending-btn-1-icon').className = 'fas fa-wallet';
+    document.getElementById('pending-btn-1-label').textContent = 'Mon portefeuille';
+    document.getElementById('pending-btn-2').style.display = 'none';
+
+    document.getElementById('error-order-advice').style.display = 'none';
+    document.getElementById('error-btn-1').href = '/dashboard/acheteur/wallet/';
+    document.getElementById('error-btn-1-icon').className = 'fas fa-wallet';
+    document.getElementById('error-btn-1-label').textContent = 'Mon portefeuille';
+    document.getElementById('error-btn-2').style.display = 'none';
+  }
+
   async function verifierPaiement() {
+    const rechargeId = localStorage.getItem('mp_pending_wallet_recharge_id');
     const ref    = localStorage.getItem('mp_pending_ref');
     const method = localStorage.getItem('mp_pending_method') || 'moncash';
     const access = localStorage.getItem('mp_access');
@@ -227,6 +259,47 @@
     const img = method === 'natcash' ? NC_IMG : MC_IMG;
     badgeWrap.innerHTML = `<div class="method-badge"><img src="${img}" alt="${method}"> ${METHOD_LABELS[method] || method}</div>`;
 
+    // ── Recharge de portefeuille — endpoint et affichage dédiés ──────────
+    if (rechargeId) {
+      applyWalletContext();
+
+      if (!access) { showState('pending'); return; }
+
+      try {
+        const res  = await fetch('/api/wallet/recharge/verifier/', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + access },
+          body: JSON.stringify({ recharge_id: rechargeId }),
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          const errBox = document.getElementById('error-box');
+          errBox.style.display = 'block';
+          errBox.innerHTML = `<div class="meta-line" style="color:#c0392b"><i class="fas fa-exclamation-circle"></i> ${data.error || 'Erreur inconnue'}</div>`;
+          showState('error');
+          return;
+        }
+
+        if (data.data.confirmee) {
+          localStorage.removeItem('mp_pending_wallet_recharge_id');
+          localStorage.removeItem('mp_pending_method');
+          const metaBox = document.getElementById('success-meta');
+          metaBox.innerHTML = `<div class="meta-line">Nouveau solde : <span>${fmtHTG(data.data.solde)}</span></div>`;
+          metaBox.style.display = 'block';
+          showState('success');
+        } else {
+          showState('pending');
+        }
+      } catch (e) {
+        document.getElementById('error-box').style.display = 'block';
+        document.getElementById('error-box').innerHTML = `<div class="meta-line" style="color:#c0392b"><i class="fas fa-exclamation-circle"></i> Erreur réseau. Réessayez plus tard.</div>`;
+        showState('error');
+      }
+      return;
+    }
+
+    // ── Paiement de commande — flux existant ─────────────────────────────
     if (!ref) {
       showState('pending');
       return;
