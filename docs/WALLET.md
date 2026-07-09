@@ -46,7 +46,10 @@
   réserves de paiement partiel des commandes impayées depuis plus de 24 h.
 - `wallet.expirer_bons_cadeaux` (03h00) : expire les bons actifs échus (validité 12 mois).
 - `wallet.rappeler_bons_expirant` (09h00) : email de rappel pour les bons
-  actifs expirant dans 30 jours (fenêtre de 24 h — un seul rappel par bon).
+  actifs expirant dans les 30 prochains jours. Dédoublonné par le champ
+  `BonCadeau.rappel_expiration_envoye` — robuste aux pannes : un jour de
+  Beat arrêté est rattrapé à l'exécution suivante, un échec d'envoi Resend
+  est retenté le lendemain, et un bon sans adresse email est marqué sans envoi.
 - `wallet.rappeler_soldes_dormants` (le 1er du mois, 10h00) : email aux
   wallets avec solde > 0 sans transaction depuis 30 jours.
 - `wallet.relancer_parrainage` (le 15 du mois, 10h00) : email aux

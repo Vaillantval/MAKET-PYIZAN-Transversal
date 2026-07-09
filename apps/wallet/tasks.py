@@ -307,9 +307,11 @@ def task_expirer_bons_cadeaux():
 @shared_task(name='wallet.rappeler_bons_expirant')
 def task_rappeler_bons_expirant():
     """
-    Rappelle par email les bons cadeaux actifs qui expirent dans ~30 jours.
-    Fenêtre de 24 h (J+29 → J+30) : la tâche quotidienne n'attrape chaque
-    bon qu'une seule fois, sans champ de dédoublonnage supplémentaire.
+    Rappelle par email les bons cadeaux actifs qui expirent dans les
+    30 prochains jours et n'ont pas encore reçu de rappel
+    (`rappel_expiration_envoye`). Robuste aux pannes : un jour de Beat/worker
+    arrêté est rattrapé à l'exécution suivante, et le drapeau garantit
+    un seul rappel par bon.
     """
     from datetime import timedelta
 
@@ -318,19 +320,32 @@ def task_rappeler_bons_expirant():
     from apps.wallet.emails import email_bon_expire_bientot
     from apps.wallet.models import BonCadeau
 
-    debut = timezone.now() + timedelta(days=29)
-    fin   = timezone.now() + timedelta(days=30)
+    maintenant = timezone.now()
     bons = BonCadeau.objects.filter(
         statut=BonCadeau.Statut.ACTIF,
-        date_expiration__gte=debut,
-        date_expiration__lt=fin,
+        rappel_expiration_envoye=False,
+        date_expiration__gt=maintenant,
+        date_expiration__lte=maintenant + timedelta(days=30),
     ).select_related('achete_par')
 
     envoyes = 0
     for bon in bons:
+        destinataire = bon.email_destinataire or (
+            bon.achete_par.email if bon.achete_par else None
+        )
+        if not destinataire:
+            # Aucune adresse ne le sera jamais — marquer pour ne pas
+            # réévaluer ce bon à chaque exécution.
+            bon.rappel_expiration_envoye = True
+            bon.save(update_fields=['rappel_expiration_envoye', 'updated_at'])
+            continue
         try:
             if email_bon_expire_bientot(bon):
+                bon.rappel_expiration_envoye = True
+                bon.save(update_fields=['rappel_expiration_envoye', 'updated_at'])
                 envoyes += 1
+            # Échec d'envoi (Resend) : drapeau laissé à False → nouvel
+            # essai à la prochaine exécution quotidienne.
         except Exception as e:
             logger.error("Rappel bon #%s non envoyé : %s", bon.pk, e)
 

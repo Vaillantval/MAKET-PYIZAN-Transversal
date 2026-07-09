@@ -28,6 +28,7 @@ class BonCadeau(models.Model):
     encaisse_par         = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='bons_cadeaux_encaisses')
     date_encaissement    = models.DateTimeField(null=True, blank=True)
     date_expiration      = models.DateTimeField(null=True, blank=True)
+    rappel_expiration_envoye = models.BooleanField(default=False, help_text=_('Email de rappel J-30 avant expiration déjà envoyé (tâche wallet.rappeler_bons_expirant).'))
     reference_plopplop   = models.CharField(max_length=64, null=True, blank=True, unique=True, help_text=_('Référence envoyée à Plopplop (format GFT{id}-{uuid8}).'))
     created_at           = models.DateTimeField(auto_now_add=True)
     updated_at           = models.DateTimeField(auto_now=True)
