@@ -402,6 +402,80 @@
       </div>
     </div>
 
+    <!-- Portefeuille (Wallet) -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-wallet" style="color:var(--green-mid)"></i><h3>{% trans "Portefeuille (Wallet)" %}</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label class="checkbox-row">
+              <input type="checkbox" id="s-wallet-enabled"> {% trans "Activer le portefeuille (recharges, paiements, retraits) pour tous les acheteurs et producteurs" %}
+            </label>
+          </div>
+          <div class="field">
+            <label>{% trans "Commission plateforme sur les ventes (%)" %}</label>
+            <input type="number" id="s-wallet-commission" min="0" max="100" step="0.01" placeholder="0">
+            <small>{% trans "Prélevée sur le crédit versé aux producteurs à la livraison. 0 = aucune commission." %}</small>
+          </div>
+          <div class="field">
+            <label>{% trans "Numéro MonCash (dépôts hors ligne)" %}</label>
+            <input type="text" id="s-wallet-moncash" placeholder="3xxx-xxxx">
+          </div>
+          <div class="field">
+            <label>{% trans "Numéro NatCash (dépôts hors ligne)" %}</label>
+            <input type="text" id="s-wallet-natcash" placeholder="3xxx-xxxx">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cashback -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-percentage" style="color:var(--green-mid)"></i><h3>{% trans "Cashback fidélité" %}</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label class="checkbox-row">
+              <input type="checkbox" id="s-cashback-enabled"> {% trans "Activer le cashback (crédite un % de chaque commande payée sur le wallet de l'acheteur)" %}
+            </label>
+          </div>
+          <div class="field">
+            <label>{% trans "Taux de cashback (%)" %}</label>
+            <input type="number" id="s-cashback-taux" min="0" max="100" step="0.01" placeholder="0">
+          </div>
+          <div class="field">
+            <label>{% trans "Plafond par commande (HTG)" %}</label>
+            <input type="number" id="s-cashback-max" min="0" step="0.01" placeholder="0">
+            <small>{% trans "0 = pas de plafond." %}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parrainage -->
+    <div class="settings-card">
+      <div class="settings-header"><i class="fas fa-user-friends" style="color:var(--green-mid)"></i><h3>{% trans "Parrainage" %}</h3></div>
+      <div class="settings-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label class="checkbox-row">
+              <input type="checkbox" id="s-parrainage-enabled"> {% trans "Activer le parrainage (bonus au parrain ET au filleul à la première commande payée du filleul)" %}
+            </label>
+          </div>
+          <div class="field">
+            <label>{% trans "Bonus parrainage (%)" %}</label>
+            <input type="number" id="s-parrainage-taux" min="0" max="100" step="0.01" placeholder="0">
+            <small>{% trans "Pourcentage du montant de la commande, crédité à chacun." %}</small>
+          </div>
+          <div class="field">
+            <label>{% trans "Plafond par personne (HTG)" %}</label>
+            <input type="number" id="s-parrainage-max" min="0" step="0.01" placeholder="0">
+            <small>{% trans "0 = pas de plafond." %}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Application Android APK -->
     <div class="settings-card" id="apk-card">
       <div class="settings-header">
@@ -584,6 +658,17 @@ async function loadSettings() {
   document.getElementById('s-maintenance').checked     = s.mode_maintenance;
   document.getElementById('s-maintenance-msg').value   = s.message_maintenance||'';
 
+  document.getElementById('s-wallet-enabled').checked     = s.wallet_enabled;
+  document.getElementById('s-wallet-commission').value    = s.taux_commission||0;
+  document.getElementById('s-wallet-moncash').value       = s.numero_moncash_depot||'';
+  document.getElementById('s-wallet-natcash').value       = s.numero_natcash_depot||'';
+  document.getElementById('s-cashback-enabled').checked    = s.cashback_enabled;
+  document.getElementById('s-cashback-taux').value         = s.taux_cashback||0;
+  document.getElementById('s-cashback-max').value          = s.cashback_montant_max||0;
+  document.getElementById('s-parrainage-enabled').checked  = s.parrainage_enabled;
+  document.getElementById('s-parrainage-taux').value       = s.taux_bonus_parrainage||0;
+  document.getElementById('s-parrainage-max').value        = s.parrainage_bonus_montant_max||0;
+
   if (s.logo)    { const p = document.getElementById('s-logo-preview');    p.src = s.logo;    p.style.display='block'; }
   if (s.favicon) { const p = document.getElementById('s-favicon-preview'); p.src = s.favicon; p.style.display='block'; }
 
@@ -745,6 +830,16 @@ async function saveSettings(e) {
     google_analytics_id: document.getElementById('s-ga').value,
     mode_maintenance:  document.getElementById('s-maintenance').checked,
     message_maintenance: document.getElementById('s-maintenance-msg').value,
+    wallet_enabled:       document.getElementById('s-wallet-enabled').checked,
+    taux_commission:      document.getElementById('s-wallet-commission').value || 0,
+    numero_moncash_depot: document.getElementById('s-wallet-moncash').value,
+    numero_natcash_depot: document.getElementById('s-wallet-natcash').value,
+    cashback_enabled:     document.getElementById('s-cashback-enabled').checked,
+    taux_cashback:        document.getElementById('s-cashback-taux').value || 0,
+    cashback_montant_max: document.getElementById('s-cashback-max').value || 0,
+    parrainage_enabled:   document.getElementById('s-parrainage-enabled').checked,
+    taux_bonus_parrainage: document.getElementById('s-parrainage-taux').value || 0,
+    parrainage_bonus_montant_max: document.getElementById('s-parrainage-max').value || 0,
   };
 
   // Vérifier si des fichiers sont présents

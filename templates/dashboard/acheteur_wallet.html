@@ -131,6 +131,9 @@
     border-radius: 10px;
     padding: 8px 18px;
   }
+  .w-btn-outline { background: transparent; color: var(--green-mid); border: 1.5px solid var(--green-mid); }
+  .w-btn-outline:hover { background: var(--green-light); }
+  .w-parrainage-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   /* ── Transactions ── */
   .w-table-card {
@@ -186,7 +189,11 @@
       <p style="font-size:12px;color:var(--text-muted);margin-top:3px" id="w-parrainage-txt"></p>
     </div>
     <div class="w-parrainage-code" id="w-parrainage-code">—</div>
-    <button class="w-btn w-btn-green" onclick="copierParrainage(this)">{% trans "Copier" %}</button>
+    <div class="w-parrainage-actions">
+      <button class="w-btn w-btn-green" onclick="copierParrainage(this)"><i class="fas fa-copy"></i> {% trans "Copier le code" %}</button>
+      <button class="w-btn w-btn-outline" onclick="copierLienParrainage(this)"><i class="fas fa-link"></i> {% trans "Copier le lien" %}</button>
+      <button class="w-btn w-btn-outline" id="btn-partager-parrainage" onclick="partagerParrainage()" style="display:none"><i class="fas fa-share-alt"></i> {% trans "Partager" %}</button>
+    </div>
   </div>
 
   <!-- Panneau recharge -->
@@ -331,15 +338,38 @@
       document.getElementById('w-parrainage-code').textContent = d.parrainage.code;
       document.getElementById('w-parrainage-txt').textContent =
         `Partagez ce code : vous recevez chacun ${d.parrainage.taux_bonus}% de sa première commande.`;
+      if (navigator.share) document.getElementById('btn-partager-parrainage').style.display = 'inline-flex';
     }
+  }
+
+  function referralLink(code) {
+    return window.location.origin + '/inscription/?parrain=' + encodeURIComponent(code);
+  }
+
+  function _flashCopied(btn, html) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copié';
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
   }
 
   function copierParrainage(btn) {
     const code = document.getElementById('w-parrainage-code').textContent;
-    navigator.clipboard.writeText(code).then(() => {
-      btn.textContent = '✓ Copié';
-      setTimeout(() => { btn.textContent = 'Copier'; }, 1800);
-    });
+    navigator.clipboard.writeText(code).then(() => _flashCopied(btn));
+  }
+
+  function copierLienParrainage(btn) {
+    const code = document.getElementById('w-parrainage-code').textContent;
+    navigator.clipboard.writeText(referralLink(code)).then(() => _flashCopied(btn));
+  }
+
+  function partagerParrainage() {
+    const code = document.getElementById('w-parrainage-code').textContent;
+    if (!navigator.share) return;
+    navigator.share({
+      title: 'Makèt Peyizan',
+      text: `Rejoins Makèt Peyizan avec mon code de parrainage ${code} et recevons chacun un bonus de bienvenue !`,
+      url: referralLink(code),
+    }).catch(() => {});
   }
 
   // ── Transactions ──

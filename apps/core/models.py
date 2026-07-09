@@ -176,6 +176,11 @@ class SiteSettings(models.Model):
         max_digits=5, decimal_places=2, default=0,
         verbose_name=_('Taux de cashback (%)'),
     )
+    cashback_montant_max = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name=_('Plafond cashback par commande (HTG)'),
+        help_text=_('Montant maximum de cashback crédité par commande. 0 = pas de plafond.'),
+    )
     parrainage_enabled = models.BooleanField(
         default=False,
         verbose_name=_('Activer le parrainage'),
@@ -185,6 +190,11 @@ class SiteSettings(models.Model):
         max_digits=5, decimal_places=2, default=0,
         verbose_name=_('Bonus parrainage (%)'),
         help_text=_('Pourcentage du montant de la première commande, crédité au parrain ET au filleul.'),
+    )
+    parrainage_bonus_montant_max = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name=_('Plafond bonus parrainage (HTG)'),
+        help_text=_('Montant maximum du bonus de parrainage (par personne). 0 = pas de plafond.'),
     )
     numero_moncash_depot = models.CharField(
         max_length=30, blank=True,

@@ -478,6 +478,9 @@ class WalletService:
             return None
 
         montant = _en_montant(Decimal(str(commande.total)) * taux / 100)
+        plafond = _en_montant(reglages.cashback_montant_max or 0)
+        if plafond > 0:
+            montant = min(montant, plafond)
         if montant <= 0:
             return None
 
@@ -545,6 +548,9 @@ class WalletService:
             return
 
         montant = _en_montant(Decimal(str(commande.total)) * taux / 100)
+        plafond = _en_montant(reglages.parrainage_bonus_montant_max or 0)
+        if plafond > 0:
+            montant = min(montant, plafond)
         if montant <= 0:
             return
 

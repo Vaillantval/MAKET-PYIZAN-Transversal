@@ -83,6 +83,10 @@
     <div><div class="w-stat-value" id="st-retraits">—</div><div class="w-stat-label">{% trans "Retraits à traiter" %}</div></div></div>
   <div class="w-stat"><div class="w-stat-icon ic-purple"><i class="fas fa-gift"></i></div>
     <div><div class="w-stat-value" id="st-bons">—</div><div class="w-stat-label">{% trans "Bons actifs" %}</div></div></div>
+  <div class="w-stat"><div class="w-stat-icon ic-green"><i class="fas fa-percentage"></i></div>
+    <div><div class="w-stat-value" id="st-cashback">—</div><div class="w-stat-label">{% trans "Cashback distribué (HTG)" %}</div></div></div>
+  <div class="w-stat"><div class="w-stat-icon ic-blue"><i class="fas fa-user-friends"></i></div>
+    <div><div class="w-stat-value" id="st-parrainage">—</div><div class="w-stat-label">{% trans "Parrainage distribué (HTG)" %}</div></div></div>
 </div>
 
 <!-- Onglets -->
@@ -238,6 +242,8 @@ async function loadStats() {
   document.getElementById('st-recharges').textContent = d.recharges_a_valider;
   document.getElementById('st-retraits').textContent  = d.retraits_a_traiter;
   document.getElementById('st-bons').textContent      = d.bons_actifs;
+  document.getElementById('st-cashback').textContent   = fmt(d.cashback_distribue_htg);
+  document.getElementById('st-parrainage').textContent = fmt(d.parrainage_distribue_htg);
   for (const [id, n] of [['tb-recharges', d.recharges_a_valider], ['tb-retraits', d.retraits_a_traiter]]) {
     const el = document.getElementById(id);
     if (n > 0) { el.textContent = n; el.style.display = 'inline-block'; } else el.style.display = 'none';

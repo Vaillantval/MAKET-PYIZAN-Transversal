@@ -382,6 +382,25 @@
     }
     .info-box i { flex-shrink: 0; margin-top: 1px; color: #c9a007; }
 
+    /* parrainage */
+    .parrainage-box {
+      background: #f0faf4;
+      border: 1px solid #a8ddb8;
+      border-radius: 10px;
+      padding: 11px 15px;
+      font-size: 12.5px;
+      color: #1a6b2f;
+      display: none;
+      gap: 9px;
+      align-items: flex-start;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    .parrainage-box.show { display: flex; }
+    .parrainage-box i { flex-shrink: 0; margin-top: 1px; color: #27ae60; }
+    .parrainage-box a { color: #1a6b2f; font-weight: 700; cursor: pointer; text-decoration: underline; }
+    input#code_parrainage[readonly] { background: #f0faf4; border-color: #a8ddb8; color: #1a6b2f; font-weight: 700; letter-spacing: .05em; }
+
     .btn-submit {
       width: 100%;
       padding: 14px;
@@ -730,6 +749,23 @@
           </div>
         </div>
 
+        <!-- ══ PARRAINAGE ══ -->
+        <div class="section-label"><i class="fas fa-gift"></i> {% trans "Parrainage" %}</div>
+        <div class="form-group">
+          <label for="code_parrainage">{% trans "Code de parrainage" %} <span style="font-weight:400;color:#aaa;font-size:11px">{% trans "(optionnel)" %}</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-user-friends ico"></i>
+            <input type="text" id="code_parrainage" placeholder="{% trans 'Ex : 7TMLZCWF' %}" maxlength="12" style="text-transform:uppercase">
+          </div>
+          <div class="parrainage-box" id="parrainageBox">
+            <i class="fas fa-gift"></i>
+            <div>
+              {% trans "Vous avez été invité·e par un ami ! Vous recevrez chacun un bonus de bienvenue à votre première commande." %}
+              <a onclick="clearParrainage()">{% trans "Ce n'est pas moi ?" %}</a>
+            </div>
+          </div>
+        </div>
+
         <button type="submit" class="btn-submit" id="submitBtn">
           <div class="spinner" id="spinner"></div>
           <i class="fas fa-user-plus" id="submitIcon"></i>
@@ -764,6 +800,24 @@
   }
 
   function switchRole(role) { applyRole(role); }
+
+  // Code de parrainage — pré-rempli et verrouillé si présent dans l'URL (?parrain=CODE)
+  (function initParrainage() {
+    const code = new URLSearchParams(window.location.search).get('parrain');
+    if (!code) return;
+    const input = document.getElementById('code_parrainage');
+    input.value = code.toUpperCase();
+    input.readOnly = true;
+    document.getElementById('parrainageBox').classList.add('show');
+  })();
+
+  function clearParrainage() {
+    const input = document.getElementById('code_parrainage');
+    input.value = '';
+    input.readOnly = false;
+    input.focus();
+    document.getElementById('parrainageBox').classList.remove('show');
+  }
 
   function togglePwd(id, btn) {
     const inp = document.getElementById(id);
@@ -801,6 +855,7 @@
       last_name:  g('last_name'),
       telephone:  g('telephone'),
       role:       currentRole,
+      code_parrainage: g('code_parrainage').toUpperCase(),
     };
 
     if (currentRole === 'acheteur') {

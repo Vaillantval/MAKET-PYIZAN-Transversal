@@ -63,6 +63,15 @@ def wallet_stats(request):
         nb_wallets=Count('id'),
         nb_actifs=Count('id', filter=Q(is_active=True)),
     )
+    # Net distribué = crédits (cashback/bonus) + reprises (négatives) déjà comptabilisées
+    fidelite = WalletTransaction.objects.aggregate(
+        cashback_net=Sum('montant', filter=Q(type__in=[
+            WalletTransaction.Type.CASHBACK, WalletTransaction.Type.REPRISE_CASHBACK,
+        ])),
+        parrainage_net=Sum('montant', filter=Q(type__in=[
+            WalletTransaction.Type.BONUS_PARRAINAGE, WalletTransaction.Type.REPRISE_BONUS_PARRAINAGE,
+        ])),
+    )
     return Response({'success': True, 'data': {
         'total_soldes': str(aggregats['total_soldes'] or 0),
         'nb_wallets':   aggregats['nb_wallets'],
@@ -76,6 +85,8 @@ def wallet_stats(request):
         ).aggregate(s=Sum('montant'))['s'] or 0),
         'bons_actifs': BonCadeau.objects.filter(
             statut=BonCadeau.Statut.ACTIF).count(),
+        'cashback_distribue_htg':   str(fidelite['cashback_net'] or 0),
+        'parrainage_distribue_htg': str(fidelite['parrainage_net'] or 0),
     }})
 
 

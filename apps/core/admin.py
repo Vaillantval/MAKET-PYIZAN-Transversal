@@ -67,6 +67,25 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('mode_maintenance', 'message_maintenance'),
             'classes': ('collapse',),
         }),
+        ('💰 Portefeuille (Wallet)', {
+            'fields': (
+                'wallet_enabled',
+                'taux_commission',
+                'numero_moncash_depot',
+                'numero_natcash_depot',
+                'cashback_enabled',
+                'taux_cashback',
+                'cashback_montant_max',
+                'parrainage_enabled',
+                'taux_bonus_parrainage',
+                'parrainage_bonus_montant_max',
+            ),
+            'description': 'Contrôle unique et global : active/désactive le portefeuille pour tous les acheteurs et producteurs à la fois.',
+        }),
+        ('📱 Application Android', {
+            'fields': ('android_apk',),
+            'classes': ('collapse',),
+        }),
     ]
 
     def has_add_permission(self, request):

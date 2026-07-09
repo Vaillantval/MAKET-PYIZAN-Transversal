@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -101,6 +103,17 @@ def _config_data(s, request=None):
         # Maintenance
         'mode_maintenance':    s.mode_maintenance,
         'message_maintenance': s.message_maintenance,
+        # Portefeuille (wallet)
+        'wallet_enabled':        s.wallet_enabled,
+        'taux_commission':       str(s.taux_commission),
+        'numero_moncash_depot':  s.numero_moncash_depot,
+        'numero_natcash_depot':  s.numero_natcash_depot,
+        'cashback_enabled':      s.cashback_enabled,
+        'taux_cashback':         str(s.taux_cashback),
+        'cashback_montant_max':  str(s.cashback_montant_max),
+        'parrainage_enabled':    s.parrainage_enabled,
+        'taux_bonus_parrainage': str(s.taux_bonus_parrainage),
+        'parrainage_bonus_montant_max': str(s.parrainage_bonus_montant_max),
     }
 
 
@@ -132,6 +145,27 @@ def site_config(request):
     if 'mode_maintenance' in request.data:
         val = request.data['mode_maintenance']
         s.mode_maintenance = val not in ('false', '0', False, 'False')
+
+    # Portefeuille (wallet) — booléens
+    for f in ('wallet_enabled', 'cashback_enabled', 'parrainage_enabled'):
+        if f in request.data:
+            setattr(s, f, request.data[f] not in ('false', '0', False, 'False', ''))
+    # Portefeuille (wallet) — taux et plafonds décimaux
+    decimal_fields = [
+        'taux_commission', 'taux_cashback', 'cashback_montant_max',
+        'taux_bonus_parrainage', 'parrainage_bonus_montant_max',
+    ]
+    for f in decimal_fields:
+        if f in request.data and request.data[f] not in (None, ''):
+            try:
+                setattr(s, f, Decimal(str(request.data[f])))
+            except (InvalidOperation, ValueError):
+                pass
+    # Portefeuille (wallet) — numéros de dépôt hors ligne
+    for f in ('numero_moncash_depot', 'numero_natcash_depot'):
+        if f in request.data:
+            setattr(s, f, request.data[f])
+
     for img_field in ('logo', 'favicon', 'login_image', 'register_image', 'a_propos_image'):
         if img_field in request.FILES:
             setattr(s, img_field, request.FILES[img_field])
