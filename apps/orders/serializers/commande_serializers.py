@@ -60,6 +60,12 @@ class PasserCommandeSerializer(serializers.Serializer):
                                default='',
                              )
 
+    # Paiement hybride : utiliser le solde du portefeuille, le reste part
+    # vers MonCash/NatCash (Plopplop)
+    utiliser_wallet        = serializers.BooleanField(
+                               required=False, default=False,
+                             )
+
     def validate(self, data):
         mode = data.get('mode_livraison')
         if mode == 'domicile':
@@ -69,4 +75,10 @@ class PasserCommandeSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     _("Une adresse de livraison est requise pour la livraison à domicile.")
                 )
+        # Le complément d'un paiement wallet doit être immédiat (Plopplop) :
+        # avec cash/virement la réserve serait libérée (24 h) avant l'encaissement.
+        if data.get('utiliser_wallet') and data.get('methode_paiement') not in ('moncash', 'natcash'):
+            raise serializers.ValidationError(
+                _("Le portefeuille est combinable uniquement avec MonCash ou NatCash.")
+            )
         return data

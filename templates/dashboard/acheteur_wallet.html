@@ -471,6 +471,9 @@
       _headers = { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') };
       loadWallet();
       loadTransactions();
+      // Arrivée depuis le bouton "Recharger" du header/topbar
+      if (window.location.hash === '#recharger') togglePanel('panel-recharge');
+      if (window.location.hash === '#code')      togglePanel('panel-code');
     }
   });
 

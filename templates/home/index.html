@@ -150,6 +150,13 @@
       gap: 12px;
     }
 
+    /* Mon portefeuille */
+    .nb-btn-wallet { display:flex; align-items:center; gap:8px; padding:8px 15px 8px 12px; border-radius:50px; font-size:13px; font-weight:700; background:rgba(232,216,0,.16); border:1.5px solid rgba(232,216,0,.5); color:#fff; cursor:pointer; text-decoration:none; font-family:'DM Sans',sans-serif; transition:all .2s; }
+    .nb-btn-wallet:hover { background:rgba(232,216,0,.28); transform:translateY(-1px); }
+    .nb-wallet-icon { width:22px; height:22px; border-radius:50%; background:var(--jaune,#e8d800); color:#1a1a1a; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+    .nb-wallet-text small { font-weight:600; opacity:.8; margin-left:2px; }
+    @media (max-width:760px) { .nb-btn-wallet .nb-wallet-text { display:none; } .nb-btn-wallet { padding:8px; } }
+
     .btn-nav {
       padding: 9px 20px;
       border-radius: 50px;
@@ -2070,6 +2077,12 @@
             </div>
           </div>
 
+          <!-- Mon portefeuille (acheteur/producteur connectés, wallet actif) -->
+          <a href="#" id="nb-wallet-link" class="nb-btn-wallet" style="display:none" title="{% trans 'Mon portefeuille' %}">
+            <span class="nb-wallet-icon"><i class="fas fa-wallet"></i></span>
+            <span class="nb-wallet-text"><span id="nb-wallet-solde">—</span><small>HTG</small></span>
+          </a>
+
           <!-- Connexion (guest) / Mon espace (connecté) — toujours visible -->
           <div id="nav-guest" style="display:flex;align-items:center">
             <a href="{% url 'home:login' %}" class="btn-nav btn-nav-primary">
@@ -2813,6 +2826,26 @@
     // Fermer avec Échap
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNavDrawer(); });
 
+    // Pastille "Mon portefeuille" — acheteur/producteur/collecteur, wallet actif uniquement
+    function _loadNavWallet(role) {
+      if (!['acheteur','producteur','collecteur'].includes(role)) return;
+      const token = localStorage.getItem('mp_access');
+      if (!token) return;
+      fetch('/api/wallet/', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.ok ? r.json() : null)
+        .then(json => {
+          const d = json && json.data;
+          if (!d || !d.is_active) return;
+          const link = document.getElementById('nb-wallet-link');
+          if (!link) return;
+          link.href = role === 'producteur' ? '/dashboard/producteur/wallet/' : '/dashboard/acheteur/wallet/';
+          document.getElementById('nb-wallet-solde').textContent =
+            Number(d.solde).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+          link.style.display = 'flex';
+        })
+        .catch(() => {});
+    }
+
     // ── Affichage selon l'état ────────────────────────────────
     (function initNavbar() {
       const raw = localStorage.getItem('mp_user');
@@ -2829,6 +2862,7 @@
       const navUser = document.getElementById('nav-user');
       navUser.style.display = 'flex';
       document.getElementById('nav-dashboard-link').href = getDashboardUrl(user);
+      _loadNavWallet(role);
 
       // ── Drawer : basculer guest → user
       document.getElementById('drawer-guest').style.display = 'none';

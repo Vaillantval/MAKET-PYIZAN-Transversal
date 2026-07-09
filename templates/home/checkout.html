@@ -141,6 +141,16 @@
     .voucher-feedback.v-ok    { color:var(--vert-vif); display:flex; align-items:center; gap:5px; }
     .voucher-feedback.v-error { color:#ef4444; display:flex; align-items:center; gap:5px; }
 
+    /* ── Portefeuille (dans recap card) ──────────────────────── */
+    .recap-wallet { padding:12px 20px; border-top:1px solid var(--gris-bord); background:#f7fdf9; }
+    .wallet-toggle { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+    .wallet-toggle input { width:16px; height:16px; accent-color:var(--vert-vif); cursor:pointer; flex-shrink:0; }
+    .wallet-toggle-txt { font-size:13px; color:#333; flex:1; }
+    .wallet-toggle-solde { font-size:13px; font-weight:700; color:var(--vert-fonce); white-space:nowrap; }
+    .recap-wallet.w-off { opacity:.55; }
+    .recap-wallet.w-off .wallet-toggle { cursor:not-allowed; }
+    .wallet-hint { margin-top:6px; font-size:11.5px; color:#92400e; display:flex; align-items:center; gap:5px; }
+
     /* ── Recap card (sticky) ─────────────────────────────────── */
     .recap-card { background:var(--blanc); border-radius:var(--radius); box-shadow:var(--shadow); position:sticky; top:84px; overflow:hidden; }
     .recap-head { padding:16px 20px; border-bottom:1px solid var(--gris-bord); display:flex; align-items:center; justify-content:space-between; }
@@ -559,6 +569,14 @@
                 <span>{% trans "Total" %}</span>
                 <span id="recap-total">—</span>
               </div>
+              <div class="recap-line" id="recap-wallet-line" style="display:none;color:var(--vert-vif)">
+                <span><i class="fas fa-wallet" style="font-size:11px"></i> {% trans "Portefeuille" %}</span>
+                <span id="recap-wallet-montant">—</span>
+              </div>
+              <div class="recap-total" id="recap-restant-line" style="display:none;border-top:1px dashed var(--gris-bord);padding-top:8px">
+                <span>{% trans "Reste à payer" %}</span>
+                <span id="recap-restant">—</span>
+              </div>
             </div>
 
             <!-- Voucher -->
@@ -572,10 +590,27 @@
               <div class="voucher-feedback" id="voucher-feedback"></div>
             </div>
 
+            <!-- Portefeuille (paiement hybride) -->
+            <div class="recap-wallet" id="wallet-box" style="display:none">
+              <div class="recap-voucher-label"><i class="fas fa-wallet"></i> {% trans "Mon portefeuille" %}</div>
+              <label class="wallet-toggle" id="wallet-toggle">
+                <input type="checkbox" id="wallet-check" onchange="toggleWallet(this.checked)">
+                <span class="wallet-toggle-txt">{% trans "Utiliser mon solde" %}</span>
+                <span class="wallet-toggle-solde" id="wallet-solde-txt">—</span>
+              </label>
+              <div class="wallet-hint" id="wallet-hint" style="display:none"></div>
+            </div>
+
             <!-- Couverture totale par voucher -->
             <div id="voucher-free-note" style="display:none;margin:0 20px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 14px;font-size:12px;color:#166534;align-items:center;gap:8px;">
               <i class="fas fa-gift" style="font-size:16px;color:#16a34a;flex-shrink:0"></i>
               <span>{% trans "Votre voucher couvre l'intégralité de cette commande. Aucun paiement requis." %}</span>
+            </div>
+
+            <!-- Couverture totale par le portefeuille -->
+            <div id="wallet-free-note" style="display:none;margin:0 20px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 14px;font-size:12px;color:#166534;align-items:center;gap:8px;">
+              <i class="fas fa-wallet" style="font-size:16px;color:#16a34a;flex-shrink:0"></i>
+              <span>{% trans "Votre solde couvre l'intégralité de cette commande. Aucun paiement supplémentaire requis." %}</span>
             </div>
 
             <div class="recap-footer">
@@ -639,6 +674,8 @@
   let selectedPM     = 'moncash';
   let appliedVoucher = null;   // { code, remise } | null
   let cartTotal      = 0;      // sous-total brut du panier (number)
+  let walletSolde    = 0;      // solde portefeuille disponible (number)
+  let useWallet      = false;  // paiement hybride wallet + MonCash/NatCash
 
   // ── URLs images statiques pour les boutons ────────────────────────────────
   const MC_IMG = "{% static 'img/moncash.png' %}";
@@ -693,10 +730,12 @@
     try {
       const access = localStorage.getItem('mp_access');
 
-      // Fetch cart + addresses en parallèle
-      const [cartRes, addrRes] = await Promise.all([
+      // Fetch cart + addresses + wallet en parallèle (wallet best-effort :
+      // désactivé ou en erreur → simplement pas d'option portefeuille)
+      const [cartRes, addrRes, walletRes] = await Promise.all([
         fetch('/api/orders/panier/', { headers: {'Authorization': 'Bearer ' + access} }),
         fetch('/api/auth/adresses/', { headers: {'Authorization': 'Bearer ' + access} }),
+        fetch('/api/wallet/', { headers: {'Authorization': 'Bearer ' + access} }).catch(() => null),
       ]);
 
       cartData = (await cartRes.json()).data || {};
@@ -708,6 +747,11 @@
 
       if (addrRes.ok) addresses = (await addrRes.json()).data || [];
 
+      if (walletRes && walletRes.ok) {
+        const w = (await walletRes.json()).data;
+        if (w && w.is_active) walletSolde = Number(w.solde) || 0;
+      }
+
     } catch {
       showToast('Erreur de chargement. Veuillez actualiser la page.', 'error');
       return;
@@ -716,8 +760,38 @@
     renderSummary(cartData);
     renderAddresses(addresses);
     initNavbar(user);
+    renderWalletBox();
 
     document.getElementById('checkout-content').style.display = 'block';
+    validateSubmit();
+  }
+
+  // ── Render: portefeuille ─────────────────────────────────────────────────
+  function renderWalletBox() {
+    const box = document.getElementById('wallet-box');
+    if (walletSolde <= 0) { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    document.getElementById('wallet-solde-txt').textContent = fmtPrice(walletSolde);
+    updateWalletBoxState();
+  }
+
+  // Le portefeuille n'est combinable qu'avec MonCash/NatCash
+  function updateWalletBoxState() {
+    const box = document.getElementById('wallet-box');
+    if (box.style.display === 'none') return;
+    const compatible = selectedPM === 'moncash' || selectedPM === 'natcash';
+    const checkbox = document.getElementById('wallet-check');
+    box.classList.toggle('w-off', !compatible);
+    checkbox.disabled = !compatible;
+    if (!compatible && useWallet) {
+      checkbox.checked = false;
+      toggleWallet(false);
+    }
+  }
+
+  function toggleWallet(checked) {
+    useWallet = checked;
+    updateRecapTotal();
     validateSubmit();
   }
 
@@ -787,7 +861,7 @@
     validateSubmit();
   }
 
-  // ── Voucher ───────────────────────────────────────────────────────────────
+  // ── Voucher / Portefeuille ───────────────────────────────────────────────
   function updateRecapTotal() {
     const remise  = appliedVoucher ? Number(appliedVoucher.remise) : 0;
     const total   = Math.max(0, cartTotal - remise);
@@ -802,21 +876,53 @@
       remiseLine.style.display = 'none';
     }
 
+    const walletUtilise = (useWallet && total > 0) ? Math.min(walletSolde, total) : 0;
+    const reste          = Math.max(0, total - walletUtilise);
+    const walletLine     = document.getElementById('recap-wallet-line');
+    const restantLine    = document.getElementById('recap-restant-line');
+    if (walletUtilise > 0) {
+      walletLine.style.display  = 'flex';
+      document.getElementById('recap-wallet-montant').textContent = '- ' + fmtPrice(walletUtilise);
+      restantLine.style.display = 'flex';
+      document.getElementById('recap-restant').textContent = fmtPrice(reste);
+    } else {
+      walletLine.style.display  = 'none';
+      restantLine.style.display = 'none';
+    }
+
+    const freeNote       = document.getElementById('voucher-free-note');
+    const walletFreeNote = document.getElementById('wallet-free-note');
+
     // Couverture totale par voucher
-    const freeNote = document.getElementById('voucher-free-note');
     if (total === 0 && appliedVoucher) {
       if (freeNote) freeNote.style.display = 'flex';
+      if (walletFreeNote) walletFreeNote.style.display = 'none';
       ['btn-submit','btn-submit-mobile'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmer ma commande';
       });
       const noteEl = document.querySelector('.security-note span');
       if (noteEl) noteEl.textContent = 'Votre commande est entièrement couverte par votre voucher. Aucun paiement requis.';
+    } else if (total > 0 && walletUtilise > 0 && reste === 0) {
+      // Couverture totale par le portefeuille
+      if (freeNote) freeNote.style.display = 'none';
+      if (walletFreeNote) walletFreeNote.style.display = 'flex';
+      ['btn-submit','btn-submit-mobile'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmer ma commande';
+      });
+      const noteEl = document.querySelector('.security-note span');
+      if (noteEl) noteEl.textContent = 'Votre solde couvre l\'intégralité de cette commande. Aucun paiement supplémentaire requis.';
     } else {
       if (freeNote) freeNote.style.display = 'none';
+      if (walletFreeNote) walletFreeNote.style.display = 'none';
       updateSubmitBtns(selectedPM);
       const noteEl = document.querySelector('.security-note span');
-      if (noteEl) noteEl.textContent = PM_SECURITY_NOTE[selectedPM] || PM_SECURITY_NOTE.cash;
+      if (noteEl) {
+        noteEl.textContent = walletUtilise > 0
+          ? `${fmtPrice(walletUtilise)} prélevés sur votre portefeuille — le reste (${fmtPrice(reste)}) sera réglé via ${selectedPM === 'natcash' ? 'NatCash' : 'MonCash'}.`
+          : (PM_SECURITY_NOTE[selectedPM] || PM_SECURITY_NOTE.cash);
+      }
     }
   }
 
@@ -997,6 +1103,8 @@
     if (noteEl) noteEl.textContent = PM_SECURITY_NOTE[method] || PM_SECURITY_NOTE.cash;
 
     updateSubmitBtns(method);
+    updateWalletBoxState();
+    updateRecapTotal();
     validateSubmit();
   }
 
@@ -1106,6 +1214,8 @@
         : { adresse_livraison_text, ville_livraison, departement_livraison }
       ),
       ...(appliedVoucher ? { code_voucher: appliedVoucher.code } : {}),
+      ...((useWallet && (selectedPM === 'moncash' || selectedPM === 'natcash'))
+        ? { utiliser_wallet: true } : {}),
     };
 
     try {
@@ -1117,8 +1227,8 @@
       const json = await r.json();
       if (r.ok) {
         const data = json.data;
-        // Voucher couvre l'intégralité — confirmation directe sans redirect paiement
-        if (data.voucher_couvre_tout) {
+        // Voucher ou portefeuille couvre l'intégralité — confirmation directe sans redirect paiement
+        if (data.voucher_couvre_tout || data.wallet_couvre_tout) {
           showConfirmation(data);
           return;
         }

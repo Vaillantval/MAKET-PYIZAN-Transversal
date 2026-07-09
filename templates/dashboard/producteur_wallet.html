@@ -307,6 +307,8 @@
       loadWallet();
       loadRetraits();
       loadTransactions();
+      // Arrivée depuis le bouton "Retirer" du header/topbar
+      if (window.location.hash === '#retrait') togglePanel('panel-retrait');
     }
   });
 

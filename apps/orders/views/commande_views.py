@@ -103,6 +103,15 @@ def commander(request):
     methode_paiement = data['methode_paiement']
     mode_livraison   = data['mode_livraison']
     notes            = data.get('notes', '')
+    utiliser_wallet  = data.get('utiliser_wallet', False)
+
+    if utiliser_wallet:
+        from apps.core.models import SiteSettings
+        if not SiteSettings.get_solo().wallet_enabled:
+            return Response(
+                {'success': False, 'error': _("Le portefeuille n'est pas disponible pour le moment.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     # ── Voucher ─────────────────────────────────────────────────────
     voucher_obj    = None
@@ -204,13 +213,48 @@ def commander(request):
 
                 commandes_creees.append(commande)
 
+            # ── Portefeuille : consommer le solde avant le complément Plopplop.
+            # Application séquentielle commande par commande : paiement intégral
+            # tant que le solde couvre le total, puis réserve partielle sur la
+            # suivante (montant_wallet_utilise) — le complément Plopplop ne
+            # portera que sur le reste. Solde épuisé → commandes suivantes
+            # entièrement sur Plopplop.
+            total_wallet_debite = Decimal('0')
+            if utiliser_wallet:
+                from apps.wallet.services import (
+                    SoldeInsuffisant, WalletError, WalletService,
+                )
+                wallet = WalletService.get_wallet(request.user)
+                for commande in commandes_creees:
+                    if commande.total <= 0:
+                        continue   # déjà couverte par le voucher
+                    wallet.refresh_from_db()
+                    if wallet.solde <= 0:
+                        break
+                    try:
+                        if wallet.solde >= commande.total:
+                            WalletService.payer_commande(request.user, commande)
+                            total_wallet_debite += commande.total
+                        else:
+                            WalletService.appliquer_paiement_partiel(request.user, commande)
+                            total_wallet_debite += commande.montant_wallet_utilise
+                    except SoldeInsuffisant:
+                        break   # débit concurrent — le reste part sur Plopplop
+                    except WalletError as e:
+                        # ex. portefeuille désactivé → 400, rollback complet
+                        raise ValueError(str(e))
+
             # Créer les enregistrements Paiement à l'intérieur de la transaction
             # pour que tout soit atomique (rollback si échec)
-            if type_paiement_django is not None:
+            commandes_a_encaisser = [
+                c for c in commandes_creees
+                if not c.est_payee and (c.total - (c.montant_wallet_utilise or 0)) > 0
+            ]
+            if type_paiement_django is not None and commandes_a_encaisser:
                 # Toutes les commandes d'un même panier partagent un batch_ref
                 # pour que plopplop_verify puisse toutes les confirmer en une passe
-                batch_ref = commandes_creees[0].numero_commande
-                for commande in commandes_creees:
+                batch_ref = commandes_a_encaisser[0].numero_commande
+                for commande in commandes_a_encaisser:
                     PaiementService.initier_paiement(
                         commande=commande,
                         type_paiement=type_paiement_django,
@@ -271,6 +315,11 @@ def commander(request):
             'code':   voucher_obj.code,
             'remise': str(remise_totale),
         }
+    if utiliser_wallet and total_wallet_debite > 0:
+        response_data['wallet'] = {
+            'montant_utilise': str(total_wallet_debite),
+            'couvre_tout':     not commandes_a_encaisser,
+        }
 
     # Voucher couvre l'intégralité — passer en PAYE directement, skip Plopplop
     voucher_couvre_tout = (
@@ -309,14 +358,26 @@ def commander(request):
             status=status.HTTP_201_CREATED,
         )
 
+    # Portefeuille couvre l'intégralité — commandes déjà payées, skip Plopplop
+    if utiliser_wallet and total_wallet_debite > 0 and not commandes_a_encaisser:
+        response_data['wallet_couvre_tout'] = True
+        return Response(
+            {'success': True, 'data': response_data},
+            status=status.HTTP_201_CREATED,
+        )
+
     # Pour MonCash / NatCash — initier le paiement via Plopplop (appel externe)
-    if type_paiement_django is not None and commandes_creees:
+    if type_paiement_django is not None and commandes_a_encaisser:
         # Un seul redirect Plopplop pour la totalité du panier (multi-producteur)
         # Le batch_ref est le numero de la première commande (identique aux notes Paiement)
         try:
             from apps.payments.services.plopplop_service import PlopplopService
-            batch_ref   = commandes_creees[0].numero_commande
-            total_batch = sum(c.total for c in commandes_creees)
+            batch_ref   = commandes_a_encaisser[0].numero_commande
+            # Net de la part déjà réservée sur le wallet (paiement hybride)
+            total_batch = sum(
+                c.total - (c.montant_wallet_utilise or 0)
+                for c in commandes_a_encaisser
+            )
             plopplop    = PlopplopService()
             result      = plopplop.initier_paiement(
                 commande_ref=batch_ref,

@@ -335,6 +335,50 @@
       background: var(--border); margin: 0 4px;
     }
 
+    /* ── Solde portefeuille (acheteur / producteur) ──────────────────────── */
+    .topbar-wallet {
+      display: none; /* activé par JS selon le rôle + disponibilité du wallet */
+      align-items: center; gap: 10px;
+      padding: 5px 6px 5px 6px;
+      border-radius: 30px;
+      background: linear-gradient(120deg, var(--green-light), transparent);
+      border: 1px solid rgba(39,174,96,.28);
+    }
+    .tw-main-link {
+      display: flex; align-items: center; gap: 9px;
+      padding: 3px 4px 3px 3px;
+      border-radius: 24px;
+      transition: background .18s;
+    }
+    .tw-main-link:hover { background: rgba(39,174,96,.1); }
+    .tw-icon {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--green-mid); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(39,174,96,.35);
+    }
+    .tw-info { line-height: 1.2; }
+    .tw-label {
+      font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--green-mid);
+    }
+    .tw-solde { font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; }
+    .tw-solde small { font-size: 10.5px; font-weight: 600; color: var(--text-muted); margin-left: 2px; }
+    .tw-action-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 15px;
+      background: var(--yellow);
+      color: var(--yellow-text);
+      border-radius: 22px;
+      font-size: 12.5px; font-weight: 700;
+      white-space: nowrap;
+      transition: all .18s;
+    }
+    .tw-action-btn:hover { background: var(--yellow-dark); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(232,216,0,.35); }
+    @media (max-width: 1050px) { .tw-info { display: none; } }
+    @media (max-width: 640px)  { .topbar-wallet { display: none !important; } }
+
     /* Site link */
     .topbar-site-btn {
       display: flex; align-items: center; gap: 6px;
@@ -556,6 +600,23 @@
 
     <div class="topbar-right">
 
+      <!-- Solde portefeuille (acheteur / producteur) -->
+      <div class="topbar-wallet" id="topbar-wallet">
+        <a href="#" id="tw-main-link" class="tw-main-link" title="{% trans 'Voir mon portefeuille' %}">
+          <div class="tw-icon"><i class="fas fa-wallet"></i></div>
+          <div class="tw-info">
+            <div class="tw-label">{% trans "Mon solde" %}</div>
+            <div class="tw-solde"><span id="tw-solde-value">—</span><small>HTG</small></div>
+          </div>
+        </a>
+        <a href="#" id="tw-action-btn" class="tw-action-btn">
+          <i class="fas fa-plus-circle" id="tw-action-icon"></i>
+          <span id="tw-action-label">{% trans "Recharger" %}</span>
+        </a>
+      </div>
+
+      <div class="topbar-divider" id="topbar-wallet-divider" style="display:none"></div>
+
       <!-- Notifications messages contact (superadmin) -->
       <button class="topbar-icon-btn" id="notif-btn" title="{% trans 'Messages de contact' %}" onclick="window.location='/dashboard/superadmin/config/#contact'" style="display:none">
         <i class="fas fa-envelope"></i>
@@ -702,6 +763,8 @@ function fillSidebarUser(user) {
   const tbName = document.getElementById('tb-name');
   if (tbName) tbName.textContent = user.first_name || name.split(' ')[0] || name;
 
+  initTopbarWallet(user);
+
   // Notification bell (superadmin seulement)
   if (user.is_superuser || user.role === 'superadmin') {
     const notifBtn = document.getElementById('notif-btn');
@@ -716,6 +779,38 @@ function fillSidebarUser(user) {
       if (dot && msgs.length > 0) dot.style.display = 'block';
     }).catch(() => {});
   }
+}
+
+// ── Solde portefeuille (topbar) ──────────────────────────────────────────
+function initTopbarWallet(user) {
+  const role = effectiveRole(user);
+  if (!['acheteur', 'producteur', 'collecteur'].includes(role)) return;
+
+  const widget = document.getElementById('topbar-wallet');
+  if (!widget) return;
+
+  const isProducteur = role === 'producteur';
+  const walletUrl = isProducteur ? '/dashboard/producteur/wallet/' : '/dashboard/acheteur/wallet/';
+
+  document.getElementById('tw-main-link').href = walletUrl;
+  const actionBtn = document.getElementById('tw-action-btn');
+  actionBtn.href = walletUrl + (isProducteur ? '#retrait' : '#recharger');
+  document.getElementById('tw-action-icon').className =
+    isProducteur ? 'fas fa-hand-holding-usd' : 'fas fa-plus-circle';
+  document.getElementById('tw-action-label').textContent =
+    isProducteur ? '{% trans "Retirer" %}' : '{% trans "Recharger" %}';
+
+  fetch('/api/wallet/', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('mp_access') } })
+    .then(r => r.ok ? r.json() : null)
+    .then(json => {
+      const d = json && json.data;
+      if (!d || !d.is_active) return;  // wallet désactivé ou indisponible → widget masqué
+      document.getElementById('tw-solde-value').textContent =
+        Number(d.solde).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      widget.style.display = 'flex';
+      document.getElementById('topbar-wallet-divider').style.display = 'block';
+    })
+    .catch(() => {});
 }
 
 // ── Auth check ────────────────────────────────────────────────────────────

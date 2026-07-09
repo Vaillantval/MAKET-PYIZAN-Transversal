@@ -45,7 +45,18 @@
       "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_phase7.py', encoding='utf-8'\\).read\\(\\)\\)\" 2>&1 | Select-Object -Last 6)",
       "PowerShell(Select-String *)",
       "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe \"C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\insert_sidebar_links.py\")",
-      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py check; .\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"from django.conf import settings; settings.ALLOWED_HOSTS.append\\('testserver'\\); from django.test import Client; c = Client\\(\\); [print\\(u, c.get\\(u\\).status_code\\) for u in ['/dashboard/acheteur/wallet/', '/dashboard/producteur/wallet/', '/dashboard/acheteur/', '/dashboard/producteur/']]\")"
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py check; .\\\\venv\\\\Scripts\\\\python.exe manage.py shell -c \"from django.conf import settings; settings.ALLOWED_HOSTS.append\\('testserver'\\); from django.test import Client; c = Client\\(\\); [print\\(u, c.get\\(u\\).status_code\\) for u in ['/dashboard/acheteur/wallet/', '/dashboard/producteur/wallet/', '/dashboard/acheteur/', '/dashboard/producteur/']]\")",
+      "PowerShell(Get-ChildItem apps\\\\wallet | Select-Object Name; \\(Get-Content apps\\\\wallet\\\\serializers.py | Select-String 'class '\\).Line)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py check 2>&1 | Select-Object -Last 30)",
+      "Read(//c/Users/Tech/AppData/Local/Temp/claude/C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal/191ed540-e5db-4d46-88c7-337fe80598d6/scratchpad/**)",
+      "Bash(sed -i 's/PanierItem\\\\.objects\\\\.create/LignePanier.objects.create/g' test_wallet_checkout_hybride.py)",
+      "Bash(curl -s http://127.0.0.1:8000/)",
+      "Bash(curl -s http://127.0.0.1:8000/dashboard/acheteur/)",
+      "Bash(curl -s http://127.0.0.1:8000/ -o /tmp/home.html)",
+      "Read(//tmp/**)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.development ./venv/Scripts/python.exe -c ' *)",
+      "Bash(curl -s http://127.0.0.1:8000/ -o /tmp/home2.html)",
+      "Bash(./venv/Scripts/python.exe -c ' *)"
     ]
   }
 }
