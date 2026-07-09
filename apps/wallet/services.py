@@ -485,13 +485,16 @@ class WalletService:
             return None
 
         wallet = cls.get_wallet(commande.acheteur.user)
-        return cls.crediter(
+        tx = cls.crediter(
             wallet,
             montant,
             type_tx=WalletTransaction.Type.CASHBACK,
             commande=commande,
             description=f"Cashback {taux}% — commande {commande.numero_commande}",
         )
+        from apps.wallet.tasks import task_notifier_cashback_credite
+        _planifier_apres_commit(task_notifier_cashback_credite, tx.pk)
+        return tx
 
     @classmethod
     def reprendre_cashback(cls, commande) -> WalletTransaction | None:
@@ -554,7 +557,7 @@ class WalletService:
         if montant <= 0:
             return
 
-        cls.crediter(
+        tx_parrain = cls.crediter(
             cls.get_wallet(parrain),
             montant,
             type_tx=WalletTransaction.Type.BONUS_PARRAINAGE,
@@ -562,7 +565,7 @@ class WalletService:
             description=f"Bonus parrainage {taux}% — filleul {filleul.username}",
             reference=reference,
         )
-        cls.crediter(
+        tx_filleul = cls.crediter(
             cls.get_wallet(filleul),
             montant,
             type_tx=WalletTransaction.Type.BONUS_PARRAINAGE,
@@ -570,6 +573,9 @@ class WalletService:
             description=f"Bonus de bienvenue {taux}% — parrainé par {parrain.username}",
             reference=reference,
         )
+        from apps.wallet.tasks import task_notifier_bonus_parrainage
+        _planifier_apres_commit(task_notifier_bonus_parrainage, tx_parrain.pk)
+        _planifier_apres_commit(task_notifier_bonus_parrainage, tx_filleul.pk)
 
     @classmethod
     def reprendre_bonus_parrainage(cls, commande) -> None:

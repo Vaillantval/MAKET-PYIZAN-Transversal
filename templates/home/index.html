@@ -2611,6 +2611,135 @@
   </section>
 
 
+  {% if site_settings.wallet_enabled %}
+  <!-- ══ PORTEFEUILLE ═════════════════════════════════════════ -->
+  <section class="wallet-promo">
+    <div class="container">
+      <div class="wp-inner">
+        <div class="wp-left">
+          <span class="wp-tag"><i class="fas fa-wallet"></i> {% trans "Nouveau" %}</span>
+          <h2 class="wp-title">
+            Le portefeuille<br><em>{% trans "Makèt Peyizan" %}</em>
+          </h2>
+          <p class="wp-desc">
+            Rechargez une fois, payez en un clic — et soyez récompensé
+            à chaque commande.
+          </p>
+          <a href="/inscription/" id="wp-cta" class="wp-btn">
+            <i class="fas fa-user-plus" id="wp-cta-icon"></i>
+            <span id="wp-cta-label">{% trans "Créer mon compte gratuit" %}</span>
+          </a>
+        </div>
+        <div class="wp-cards">
+          {% if site_settings.cashback_enabled and site_settings.taux_cashback > 0 %}
+          <div class="wp-card">
+            <div class="wp-card-icon"><i class="fas fa-percentage"></i></div>
+            <div class="wp-card-value">{{ site_settings.taux_cashback|floatformat:"-2" }}%</div>
+            <div class="wp-card-label">{% trans "de cashback sur chaque commande payée" %}</div>
+          </div>
+          {% endif %}
+          {% if site_settings.parrainage_enabled and site_settings.taux_bonus_parrainage > 0 %}
+          <div class="wp-card">
+            <div class="wp-card-icon"><i class="fas fa-user-friends"></i></div>
+            <div class="wp-card-value">{{ site_settings.taux_bonus_parrainage|floatformat:"-2" }}%</div>
+            <div class="wp-card-label">{% trans "de bonus pour vous ET votre filleul parrainé" %}</div>
+          </div>
+          {% endif %}
+          <div class="wp-card">
+            <div class="wp-card-icon"><i class="fas fa-bolt"></i></div>
+            <div class="wp-card-value">{% trans "1 clic" %}</div>
+            <div class="wp-card-label">{% trans "pour payer vos commandes, sans redirection" %}</div>
+          </div>
+          <div class="wp-card">
+            <div class="wp-card-icon"><i class="fas fa-gift"></i></div>
+            <div class="wp-card-value">{% trans "Bons" %}</div>
+            <div class="wp-card-label">{% trans "offrez un bon cadeau à vos proches" %}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    .wallet-promo {
+      background: linear-gradient(135deg, #0d3520 0%, #1a6b2f 55%, #1e8449 100%);
+      padding: 72px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .wallet-promo::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle at 85% 20%, rgba(232,216,0,.10) 0%, transparent 45%),
+                        radial-gradient(circle at 10% 90%, rgba(46,204,113,.14) 0%, transparent 40%);
+      pointer-events: none;
+    }
+    .wp-inner { display:grid; grid-template-columns: 1fr 1.15fr; gap:48px; align-items:center; position:relative; }
+    .wp-tag {
+      display:inline-flex; align-items:center; gap:7px;
+      background:rgba(232,216,0,.15); border:1px solid rgba(232,216,0,.4);
+      color:#e8d800; border-radius:50px; padding:6px 16px;
+      font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+      margin-bottom:18px;
+    }
+    .wp-title {
+      font-family:'Playfair Display',serif; font-size:38px; font-weight:900;
+      color:#fff; line-height:1.15; margin-bottom:16px;
+    }
+    .wp-title em { font-style:italic; color:#e8d800; }
+    .wp-desc { font-size:15px; color:rgba(255,255,255,.82); line-height:1.7; margin-bottom:26px; max-width:380px; }
+    .wp-btn {
+      display:inline-flex; align-items:center; gap:9px;
+      background:#e8d800; color:#1a1a1a; border-radius:50px;
+      padding:14px 28px; font-size:14px; font-weight:700; text-decoration:none;
+      transition:all .2s; box-shadow:0 6px 24px rgba(232,216,0,.3);
+    }
+    .wp-btn:hover { background:#fff; transform:translateY(-2px); box-shadow:0 10px 32px rgba(0,0,0,.25); }
+    .wp-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .wp-card {
+      background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14);
+      border-radius:16px; padding:22px 20px;
+      backdrop-filter:blur(4px);
+      transition:transform .2s, background .2s;
+    }
+    .wp-card:hover { transform:translateY(-3px); background:rgba(255,255,255,.11); }
+    .wp-card-icon {
+      width:40px; height:40px; border-radius:11px;
+      background:rgba(232,216,0,.16); border:1px solid rgba(232,216,0,.35);
+      color:#e8d800; display:flex; align-items:center; justify-content:center;
+      font-size:16px; margin-bottom:12px;
+    }
+    .wp-card-value { font-size:26px; font-weight:800; color:#fff; line-height:1.1; margin-bottom:5px; }
+    .wp-card-label { font-size:12.5px; color:rgba(255,255,255,.72); line-height:1.5; }
+    @media (max-width: 860px) {
+      .wp-inner { grid-template-columns:1fr; gap:32px; }
+      .wp-title { font-size:30px; }
+      .wallet-promo { padding:52px 0; }
+    }
+    @media (max-width: 480px) {
+      .wp-cards { grid-template-columns:1fr; }
+    }
+  </style>
+
+  <script>
+    // CTA contextualisé : visiteur → inscription, connecté → son portefeuille
+    (function () {
+      try {
+        const raw = localStorage.getItem('mp_user');
+        if (!raw) return;
+        const u = JSON.parse(raw);
+        const role = u.is_superuser ? 'superadmin' : (u.role || 'acheteur');
+        if (!['acheteur','producteur','collecteur'].includes(role)) return;
+        const cta = document.getElementById('wp-cta');
+        cta.href = role === 'producteur' ? '/dashboard/producteur/wallet/' : '/dashboard/acheteur/wallet/';
+        document.getElementById('wp-cta-icon').className = 'fas fa-wallet';
+        document.getElementById('wp-cta-label').textContent = 'Voir mon portefeuille';
+      } catch (_) {}
+    })();
+  </script>
+  {% endif %}
+
+
   <!-- ══ CTA ══════════════════════════════════════════════════ -->
   <section class="cta-banner">
     <div class="container">

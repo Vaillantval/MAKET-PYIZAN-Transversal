@@ -127,6 +127,104 @@ def email_vente_creditee(tx):
     )
 
 
+# ── Cashback et parrainage ──────────────────────────────────────
+
+def email_cashback_credite(tx):
+    """Acheteur : cashback fidélité crédité sur une commande payée."""
+    user = tx.wallet.user
+    if not user.email:
+        return False
+    return envoyer_email(
+        destinataire=user.email,
+        sujet="🎉 Vous avez gagné du cashback — Makèt Peyizan",
+        template="wallet_cashback_credite.html",
+        contexte={
+            "tx":       tx,
+            "commande": tx.commande,
+            "prenom":   user.first_name or user.username,
+            "site_url": settings.SITE_URL,
+        },
+    )
+
+
+def email_bonus_parrainage(tx, est_filleul):
+    """Parrain ou filleul : bonus de parrainage crédité (1ère commande du filleul)."""
+    user = tx.wallet.user
+    if not user.email:
+        return False
+    sujet = (
+        "🎁 Votre bonus de bienvenue est arrivé — Makèt Peyizan"
+        if est_filleul else
+        "🤝 Votre filleul a commandé — bonus crédité ! — Makèt Peyizan"
+    )
+    return envoyer_email(
+        destinataire=user.email,
+        sujet=sujet,
+        template="wallet_bonus_parrainage.html",
+        contexte={
+            "tx":          tx,
+            "est_filleul": est_filleul,
+            "prenom":      user.first_name or user.username,
+            "site_url":    settings.SITE_URL,
+        },
+    )
+
+
+# ── Emails lifecycle (Celery Beat) ──────────────────────────────
+
+def email_bon_expire_bientot(bon):
+    """Rappel : le bon cadeau expire dans ~30 jours (destinataire ou acheteur)."""
+    destinataire = bon.email_destinataire or (
+        bon.achete_par.email if bon.achete_par else None
+    )
+    if not destinataire:
+        return False
+    return envoyer_email(
+        destinataire=destinataire,
+        sujet="⏳ Votre bon cadeau expire bientôt — Makèt Peyizan",
+        template="wallet_bon_expire_bientot.html",
+        contexte={
+            "bon":      bon,
+            "site_url": settings.SITE_URL,
+        },
+    )
+
+
+def email_solde_dormant(wallet):
+    """Rappel mensuel : solde inutilisé depuis plus de 30 jours."""
+    user = wallet.user
+    if not user.email:
+        return False
+    return envoyer_email(
+        destinataire=user.email,
+        sujet="💰 Votre solde vous attend — Makèt Peyizan",
+        template="wallet_solde_dormant.html",
+        contexte={
+            "wallet":   wallet,
+            "prenom":   user.first_name or user.username,
+            "site_url": settings.SITE_URL,
+        },
+    )
+
+
+def email_relance_parrainage(user, taux_bonus):
+    """Relance : le code de parrainage n'a encore parrainé personne."""
+    if not user.email:
+        return False
+    return envoyer_email(
+        destinataire=user.email,
+        sujet="🤝 Votre code de parrainage n'attend que vous — Makèt Peyizan",
+        template="wallet_relance_parrainage.html",
+        contexte={
+            "code":       user.code_parrainage,
+            "taux_bonus": taux_bonus,
+            "lien":       f"{settings.SITE_URL}/inscription/?parrain={user.code_parrainage}",
+            "prenom":     user.first_name or user.username,
+            "site_url":   settings.SITE_URL,
+        },
+    )
+
+
 # ── Bons cadeaux ────────────────────────────────────────────────
 
 def email_bon_cadeau(bon):

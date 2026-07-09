@@ -1,0 +1,43 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Bonus de parrainage — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }} 🤝{% endblocktrans %}</p>
+
+{% if est_filleul %}
+<p class="message">
+  {% trans "Bienvenue dans la communauté Makèt Peyizan ! Votre bonus de bienvenue vient d'être crédité sur votre portefeuille — merci de nous avoir rejoints avec un code de parrainage." %}
+</p>
+{% else %}
+<p class="message">
+  {% trans "Bonne nouvelle : votre filleul vient de passer sa première commande sur Makèt Peyizan. Votre bonus de parrainage a été crédité sur votre portefeuille !" %}
+</p>
+{% endif %}
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Bonus crédité" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:16px;">+{{ tx.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Nouveau solde" %}</span>
+    <span class="card-value">{{ tx.solde_apres|floatformat:2 }} HTG</span>
+  </div>
+</div>
+
+{% if est_filleul %}
+<p class="message">
+  {% trans "Vous aussi, vous avez un code de parrainage ! Partagez-le avec vos proches depuis votre portefeuille : vous recevrez chacun un bonus à leur première commande." %}
+</p>
+{% else %}
+<p class="message">
+  {% trans "Continuez à partager votre code de parrainage : chaque nouveau filleul qui commande vous rapporte un bonus." %}
+</p>
+{% endif %}
+
+<div style="text-align:center">
+  <a href="{{ site_url }}/dashboard/acheteur/wallet/" class="btn">{% trans "💰 Voir mon portefeuille" %}</a>
+</div>
+
+{% endblock %}

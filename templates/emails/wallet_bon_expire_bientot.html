@@ -1,0 +1,35 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Votre bon cadeau expire bientôt — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% trans "Bonjour 👋" %}</p>
+
+<p class="message">
+  {% trans "Petit rappel : vous avez un bon cadeau Makèt Peyizan qui expire dans un mois. Ne laissez pas cette valeur se perdre !" %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Code du bon" %}</span>
+    <span class="card-value" style="font-family:monospace;letter-spacing:2px;font-size:16px">{{ bon.code }}</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Valeur" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:16px">{{ bon.montant|floatformat:2 }} HTG</span>
+  </div>
+  <div class="card-row">
+    <span class="card-label">{% trans "Expire le" %}</span>
+    <span class="card-value" style="color:#e67e22">{{ bon.date_expiration|date:"d F Y" }}</span>
+  </div>
+</div>
+
+<p class="message">
+  {% trans "Pour l'utiliser : connectez-vous, ouvrez votre portefeuille et encaissez ce code — le montant sera immédiatement crédité sur votre solde." %}
+</p>
+
+<div style="text-align:center">
+  <a href="{{ site_url }}/dashboard/acheteur/wallet/#code" class="btn">{% trans "🎁 Encaisser mon bon" %}</a>
+</div>
+
+{% endblock %}

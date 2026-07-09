@@ -1,0 +1,37 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Cashback crédité — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }} 🎉{% endblocktrans %}</p>
+
+<p class="message">
+  {% trans "Merci pour votre commande ! Votre cashback fidélité vient d'être crédité sur votre portefeuille Makèt Peyizan." %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Cashback gagné" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:16px;">+{{ tx.montant|floatformat:2 }} HTG</span>
+  </div>
+  {% if commande %}
+  <div class="card-row">
+    <span class="card-label">{% trans "Commande" %}</span>
+    <span class="card-value">{{ commande.numero_commande }}</span>
+  </div>
+  {% endif %}
+  <div class="card-row">
+    <span class="card-label">{% trans "Nouveau solde" %}</span>
+    <span class="card-value">{{ tx.solde_apres|floatformat:2 }} HTG</span>
+  </div>
+</div>
+
+<p class="message">
+  {% trans "Ce solde est utilisable dès maintenant pour payer vos prochaines commandes — directement au moment du paiement." %}
+</p>
+
+<div style="text-align:center">
+  <a href="{{ site_url }}/dashboard/acheteur/wallet/" class="btn">{% trans "💰 Voir mon portefeuille" %}</a>
+</div>
+
+{% endblock %}

@@ -160,6 +160,65 @@ def task_notifier_vente_creditee(self, transaction_id):
         _retry(self, exc)
 
 
+# ── Cashback et parrainage ────────────────────────────────────────────────────
+
+@shared_task(bind=True, max_retries=3, name='wallet.cashback_credite')
+def task_notifier_cashback_credite(self, transaction_id):
+    """Email + push acheteur : cashback fidélité crédité."""
+    try:
+        from apps.wallet.emails import email_cashback_credite
+        from apps.wallet.models import WalletTransaction
+        tx = WalletTransaction.objects.select_related(
+            'wallet__user', 'commande',
+        ).get(pk=transaction_id)
+        email_cashback_credite(tx)
+        numero = tx.commande.numero_commande if tx.commande else ''
+        _push_wallet(
+            tx.wallet.user,
+            "Cashback gagné 🎉",
+            f"+{tx.montant} HTG de cashback crédités sur votre portefeuille "
+            f"pour la commande {numero}.",
+            {"transaction_id": str(tx.pk)},
+        )
+    except Exception as exc:
+        logger.exception("task_notifier_cashback_credite(%s) échec", transaction_id)
+        _retry(self, exc)
+
+
+@shared_task(bind=True, max_retries=3, name='wallet.bonus_parrainage')
+def task_notifier_bonus_parrainage(self, transaction_id):
+    """Email + push : bonus de parrainage crédité (parrain OU filleul)."""
+    try:
+        from apps.wallet.emails import email_bonus_parrainage
+        from apps.wallet.models import WalletTransaction
+        tx = WalletTransaction.objects.select_related(
+            'wallet__user', 'commande__acheteur__user',
+        ).get(pk=transaction_id)
+        # Le filleul est l'acheteur de la commande déclencheuse ; l'autre
+        # bénéficiaire de la même référence est le parrain.
+        est_filleul = (
+            tx.commande is not None
+            and tx.commande.acheteur.user_id == tx.wallet.user_id
+        )
+        email_bonus_parrainage(tx, est_filleul)
+        if est_filleul:
+            titre = "Bonus de bienvenue 🎁"
+            corps = (
+                f"+{tx.montant} HTG crédités sur votre portefeuille — "
+                "merci d'avoir rejoint Makèt Peyizan avec un code de parrainage !"
+            )
+        else:
+            titre = "Votre filleul a commandé 🤝"
+            corps = (
+                f"+{tx.montant} HTG de bonus parrainage crédités sur votre "
+                "portefeuille. Continuez à partager votre code !"
+            )
+        _push_wallet(tx.wallet.user, titre, corps, {"transaction_id": str(tx.pk)})
+    except Exception as exc:
+        logger.exception("task_notifier_bonus_parrainage(%s) échec", transaction_id)
+        _retry(self, exc)
+
+
 # ── Réserves de paiement partiel ──────────────────────────────────────────────
 
 @shared_task(name='wallet.liberer_reserves_expirees')
@@ -241,3 +300,115 @@ def task_expirer_bons_cadeaux():
     if expires:
         logger.info("%s bon(s) cadeau(x) expiré(s).", expires)
     return expires
+
+
+# ── Emails lifecycle (Celery Beat) ────────────────────────────────────────────
+
+@shared_task(name='wallet.rappeler_bons_expirant')
+def task_rappeler_bons_expirant():
+    """
+    Rappelle par email les bons cadeaux actifs qui expirent dans ~30 jours.
+    Fenêtre de 24 h (J+29 → J+30) : la tâche quotidienne n'attrape chaque
+    bon qu'une seule fois, sans champ de dédoublonnage supplémentaire.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.wallet.emails import email_bon_expire_bientot
+    from apps.wallet.models import BonCadeau
+
+    debut = timezone.now() + timedelta(days=29)
+    fin   = timezone.now() + timedelta(days=30)
+    bons = BonCadeau.objects.filter(
+        statut=BonCadeau.Statut.ACTIF,
+        date_expiration__gte=debut,
+        date_expiration__lt=fin,
+    ).select_related('achete_par')
+
+    envoyes = 0
+    for bon in bons:
+        try:
+            if email_bon_expire_bientot(bon):
+                envoyes += 1
+        except Exception as e:
+            logger.error("Rappel bon #%s non envoyé : %s", bon.pk, e)
+
+    if envoyes:
+        logger.info("%s rappel(s) de bon expirant envoyé(s).", envoyes)
+    return envoyes
+
+
+@shared_task(name='wallet.rappeler_soldes_dormants')
+def task_rappeler_soldes_dormants():
+    """
+    Email mensuel aux portefeuilles avec solde > 0 sans aucune transaction
+    depuis 30 jours : « vous avez X HTG qui vous attendent ».
+    """
+    from datetime import timedelta
+
+    from django.db.models import Max
+    from django.utils import timezone
+
+    from apps.core.models import SiteSettings
+    from apps.wallet.emails import email_solde_dormant
+    from apps.wallet.models import Wallet
+
+    if not SiteSettings.get_solo().wallet_enabled:
+        return 0
+
+    limite = timezone.now() - timedelta(days=30)
+    wallets = Wallet.objects.filter(
+        is_active=True, solde__gt=0,
+    ).annotate(
+        derniere_tx=Max('transactions__created_at'),
+    ).filter(derniere_tx__lt=limite).select_related('user')
+
+    envoyes = 0
+    for wallet in wallets:
+        try:
+            if email_solde_dormant(wallet):
+                envoyes += 1
+        except Exception as e:
+            logger.error("Rappel solde dormant wallet #%s non envoyé : %s", wallet.pk, e)
+
+    if envoyes:
+        logger.info("%s rappel(s) de solde dormant envoyé(s).", envoyes)
+    return envoyes
+
+
+@shared_task(name='wallet.relancer_parrainage')
+def task_relancer_parrainage():
+    """
+    Email mensuel aux utilisateurs dont le code de parrainage n'a encore
+    parrainé personne : rappel du code + lien de partage.
+    """
+    from django.contrib.auth import get_user_model
+    from django.db.models import Count
+
+    from apps.core.models import SiteSettings
+    from apps.wallet.emails import email_relance_parrainage
+
+    reglages = SiteSettings.get_solo()
+    if not (reglages.wallet_enabled and reglages.parrainage_enabled):
+        return 0
+
+    User = get_user_model()
+    users = User.objects.filter(
+        is_active=True,
+        code_parrainage__isnull=False,
+    ).exclude(email='').annotate(
+        nb_filleuls=Count('filleuls'),
+    ).filter(nb_filleuls=0)
+
+    envoyes = 0
+    for user in users:
+        try:
+            if email_relance_parrainage(user, reglages.taux_bonus_parrainage):
+                envoyes += 1
+        except Exception as e:
+            logger.error("Relance parrainage user #%s non envoyée : %s", user.pk, e)
+
+    if envoyes:
+        logger.info("%s relance(s) parrainage envoyée(s).", envoyes)
+    return envoyes

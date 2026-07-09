@@ -45,6 +45,33 @@
 - `wallet.liberer_reserves_expirees` (toutes les heures) : re-crédite les
   réserves de paiement partiel des commandes impayées depuis plus de 24 h.
 - `wallet.expirer_bons_cadeaux` (03h00) : expire les bons actifs échus (validité 12 mois).
+- `wallet.rappeler_bons_expirant` (09h00) : email de rappel pour les bons
+  actifs expirant dans 30 jours (fenêtre de 24 h — un seul rappel par bon).
+- `wallet.rappeler_soldes_dormants` (le 1er du mois, 10h00) : email aux
+  wallets avec solde > 0 sans transaction depuis 30 jours.
+- `wallet.relancer_parrainage` (le 15 du mois, 10h00) : email aux
+  utilisateurs dont le code de parrainage n'a encore parrainé personne.
+
+## Notifications automatiques (email Resend + push FCM)
+
+Recharges (validée/rejetée), retraits (payé/rejeté + alerte admin), vente
+créditée producteur, bon cadeau envoyé — et côté fidélité :
+
+- **Cashback crédité** (`wallet.cashback_credite`) : email + push acheteur
+  à chaque crédit, également mentionné dans l'email « paiement confirmé ».
+- **Bonus parrainage** (`wallet.bonus_parrainage`) : email + push distincts
+  pour le parrain (« votre filleul a commandé ») et le filleul (« bonus de
+  bienvenue »).
+
+## Marketing
+
+- **Accueil** : section « Le portefeuille Makèt Peyizan » (cartes cashback /
+  parrainage / paiement 1 clic / bons) — affichée si `wallet_enabled`, taux
+  dynamiques depuis SiteSettings, CTA inscription (ou portefeuille si connecté).
+- **Checkout** : encart « Vous gagnerez ≈ X HTG de cashback » calculé en
+  direct (masqué si le wallet finance la commande — pas de cashback dans ce cas).
+- **Inscription** : champ code de parrainage (pré-rempli via `?parrain=CODE`) ;
+  la page wallet propose « Copier le lien » et le partage natif mobile.
 
 ---
 

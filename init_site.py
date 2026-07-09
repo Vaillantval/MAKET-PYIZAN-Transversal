@@ -93,6 +93,51 @@ def register_wallet_periodic_tasks():
     print(f'[init_site] Tâche "wallet.liberer_reserves_expirees" '
           f'{"créée" if created else "déjà planifiée"}.')
 
+    # Tous les jours à 09h00 : rappeler les bons cadeaux expirant dans 30 jours
+    matin, _ = CrontabSchedule.objects.get_or_create(
+        minute='0', hour='9', day_of_week='*', day_of_month='*', month_of_year='*',
+        timezone='America/Port-au-Prince',
+    )
+    _, created = PeriodicTask.objects.get_or_create(
+        name='Wallet — rappeler les bons cadeaux expirant (J-30)',
+        defaults={
+            'task': 'wallet.rappeler_bons_expirant',
+            'crontab': matin,
+        },
+    )
+    print(f'[init_site] Tâche "wallet.rappeler_bons_expirant" '
+          f'{"créée" if created else "déjà planifiée"}.')
+
+    # Le 1er du mois à 10h00 : rappeler les soldes dormants (30 j sans activité)
+    mensuel_1, _ = CrontabSchedule.objects.get_or_create(
+        minute='0', hour='10', day_of_week='*', day_of_month='1', month_of_year='*',
+        timezone='America/Port-au-Prince',
+    )
+    _, created = PeriodicTask.objects.get_or_create(
+        name='Wallet — rappeler les soldes dormants',
+        defaults={
+            'task': 'wallet.rappeler_soldes_dormants',
+            'crontab': mensuel_1,
+        },
+    )
+    print(f'[init_site] Tâche "wallet.rappeler_soldes_dormants" '
+          f'{"créée" if created else "déjà planifiée"}.')
+
+    # Le 15 du mois à 10h00 : relancer les codes de parrainage jamais utilisés
+    mensuel_15, _ = CrontabSchedule.objects.get_or_create(
+        minute='0', hour='10', day_of_week='*', day_of_month='15', month_of_year='*',
+        timezone='America/Port-au-Prince',
+    )
+    _, created = PeriodicTask.objects.get_or_create(
+        name='Wallet — relancer les parrainages inactifs',
+        defaults={
+            'task': 'wallet.relancer_parrainage',
+            'crontab': mensuel_15,
+        },
+    )
+    print(f'[init_site] Tâche "wallet.relancer_parrainage" '
+          f'{"créée" if created else "déjà planifiée"}.')
+
 
 if __name__ == '__main__':
     create_superadmin()

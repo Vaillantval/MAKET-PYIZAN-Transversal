@@ -100,8 +100,9 @@ def wallet_detail(request):
             'devise':     'HTG',
             'is_active':  wallet.is_active,
             'cashback': {
-                'actif': reglages.cashback_enabled,
-                'taux':  str(reglages.taux_cashback or 0),
+                'actif':   reglages.cashback_enabled,
+                'taux':    str(reglages.taux_cashback or 0),
+                'plafond': str(reglages.cashback_montant_max or 0),
             },
             'parrainage': parrainage,
             'depot_hors_ligne': {

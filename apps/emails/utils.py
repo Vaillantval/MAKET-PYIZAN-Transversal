@@ -161,6 +161,16 @@ def email_statut_commande_change(commande, statut_avant):
 # ── Emails Paiements ────────────────────────────────────────────
 
 def email_paiement_confirme(paiement):
+    # Cashback éventuellement crédité sur cette commande (signal wallet,
+    # déclenché avant l'envoi de cet email) — affiché dans le récapitulatif.
+    cashback_tx = None
+    try:
+        from apps.wallet.models import WalletTransaction
+        cashback_tx = WalletTransaction.objects.filter(
+            commande=paiement.commande, type=WalletTransaction.Type.CASHBACK,
+        ).first()
+    except Exception:
+        pass
     return envoyer_email(
         destinataire=paiement.commande.acheteur.user.email,
         sujet=f"✅ Paiement confirmé — {paiement.reference}",
@@ -168,6 +178,7 @@ def email_paiement_confirme(paiement):
         contexte={
             "paiement": paiement,
             "commande": paiement.commande,
+            "cashback": cashback_tx,
             "prenom":   paiement.commande.acheteur.user.first_name,
             "site_url": settings.SITE_URL,
         }

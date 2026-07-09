@@ -1,0 +1,28 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Partagez votre code de parrainage — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }} 🤝{% endblocktrans %}</p>
+
+<p class="message">
+  {% blocktrans with taux=taux_bonus|floatformat:"-2" %}Saviez-vous que vous pouvez gagner de l'argent en faisant découvrir Makèt Peyizan ? Pour chaque proche qui s'inscrit avec votre code et passe sa première commande, vous recevez chacun {{ taux }}% du montant en bonus sur votre portefeuille.{% endblocktrans %}
+</p>
+
+<div style="text-align:center;margin:20px 0">
+  <div style="display:inline-block;background:#f0faf4;border:2px dashed #27ae60;border-radius:12px;padding:14px 30px">
+    <div style="font-size:11px;font-weight:700;color:#1a6b2f;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">{% trans "Votre code" %}</div>
+    <div style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:4px;color:#1a6b2f">{{ code }}</div>
+  </div>
+</div>
+
+<p class="message" style="text-align:center">
+  {% trans "Encore plus simple : partagez directement ce lien, le code sera pré-rempli à l'inscription." %}<br>
+  <a href="{{ lien }}" style="color:#27ae60;font-weight:700;word-break:break-all">{{ lien }}</a>
+</p>
+
+<div style="text-align:center">
+  <a href="{{ site_url }}/dashboard/acheteur/wallet/" class="btn">{% trans "💰 Voir mon portefeuille" %}</a>
+</div>
+
+{% endblock %}

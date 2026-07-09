@@ -577,6 +577,10 @@
                 <span>{% trans "Reste à payer" %}</span>
                 <span id="recap-restant">—</span>
               </div>
+              <div id="recap-cashback-note" style="display:none;margin-top:10px;background:linear-gradient(120deg,#f0fdf4,#fdfbe8);border:1px solid #bbf7d0;border-radius:10px;padding:9px 12px;font-size:12px;color:#166534;align-items:center;gap:7px">
+                <i class="fas fa-gift" style="color:#16a34a;flex-shrink:0"></i>
+                <span>{% trans "Vous gagnerez" %} <strong id="recap-cashback-montant">—</strong> {% trans "de cashback sur votre portefeuille avec cette commande." %}</span>
+              </div>
             </div>
 
             <!-- Voucher -->
@@ -676,6 +680,7 @@
   let cartTotal      = 0;      // sous-total brut du panier (number)
   let walletSolde    = 0;      // solde portefeuille disponible (number)
   let useWallet      = false;  // paiement hybride wallet + MonCash/NatCash
+  let cashbackInfo   = null;   // { taux, plafond } si le cashback est actif
 
   // ── URLs images statiques pour les boutons ────────────────────────────────
   const MC_IMG = "{% static 'img/moncash.png' %}";
@@ -749,7 +754,12 @@
 
       if (walletRes && walletRes.ok) {
         const w = (await walletRes.json()).data;
-        if (w && w.is_active) walletSolde = Number(w.solde) || 0;
+        if (w && w.is_active) {
+          walletSolde = Number(w.solde) || 0;
+          if (w.cashback && w.cashback.actif && Number(w.cashback.taux) > 0) {
+            cashbackInfo = { taux: Number(w.cashback.taux), plafond: Number(w.cashback.plafond) || 0 };
+          }
+        }
       }
 
     } catch {
@@ -888,6 +898,22 @@
     } else {
       walletLine.style.display  = 'none';
       restantLine.style.display = 'none';
+    }
+
+    // Estimation cashback — pas de cashback si le wallet finance tout ou partie
+    const cbNote = document.getElementById('recap-cashback-note');
+    if (cbNote) {
+      let cb = 0;
+      if (cashbackInfo && total > 0 && walletUtilise === 0) {
+        cb = total * cashbackInfo.taux / 100;
+        if (cashbackInfo.plafond > 0) cb = Math.min(cb, cashbackInfo.plafond);
+      }
+      if (cb > 0) {
+        document.getElementById('recap-cashback-montant').textContent = '≈ ' + fmtPrice(cb);
+        cbNote.style.display = 'flex';
+      } else {
+        cbNote.style.display = 'none';
+      }
     }
 
     const freeNote       = document.getElementById('voucher-free-note');

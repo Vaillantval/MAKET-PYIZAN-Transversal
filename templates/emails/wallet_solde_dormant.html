@@ -1,0 +1,27 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+{% block titre %}Votre solde vous attend — Makèt Peyizan{% endblock %}
+{% block content %}
+
+<p class="greeting">{% blocktrans with prenom=prenom %}Bonjour {{ prenom }} 👋{% endblocktrans %}</p>
+
+<p class="message">
+  {% trans "Cela fait un moment que nous ne vous avons pas vu ! Vous avez un solde disponible sur votre portefeuille Makèt Peyizan, prêt à être utilisé." %}
+</p>
+
+<div class="card">
+  <div class="card-row">
+    <span class="card-label">{% trans "Solde disponible" %}</span>
+    <span class="card-value" style="color:#27ae60;font-size:20px;font-weight:800">{{ wallet.solde|floatformat:2 }} HTG</span>
+  </div>
+</div>
+
+<p class="message">
+  {% trans "Payez vos commandes en un clic avec ce solde — produits frais, directement des producteurs haïtiens, livrés chez vous." %}
+</p>
+
+<div style="text-align:center">
+  <a href="{{ site_url }}" class="btn">{% trans "🛒 Découvrir les produits du moment" %}</a>
+</div>
+
+{% endblock %}

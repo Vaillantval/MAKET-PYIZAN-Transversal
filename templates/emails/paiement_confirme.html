@@ -40,6 +40,15 @@
   </div>
 </div>
 
+{% if cashback %}
+<div style="background:linear-gradient(120deg,#f0fdf4,#fdfbe8); border:1px solid #bbf7d0; border-radius:10px; padding:14px 18px; margin-top:16px; text-align:center">
+  <span style="font-size:14px; color:#166534">
+    🎉 {% trans "Bonus fidélité :" %} <strong>+{{ cashback.montant|floatformat:2 }} HTG</strong>
+    {% trans "de cashback crédités sur votre portefeuille !" %}
+  </span>
+</div>
+{% endif %}
+
 <p style="font-size:13px; color:#aaa; text-align:center; margin-top:16px">
   Conservez cet email comme reçu de paiement.
 </p>
