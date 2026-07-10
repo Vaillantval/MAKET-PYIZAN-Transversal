@@ -5,10 +5,11 @@ from django.utils.translation import gettext_lazy as _
 
 class CustomUser(AbstractUser):
     class Role(models.TextChoices):
-        SUPERADMIN = 'superadmin', _('Super Administrateur')
-        PRODUCTEUR = 'producteur', _('Producteur')
-        ACHETEUR   = 'acheteur',   _('Acheteur')
-        COLLECTEUR = 'collecteur', _('Agent de Collecte')
+        SUPERADMIN   = 'superadmin',   _('Super Administrateur')
+        PRODUCTEUR   = 'producteur',   _('Producteur')
+        ACHETEUR     = 'acheteur',     _('Acheteur')
+        COLLECTEUR   = 'collecteur',   _('Agent de Collecte')
+        POS_OPERATOR = 'pos_operator', _('Opérateur de caisse')
 
     role        = models.CharField(max_length=20, choices=Role.choices, default=Role.ACHETEUR)
     telephone   = models.CharField(max_length=20, blank=True)
@@ -59,3 +60,7 @@ class CustomUser(AbstractUser):
     @property
     def is_acheteur(self):
         return self.role == self.Role.ACHETEUR
+
+    @property
+    def is_pos_operator(self):
+        return self.role == self.Role.POS_OPERATOR

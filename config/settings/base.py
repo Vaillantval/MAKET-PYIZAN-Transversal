@@ -42,6 +42,7 @@ LOCAL_APPS = [
     'apps.geo',
     'apps.api_admin',
     'apps.wallet',
+    'apps.pos',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -185,6 +186,9 @@ JAZZMIN_SETTINGS = {
         "payments.Paiement":        "fas fa-credit-card",
         "payments.Voucher":         "fas fa-ticket-alt",
         "collectes.Collecte":       "fas fa-truck",
+        "pos.POSDevice":            "fas fa-cash-register",
+        "pos.POSSession":           "fas fa-clock",
+        "pos.POSSale":              "fas fa-receipt",
     },
     "topmenu_links": [
         {

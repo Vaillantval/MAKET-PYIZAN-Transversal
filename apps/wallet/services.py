@@ -61,8 +61,9 @@ class WalletService:
     # ── Mouvement bas niveau ─────────────────────────────────────────────────
 
     @staticmethod
-    def _appliquer(wallet, montant, type_tx, commande=None, description='',
-                   reference='', autoriser_negatif=False) -> WalletTransaction:
+    def _appliquer(wallet, montant, type_tx, commande=None, pos_sale=None,
+                   description='', reference='',
+                   autoriser_negatif=False) -> WalletTransaction:
         """
         Applique un mouvement signé sur le wallet et écrit la ligne de ledger.
         `autoriser_negatif` n'est utilisé que pour les reprises (cashback,
@@ -93,6 +94,7 @@ class WalletService:
                 montant=montant,
                 solde_apres=nouveau_solde,
                 commande=commande,
+                pos_sale=pos_sale,
                 description=description,
                 reference=reference,
             )
@@ -334,6 +336,29 @@ class WalletService:
                 commande.numero_commande, e,
             )
         return tx
+
+    # ── Paiement d'une vente POS (comptoir) ──────────────────────────────────
+
+    @classmethod
+    def payer_vente_pos(cls, user, pos_sale, montant) -> WalletTransaction:
+        """
+        Débite le wallet du client pour une vente au comptoir (totale ou part
+        wallet d'un paiement hybride). SYNCHRONE et ONLINE uniquement — la
+        synchronisation batch offline rejette toute vente wallet pour empêcher
+        le double-spending. Lève SoldeInsuffisant si le solde ne couvre pas.
+        """
+        montant = _en_montant(montant)
+        if montant <= 0:
+            raise WalletError("Le montant du paiement POS doit être strictement positif.")
+        wallet = cls.get_wallet(user)
+        return cls._appliquer(
+            wallet,
+            -montant,
+            WalletTransaction.Type.PAIEMENT_POS,
+            pos_sale=pos_sale,
+            description=f"Paiement POS — vente {pos_sale.numero_vente}",
+            reference=f"pos-{pos_sale.pk}",
+        )
 
     # ── Paiement partiel (wallet + complément MonCash/NatCash) ──────────────
 

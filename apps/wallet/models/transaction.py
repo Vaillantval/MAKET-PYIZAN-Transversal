@@ -14,6 +14,7 @@ class WalletTransaction(models.Model):
     class Type(models.TextChoices):
         RECHARGE                 = 'recharge',                 _('Recharge')
         PAIEMENT                 = 'paiement',                 _('Paiement commande')
+        PAIEMENT_POS             = 'paiement_pos',             _('Paiement vente POS')
         REMBOURSEMENT            = 'remboursement',            _('Remboursement')
         LIBERATION_RESERVE       = 'liberation_reserve',       _('Libération solde réservé')
         VENTE                    = 'vente',                    _('Vente créditée (producteur)')
@@ -33,6 +34,7 @@ class WalletTransaction(models.Model):
     montant     = models.DecimalField(max_digits=12, decimal_places=2, help_text=_('Montant signé : positif = crédit, négatif = débit.'))
     solde_apres = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_('Solde après'))
     commande    = models.ForeignKey('orders.Commande', on_delete=models.SET_NULL, null=True, blank=True, related_name='wallet_transactions')
+    pos_sale    = models.ForeignKey('pos.POSSale', on_delete=models.SET_NULL, null=True, blank=True, related_name='wallet_transactions')
     description = models.CharField(max_length=255, blank=True, default='')
     reference   = models.CharField(max_length=128, blank=True, default='', help_text=_('Référence externe (transaction Plopplop, référence Paiement...).'))
     created_at  = models.DateTimeField(auto_now_add=True)

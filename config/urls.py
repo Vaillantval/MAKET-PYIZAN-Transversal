@@ -26,6 +26,7 @@ urlpatterns += i18n_patterns(
     path('api/orders/',              include('apps.orders.urls')),
     path('api/payments/',            include('apps.payments.urls')),
     path('api/wallet/',              include('apps.wallet.urls')),
+    path('api/pos/',                 include('apps.pos.urls')),
     path('api/collectes/',           include('apps.collectes.urls')),
     path('api/geo/',                 include('apps.geo.urls')),
     path('',            include('apps.core.urls')),
