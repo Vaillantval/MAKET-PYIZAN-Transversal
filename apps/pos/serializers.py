@@ -74,6 +74,8 @@ class VenteInputSerializer(serializers.Serializer):
     client_telephone = serializers.CharField(max_length=20, required=False,
                                              allow_blank=True, default='')
     client_email     = serializers.EmailField(required=False, allow_blank=True, default='')
+    code_paiement    = serializers.CharField(max_length=6, required=False,
+                                             allow_blank=True, default='')
     vendue_le        = serializers.DateTimeField()
 
 

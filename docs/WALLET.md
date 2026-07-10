@@ -104,6 +104,17 @@ GET /api/wallet/
 GET /api/wallet/transactions/?page=1        # historique paginé (20/page)
 ```
 
+### Code de paiement POS (consentement au comptoir)
+
+```
+POST /api/wallet/code-paiement/
+→ {"code": "483920", "expire_dans": 300, "solde": "150.00"}
+```
+Code à usage unique (6 chiffres, 5 minutes) à montrer à l'opérateur de
+caisse pour autoriser un débit wallet au point de vente physique. En
+générer un nouveau invalide les précédents non utilisés ; le code est
+consommé atomiquement à la vente (cf. `docs/POS.md`).
+
 ### Recharges
 
 ```

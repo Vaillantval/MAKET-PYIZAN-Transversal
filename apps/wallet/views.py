@@ -601,3 +601,39 @@ def bons_recus(request):
     return paginator.get_paginated_response(
         BonCadeauRecuSerializer(page, many=True).data,
     )
+
+
+# ── POST /api/wallet/code-paiement/ ─────────────────────────────
+
+@extend_schema(tags=['Wallet'],
+               summary='Générer un code de paiement POS (usage unique, 5 min)',
+               description='Code à 6 chiffres à montrer/dicter à l\'opérateur '
+                           'de caisse pour autoriser un débit wallet au '
+                           'comptoir. En générer un nouveau invalide les '
+                           'précédents non utilisés.')
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def code_paiement_generer(request):
+    from django.utils import timezone
+
+    indisponible = _wallet_indisponible()
+    if indisponible:
+        return indisponible
+
+    try:
+        cp = WalletService.generer_code_paiement(request.user)
+    except WalletError as e:
+        return Response(
+            {'success': False, 'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    wallet = WalletService.get_wallet(request.user)
+    return Response({
+        'success': True,
+        'data': {
+            'code':        cp.code,
+            'expire_dans': max(0, int((cp.expire_le - timezone.now()).total_seconds())),
+            'expire_le':   cp.expire_le,
+            'solde':       str(wallet.solde),
+        },
+    })

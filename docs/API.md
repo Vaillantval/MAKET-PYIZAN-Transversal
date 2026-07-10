@@ -491,7 +491,70 @@ GET /api/admin/adresses/
 
 ---
 
-## 11. Endpoints système
+## 11. Point de vente physique (POS) (`/api/pos/`)
+
+Réservé au rôle `pos_operator` : header **`X-POS-Device: <device_uid>`**
+obligatoire (terminal actif appartenant à l'opérateur, créé par le
+superadmin dans l'admin). Le superadmin passe sans header.
+Doc complète : `docs/POS.md`.
+
+### Sessions de caisse
+```
+POST /api/pos/session/ouvrir/   {device_uid, fonds_ouverture}
+POST /api/pos/session/fermer/   {fonds_fermeture}
+     → recap {nb_ventes, total_ventes, total_cash, par_methode, ecart_caisse}
+```
+
+### Paiement wallet — code de consentement (usage unique, 5 min)
+
+Le débit wallet au comptoir exige un **code de paiement** généré par le
+client — jamais un simple téléphone/email :
+
+```
+POST /api/wallet/code-paiement/          (client authentifié)
+     → {"code": "483920", "expire_dans": 300, "solde": "150.00"}
+     (en générer un nouveau invalide les précédents non utilisés)
+
+POST /api/pos/client/verifier-code/      (opérateur) {code}
+     → {"client": {"nom", "telephone"}, "solde"}   — SANS consommer le code
+```
+
+Le code est consommé atomiquement à la vente, dans la même transaction
+que le débit (rollback = code rendu au client, double usage impossible).
+
+### Ventes
+```
+POST /api/pos/vente/       (online)
+     {idempotency_key, items: [{produit_id, lot_id?, quantite, prix_unitaire}],
+      methode_paiement: moncash|natcash|cash|voucher|wallet,
+      montant_wallet?, code_paiement?, client_telephone?, client_email?,
+      vendue_le}
+     — wallet ou montant_wallet > 0 → code_paiement OBLIGATOIRE
+       (client_telephone/email refusés) ; solde insuffisant →
+       400 {"code": "SOLDE_INSUFFISANT"}
+     — client_telephone/email : rattachement des ventes SANS wallet
+     — idempotency_key déjà connue → vente existante, pas de doublon
+
+POST /api/pos/sync/        {ventes: [...]} — batch offline
+     → {resultats: [{idempotency_key, status: created|duplicate|rejected,
+        vente_id?, session_id?, stock_conflict?, erreur?}]}
+     — toute vente wallet est REJETÉE (paiement wallet online uniquement)
+     — stock insuffisant : vente créée avec stock_conflict=true (lot à 0 min.)
+     — vente synchronisée après la clôture : rattachée à la session couvrant
+       son vendue_le, écart de caisse recalculé
+```
+
+### Catalogue et rapports
+```
+GET /api/pos/catalogue/    → produits actifs, prix détail/gros, lots dispo
+                             (ETag contenu : If-None-Match → 304 si inchangé)
+GET /api/pos/rapports/     ?session_id= | ?date=YYYY-MM-DD | ?device_id=
+                             (opérateur : ses ventes ; superadmin : tout)
+```
+
+---
+
+## 12. Endpoints système
 
 ```
 GET /health/                    → {"status": "ok"} — healthcheck Railway

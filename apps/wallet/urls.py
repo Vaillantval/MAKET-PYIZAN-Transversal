@@ -7,6 +7,7 @@ app_name = 'wallet'
 urlpatterns = [
     path('',                      views.wallet_detail,       name='detail'),
     path('transactions/',         views.wallet_transactions, name='transactions'),
+    path('code-paiement/',        views.code_paiement_generer, name='code_paiement'),
 
     # Recharges
     path('recharge/initier/',     views.recharge_initier,    name='recharge_initier'),

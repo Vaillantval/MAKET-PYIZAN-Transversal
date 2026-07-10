@@ -30,6 +30,10 @@ class SoldeInsuffisant(WalletError):
     """Le solde du wallet ne couvre pas le débit demandé."""
 
 
+class CodeInvalide(WalletError):
+    """Code de paiement inexistant, expiré ou déjà utilisé."""
+
+
 def _en_montant(valeur) -> Decimal:
     """Convertit float/str/Decimal en Decimal 2 décimales (ROUND_HALF_UP)."""
     return Decimal(str(valeur)).quantize(DEUX_DECIMALES, rounding=ROUND_HALF_UP)
@@ -336,6 +340,91 @@ class WalletService:
                 commande.numero_commande, e,
             )
         return tx
+
+    # ── Codes de paiement POS (consentement client) ─────────────────────────
+
+    @classmethod
+    def generer_code_paiement(cls, user):
+        """
+        Génère un code à usage unique (6 chiffres, 5 min) autorisant un débit
+        wallet au comptoir. Un seul code actif par client : en générer un
+        nouveau invalide les précédents non utilisés. Le code est unique
+        parmi les codes actifs (collision à 6 chiffres possible sinon).
+        """
+        import secrets
+
+        from apps.wallet.models import WalletCodePaiement
+
+        wallet = cls.get_wallet(user)
+        if not wallet.is_active:
+            raise WalletError("Ce portefeuille est désactivé.")
+
+        with transaction.atomic():
+            maintenant = timezone.now()
+            WalletCodePaiement.objects.filter(
+                user=user, utilise=False, expire_le__gt=maintenant,
+            ).update(expire_le=maintenant)
+
+            while True:
+                code = f"{secrets.randbelow(10**6):06d}"
+                if not WalletCodePaiement.objects.filter(
+                    code=code, utilise=False, expire_le__gt=maintenant,
+                ).exists():
+                    break
+            return WalletCodePaiement.objects.create(user=user, code=code)
+
+    @classmethod
+    def consulter_code_paiement(cls, code):
+        """
+        Vérifie un code SANS le consommer (écran de contrôle caisse).
+        Retourne (user, wallet) ou lève CodeInvalide.
+        """
+        from apps.wallet.models import WalletCodePaiement
+
+        normalise = (code or '').strip()
+        cp = (
+            WalletCodePaiement.objects
+            .filter(code=normalise, utilise=False)
+            .order_by('-created_at')
+            .first()
+        )
+        if cp is None:
+            raise CodeInvalide("Code de paiement invalide ou déjà utilisé.")
+        if cp.est_expire:
+            raise CodeInvalide(
+                "Code de paiement expiré — demandez au client d'en générer un nouveau."
+            )
+        return cp.user, cls.get_wallet(cp.user)
+
+    @classmethod
+    def valider_code_paiement(cls, code, pos_sale=None):
+        """
+        Valide ET consomme le code atomiquement (select_for_update) : deux
+        caisses soumettant le même code en même temps ne peuvent pas le
+        consommer deux fois. Retourne (user, wallet) ou lève CodeInvalide.
+        À appeler dans la même transaction que le débit wallet — un débit
+        qui échoue rend le code au client (rollback).
+        """
+        from apps.wallet.models import WalletCodePaiement
+
+        normalise = (code or '').strip()
+        with transaction.atomic():
+            cp = (
+                WalletCodePaiement.objects.select_for_update()
+                .filter(code=normalise, utilise=False)
+                .order_by('-created_at')
+                .first()
+            )
+            if cp is None:
+                raise CodeInvalide("Code de paiement invalide ou déjà utilisé.")
+            if cp.est_expire:
+                raise CodeInvalide(
+                    "Code de paiement expiré — demandez au client d'en générer un nouveau."
+                )
+            cp.utilise = True
+            cp.pos_sale = pos_sale
+            cp.save(update_fields=['utilise', 'pos_sale'])
+        return cp.user, cls.get_wallet(cp.user)
 
     # ── Paiement d'une vente POS (comptoir) ──────────────────────────────────
 

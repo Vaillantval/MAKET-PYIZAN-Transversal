@@ -17,6 +17,11 @@
   vente offline). Le débit wallet en ligne est dans la même transaction
   atomique que la création de la vente (type ledger `paiement_pos`,
   lié à la vente via `WalletTransaction.pos_sale`).
+- **Consentement client obligatoire** : aucun débit wallet sans le **code
+  de paiement** à usage unique (6 chiffres, 5 min) que le client génère
+  depuis son portefeuille (`POST /api/wallet/code-paiement/`) et
+  montre/dicte à l'opérateur. Un téléphone/email ne suffit JAMAIS à
+  débiter un wallet.
 - **La vente physique a eu lieu** : un stock serveur insuffisant ne rejette
   jamais une vente — elle est créée avec `stock_conflict=True` (badge dans
   l'admin, action « Lever le conflit » après arbitrage) et le lot est ramené
@@ -62,14 +67,20 @@ vente : le comptage historique, lui, incluait cet argent.)
 
 - `POST /api/pos/vente/` (online) —
   `{idempotency_key, items: [{produit_id, lot_id?, quantite, prix_unitaire}],
-  methode_paiement, montant_wallet?, client_telephone?, client_email?,
-  vendue_le}`. Méthodes : `moncash | natcash | cash | voucher | wallet`.
-  Montant total calculé côté serveur (Σ quantité × prix). `vendue_le` est
-  l'horodatage réel de la vente (≠ `synced_le`).
-  - Paiement wallet (total ou hybride `montant_wallet` + cash) : exige un
-    client identifié par `client_telephone`/`client_email` ; solde
-    insuffisant → 400 `SOLDE_INSUFFISANT`, rien n'est créé.
-  - Client introuvable sans wallet → vente anonyme.
+  methode_paiement, montant_wallet?, code_paiement?, client_telephone?,
+  client_email?, vendue_le}`. Méthodes : `moncash | natcash | cash |
+  voucher | wallet`. Montant total calculé côté serveur (Σ quantité × prix).
+  `vendue_le` est l'horodatage réel de la vente (≠ `synced_le`).
+  - Paiement wallet (total ou hybride `montant_wallet` + cash) : exige
+    `code_paiement` (code de consentement du client — `client_telephone`/
+    `client_email` sont refusés pour le wallet). Le code est consommé
+    atomiquement dans la même transaction que le débit : solde insuffisant
+    → 400 `SOLDE_INSUFFISANT`, rien n'est créé et le code est rendu au
+    client ; deux caisses ne peuvent pas consommer le même code.
+  - `POST /api/pos/client/verifier-code/` `{code}` : consultation avant
+    encaissement (identité + solde du client) SANS consommer le code.
+  - `client_telephone`/`client_email` : rattachement des ventes **sans**
+    wallet à un compte client ; introuvable → vente anonyme.
 - `POST /api/pos/sync/` `{ventes: [...]}` — batch offline, chaque vente
   traitée indépendamment :
   `{resultats: [{idempotency_key, status: created|duplicate|rejected,

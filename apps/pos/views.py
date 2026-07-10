@@ -161,6 +161,37 @@ def sync_ventes(request):
     return Response({'success': True, 'data': {'resultats': resultats}})
 
 
+# ── POST /api/pos/client/verifier-code/ ─────────────────────────
+
+@extend_schema(tags=['POS'],
+               summary='Vérifier un code de paiement client (sans le consommer)',
+               description='Consultation avant encaissement : identité et '
+                           'solde du client. Le code n\'est consommé qu\'au '
+                           'moment de la vente.')
+@api_view(['POST'])
+@permission_classes([IsPOSOperator])
+def client_verifier_code(request):
+    from apps.wallet.services import CodeInvalide, WalletService
+
+    code = (request.data.get('code') or '').strip()
+    if not code:
+        return _erreur(_("Le code est requis."))
+    try:
+        client, wallet = WalletService.consulter_code_paiement(code)
+    except CodeInvalide as e:
+        return _erreur(e)
+    return Response({
+        'success': True,
+        'data': {
+            'client': {
+                'nom':       client.get_full_name() or client.username,
+                'telephone': client.telephone,
+            },
+            'solde': str(wallet.solde),
+        },
+    })
+
+
 # ── GET /api/pos/catalogue/ ─────────────────────────────────────
 
 @extend_schema(tags=['POS'], summary='Catalogue allégé pour cache local (ETag)',

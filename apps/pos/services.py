@@ -250,22 +250,34 @@ class POSService:
             if not SiteSettings.get_solo().wallet_enabled:
                 raise POSError("Le portefeuille n'est pas disponible pour le moment.")
 
-        # Client (obligatoire pour un paiement wallet)
+        # Client : un paiement wallet exige le CODE DE PAIEMENT généré par le
+        # client depuis son portefeuille (consentement) — jamais un simple
+        # téléphone/email, sinon n'importe quel opérateur pourrait débiter
+        # n'importe qui. téléphone/email ne servent qu'au rattachement des
+        # ventes SANS wallet (vente nominative).
         client = None
-        telephone = donnees.get('client_telephone') or ''
-        email = donnees.get('client_email') or ''
-        if telephone.strip() or email.strip():
-            client = cls._trouver_client(telephone, email)
-            if client is None and est_wallet:
+        telephone = (donnees.get('client_telephone') or '').strip()
+        email = (donnees.get('client_email') or '').strip()
+        code_paiement = (donnees.get('code_paiement') or '').strip()
+        if est_wallet:
+            if telephone or email:
                 raise POSError(
-                    "Client introuvable pour ce téléphone/email — "
-                    "le paiement wallet exige un compte client existant."
+                    "Pour un paiement wallet, le client s'identifie uniquement "
+                    "par son code de paiement (code_paiement) — pas de "
+                    "client_telephone/client_email."
                 )
-        elif est_wallet:
-            raise POSError(
-                "Le paiement wallet exige un client identifié "
-                "(client_telephone ou client_email)."
-            )
+            if not code_paiement:
+                raise POSError(
+                    "code_paiement requis pour un paiement wallet — le client "
+                    "le génère depuis son portefeuille (valide 5 minutes)."
+                )
+            from apps.wallet.services import CodeInvalide, WalletService
+            try:
+                client, _wallet = WalletService.consulter_code_paiement(code_paiement)
+            except CodeInvalide as e:
+                raise POSError(str(e))
+        elif telephone or email:
+            client = cls._trouver_client(telephone, email)
 
         # Lignes : produits/lots vérifiés, totaux calculés côté serveur
         lignes = []
@@ -308,8 +320,18 @@ class POSService:
                     quantite=quantite, prix_unitaire=prix, sous_total=sous_total,
                 )
             if montant_wallet > 0:
-                from apps.wallet.services import WalletService
-                WalletService.payer_vente_pos(client, vente, montant_wallet)
+                from apps.wallet.services import CodeInvalide, WalletService
+                # Consommer le code DANS la transaction du débit : si le
+                # débit échoue (solde...), le rollback rend le code au
+                # client ; si le code a été consommé par une autre caisse
+                # entre la consultation et ici, la vente est annulée.
+                try:
+                    client_confirme, _wallet = WalletService.valider_code_paiement(
+                        code_paiement, pos_sale=vente,
+                    )
+                except CodeInvalide as e:
+                    raise POSError(str(e))
+                WalletService.payer_vente_pos(client_confirme, vente, montant_wallet)
         return vente, True
 
     @classmethod

@@ -70,7 +70,13 @@
       "Bash(DJANGO_SETTINGS_MODULE=config.settings.development ./venv/Scripts/python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_recharge_verify_endpoint.py', encoding='utf-8'\\).read\\(\\)\\)\")",
       "Bash(curl -s -o /dev/null -w \"site -> %{http_code}\\\\n\" https://maketpeyizan.ht/)",
       "Bash(curl -s -o /dev/null -w \"health -> %{http_code}\\\\n\" https://maketpeyizan.ht/health/)",
-      "Bash(DJANGO_SETTINGS_MODULE=config.settings.development ./venv/Scripts/python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_marketing.py', encoding='utf-8'\\).read\\(\\)\\)\")"
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.development ./venv/Scripts/python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_wallet_marketing.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(./venv/Scripts/python.exe manage.py makemigrations accounts pos wallet)",
+      "Bash(./venv/Scripts/python.exe manage.py migrate)",
+      "Bash(./venv/Scripts/python.exe manage.py check)",
+      "Bash(./venv/Scripts/python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_pos.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(PYTHONIOENCODING=utf-8 ./venv/Scripts/python.exe manage.py shell -c \"exec\\(open\\(r'C:\\\\Users\\\\Tech\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Tech-Desktop-Ing-Vaillant-MAKET-PYIZAN-Transversal\\\\191ed540-e5db-4d46-88c7-337fe80598d6\\\\scratchpad\\\\test_pos.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(./venv/Scripts/python.exe manage.py makemigrations wallet)"
     ]
   }
 }
