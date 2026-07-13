@@ -373,6 +373,7 @@ class POSService:
                         'idempotency_key': cle, 'status': 'duplicate',
                         'vente_id': existante.pk,
                         'numero_vente': existante.numero_vente,
+                        'session_id': existante.session_id,
                         'stock_conflict': existante.stock_conflict,
                     })
                     continue
