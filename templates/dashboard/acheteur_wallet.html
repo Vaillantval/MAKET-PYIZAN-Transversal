@@ -135,6 +135,26 @@
   .w-btn-outline:hover { background: var(--green-light); }
   .w-parrainage-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+  /* ── Code de paiement POS ── */
+  .w-pos-affichage { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 10px 0 4px; }
+  .w-pos-affichage.open { display: flex; }
+  .w-pos-code {
+    font-family: monospace;
+    font-size: clamp(34px, 9vw, 52px);
+    font-weight: 800;
+    letter-spacing: .28em;
+    text-indent: .28em;   /* compense l'espacement après le dernier chiffre */
+    color: var(--green);
+    background: #f0faf4;
+    border: 2px dashed var(--green-mid);
+    border-radius: 14px;
+    padding: 16px 28px;
+  }
+  .w-pos-code.expire { color: #e74c3c; border-color: #e74c3c; background: #fdf1ef; }
+  .w-pos-timer { font-size: 14px; font-weight: 700; color: var(--text-muted); }
+  .w-pos-timer strong { color: var(--text); font-variant-numeric: tabular-nums; }
+  .w-pos-solde { font-size: 13px; color: var(--text-muted); }
+
   /* ── Transactions ── */
   .w-table-card {
     background: var(--card);
@@ -173,6 +193,9 @@
       <button class="w-btn w-btn-light" onclick="togglePanel('panel-recharge')">
         <i class="fas fa-plus-circle"></i> {% trans "Recharger" %}
       </button>
+      <button class="w-btn w-btn-light" onclick="ouvrirPanelPos()">
+        <i class="fas fa-store"></i> {% trans "Payer en boutique" %}
+      </button>
       <button class="w-btn w-btn-ghost" onclick="togglePanel('panel-code')">
         <i class="fas fa-gift"></i> {% trans "Encaisser un code" %}
       </button>
@@ -194,6 +217,28 @@
       <button class="w-btn w-btn-outline" onclick="copierLienParrainage(this)"><i class="fas fa-link"></i> {% trans "Copier le lien" %}</button>
       <button class="w-btn w-btn-outline" id="btn-partager-parrainage" onclick="partagerParrainage()" style="display:none"><i class="fas fa-share-alt"></i> {% trans "Partager" %}</button>
     </div>
+  </div>
+
+  <!-- Panneau payer en boutique (code de paiement POS) -->
+  <div class="w-panel" id="panel-pos">
+    <h3><i class="fas fa-store"></i> {% trans "Payer en boutique avec mon solde" %}</h3>
+    <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:14px">
+      {% trans "Montrez ou dictez ce code à l'opérateur de caisse : il autorise UN paiement depuis votre portefeuille, pendant 5 minutes. Générer un nouveau code annule le précédent. Ne le partagez qu'au moment de payer." %}
+    </p>
+    <div id="pos-vide" style="text-align:center;padding:6px 0">
+      <button class="w-btn w-btn-green" id="pos-generer" onclick="genererCodePaiement()">
+        <i class="fas fa-key"></i> {% trans "Générer mon code" %}
+      </button>
+    </div>
+    <div class="w-pos-affichage" id="pos-affichage">
+      <div class="w-pos-code" id="pos-code">······</div>
+      <div class="w-pos-timer"><i class="far fa-clock"></i> {% trans "Expire dans" %} <strong id="pos-compte">5:00</strong></div>
+      <div class="w-pos-solde">{% trans "Solde disponible" %} : <strong id="pos-solde">—</strong> HTG</div>
+      <button class="w-btn w-btn-outline" onclick="genererCodePaiement()">
+        <i class="fas fa-sync-alt"></i> {% trans "Nouveau code" %}
+      </button>
+    </div>
+    <div class="w-msg" id="pos-msg"></div>
   </div>
 
   <!-- Panneau recharge -->
@@ -396,6 +441,59 @@
     document.getElementById('w-table').style.display = 'table';
   }
 
+  // ── Code de paiement POS ──
+  let _posTimer = null;
+
+  function ouvrirPanelPos() {
+    togglePanel('panel-pos');
+    // Première ouverture : générer directement (moins de gestes au comptoir).
+    const panel = document.getElementById('panel-pos');
+    if (panel.classList.contains('open') &&
+        document.getElementById('pos-affichage').classList.contains('open') === false) {
+      genererCodePaiement();
+    }
+  }
+
+  async function genererCodePaiement() {
+    const btns = document.querySelectorAll('#panel-pos .w-btn');
+    btns.forEach(b => b.disabled = true);
+    try {
+      const r = await fetch('/api/wallet/code-paiement/', { method: 'POST', headers: _headers });
+      const data = await r.json();
+      if (r.ok) {
+        document.getElementById('pos-msg').className = 'w-msg';
+        afficherCodePaiement(data.data);
+      } else {
+        showMsg('pos-msg', apiError(data), false);
+      }
+    } catch (_) { showMsg('pos-msg', 'Erreur réseau. Réessayez.', false); }
+    btns.forEach(b => b.disabled = false);
+  }
+
+  function afficherCodePaiement(d) {
+    document.getElementById('pos-vide').style.display = 'none';
+    document.getElementById('pos-affichage').classList.add('open');
+    const codeEl = document.getElementById('pos-code');
+    codeEl.classList.remove('expire');
+    codeEl.textContent = d.code;
+    document.getElementById('pos-solde').textContent = fmtHTG(d.solde);
+
+    let restant = d.expire_dans;
+    clearInterval(_posTimer);
+    const maj = () => {
+      const m = Math.floor(Math.max(0, restant) / 60), s = Math.max(0, restant) % 60;
+      document.getElementById('pos-compte').textContent = m + ':' + String(s).padStart(2, '0');
+      if (restant <= 0) {
+        clearInterval(_posTimer);
+        codeEl.classList.add('expire');
+        showMsg('pos-msg', 'Code expiré — générez-en un nouveau.', false);
+      }
+      restant--;
+    };
+    maj();
+    _posTimer = setInterval(maj, 1000);
+  }
+
   // ── Recharge ──
   document.getElementById('r-methode').addEventListener('change', function () {
     const horsLigne = this.value === 'hors_ligne';
@@ -508,6 +606,7 @@
       // Arrivée depuis le bouton "Recharger" du header/topbar
       if (window.location.hash === '#recharger') togglePanel('panel-recharge');
       if (window.location.hash === '#code')      togglePanel('panel-code');
+      if (window.location.hash === '#payer')     ouvrirPanelPos();
     }
   });
 
