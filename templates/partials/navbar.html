@@ -233,6 +233,7 @@
   function _navDashboardUrl(user) {
     if (user.is_superuser || user.role === 'superadmin') return '/dashboard/superadmin/';
     if (user.role === 'producteur') return '/dashboard/producteur/';
+    if (user.role === 'pos_operator') return '/';   // pas de dashboard web — app caisse
     return '/dashboard/acheteur/';
   }
 

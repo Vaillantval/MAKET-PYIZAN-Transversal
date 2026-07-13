@@ -710,17 +710,21 @@ const ROLE_LABELS = {
   collecteur: 'Agent de Collecte',
 };
 const DASHBOARD_URLS = {
-  superadmin: '/dashboard/superadmin/',
-  producteur: '/dashboard/producteur/',
-  acheteur:   '/dashboard/acheteur/',
-  collecteur: '/dashboard/acheteur/',
+  superadmin:   '/dashboard/superadmin/',
+  producteur:   '/dashboard/producteur/',
+  acheteur:     '/dashboard/acheteur/',
+  collecteur:   '/dashboard/acheteur/',
+  pos_operator: '/',
 };
 
 function effectiveRole(user) {
   return user.is_superuser ? 'superadmin' : (user.role || 'acheteur');
 }
 function getDashboardUrl(user) {
-  return DASHBOARD_URLS[effectiveRole(user)] || '/dashboard/acheteur/';
+  // Repli sur l'accueil : un rôle sans dashboard (pos_operator, futur rôle)
+  // renvoyé vers un dashboard qui le rejette provoquerait une boucle de
+  // redirections infinie.
+  return DASHBOARD_URLS[effectiveRole(user)] || '/';
 }
 
 function mpProducteurGuard(user) {
