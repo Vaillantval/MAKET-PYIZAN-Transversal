@@ -502,7 +502,15 @@ Doc complète : `docs/POS.md`.
 ```
 POST /api/pos/session/ouvrir/   {device_uid, fonds_ouverture}
 POST /api/pos/session/fermer/   {fonds_fermeture}
-     → recap {nb_ventes, total_ventes, total_cash, par_methode, ecart_caisse}
+     → {"session": {...POSSession...},
+        "recap": {
+          "nb_ventes": 12,
+          "total_ventes": "5400.00",
+          "total_cash": "3200.00",          ← part espèces réellement en tiroir
+          "par_methode": {"cash": {"nb": 8, "montant": "3200.00"},
+                          "wallet": {"nb": 4, "montant": "2200.00"}},
+          "ecart_caisse": "-20.00"
+        }}
 ```
 
 ### Paiement wallet — code de consentement (usage unique, 5 min)
@@ -550,6 +558,22 @@ GET /api/pos/catalogue/    → produits actifs, prix détail/gros, lots dispo
                              (ETag contenu : If-None-Match → 304 si inchangé)
 GET /api/pos/rapports/     ?session_id= | ?date=YYYY-MM-DD | ?device_id=
                              (opérateur : ses ventes ; superadmin : tout)
+     → {
+       "nb_ventes": 12,                  ← ventes confirmées
+       "chiffre_affaires": "5400.00",
+       "nb_annulees": 1,
+       "nb_stock_conflict": 2,
+       "par_methode": {"cash": {"nb": 8, "montant": "3400.00"}, ...},
+       "top_produits": [{"produit_id", "produit", "quantite_vendue",
+                         "montant"}, ...],              ← top 10
+       "ventes": [                       ← réconciliation : 200 plus récentes
+         {"id": 42, "idempotency_key": "9f1c...", "numero_vente": "POS-2026-00042",
+          "statut": "confirmee|annulee", "montant_total": "450.00",
+          "montant_wallet": "0.00", "methode_paiement": "cash",
+          "stock_conflict": false, "vendue_le": "2026-07-13T09:30:00-04:00"},
+         ...
+       ]
+     }
 ```
 
 ---

@@ -106,8 +106,11 @@ resynchronisé.
   si inchangé.
 - `GET /api/pos/rapports/` — `?session_id=` ou `?date=YYYY-MM-DD` ou
   `?device_id=`. Totaux, répartition par méthode, top 10 produits, nb
-  conflits de stock. Cloisonné : un opérateur ne voit que ses ventes
-  (session d'un autre opérateur → 404), le superadmin voit tout.
+  conflits de stock, plus la clé `ventes` : liste des 200 ventes les plus
+  récentes du filtre (id, idempotency_key, numéro, statut, montants,
+  méthode, conflit, vendue_le) pour la réconciliation du terminal mobile.
+  Cloisonné : un opérateur ne voit que ses ventes (session d'un autre
+  opérateur → 404), le superadmin voit tout.
 
 ## Admin Django
 

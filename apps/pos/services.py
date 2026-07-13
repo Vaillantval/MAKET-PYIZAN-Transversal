@@ -444,6 +444,23 @@ class POSService:
             .order_by('-quantite_totale')[:10]
         ]
 
+        # Liste détaillée pour la réconciliation mobile (200 plus récentes,
+        # annulées comprises — le statut permet de les distinguer).
+        ventes_liste = [
+            {
+                'id':               v.pk,
+                'idempotency_key':  str(v.idempotency_key),
+                'numero_vente':     v.numero_vente,
+                'statut':           v.statut,
+                'montant_total':    str(v.montant_total),
+                'montant_wallet':   str(v.montant_wallet),
+                'methode_paiement': v.methode_paiement,
+                'stock_conflict':   v.stock_conflict,
+                'vendue_le':        v.vendue_le.isoformat(),
+            }
+            for v in ventes.order_by('-vendue_le')[:200]
+        ]
+
         return {
             'nb_ventes':        agregats['nb'] or 0,
             'chiffre_affaires': str(_en_montant(agregats['ca'] or 0)),
@@ -451,4 +468,5 @@ class POSService:
             'nb_stock_conflict': confirmees.filter(stock_conflict=True).count(),
             'par_methode':      par_methode,
             'top_produits':     top_produits,
+            'ventes':           ventes_liste,
         }
