@@ -103,6 +103,11 @@ GET /api/wallet/
 ```
 GET /api/wallet/transactions/?page=1        # historique paginé (20/page)
 ```
+Format paginé uniforme (aussi pour `/retraits/`, `/bons/`, `/bons/recus/`) :
+```json
+{"success": true, "data": {"results": [...], "count": 57,
+ "next": "…?page=2|null", "previous": null}}
+```
 
 ### Code de paiement POS (consentement au comptoir)
 

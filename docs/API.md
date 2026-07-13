@@ -17,6 +17,36 @@ Les tokens sont retournés lors du login/register. L'access token expire après 
 
 ---
 
+## Format des réponses
+
+Toutes les réponses suivent le format uniforme :
+
+```json
+{"success": true,  "data": ...}          // succès
+{"success": false, "error": "...", "code": "..."}   // erreur (code optionnel)
+```
+
+Les endpoints **paginés** (`?page=`, `?page_size=` ≤ 100, 20 par défaut) —
+`/api/wallet/transactions/`, `/api/wallet/retraits/`, `/api/wallet/bons/`,
+`/api/wallet/bons/recus/`, `/api/products/` — enveloppent la pagination
+dans `data` :
+
+```json
+{
+  "success": true,
+  "data": {
+    "results":  [ ... ],
+    "count":    57,
+    "next":     "https://…?page=3",
+    "previous": "https://…?page=1"
+  }
+}
+```
+
+Les montants sont toujours des **chaînes** (`"500.00"`), jamais des nombres.
+
+---
+
 ## 1. Auth & Compte (`/api/auth/`)
 
 ### Inscription

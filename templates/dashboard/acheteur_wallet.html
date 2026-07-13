@@ -377,7 +377,7 @@
     const r = await fetch('/api/wallet/transactions/', { headers: _headers });
     document.getElementById('w-loading').style.display = 'none';
     if (!r.ok) { document.getElementById('w-empty').style.display = 'block'; return; }
-    const rows = (await r.json()).results || [];
+    const j = await r.json(); const rows = (j.data && j.data.results) || j.results || [];
     if (!rows.length) { document.getElementById('w-empty').style.display = 'block'; return; }
 
     const tbody = document.getElementById('w-tbody');

@@ -5,12 +5,12 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, parser_classes, permission_classes
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.core.models import SiteSettings
+from apps.core.pagination import PaginationUniforme
 from apps.orders.models import Commande
 from apps.wallet.models import BonCadeau, WalletRetrait
 from apps.wallet.serializers import (
@@ -126,7 +126,7 @@ def wallet_transactions(request):
         return indisponible
 
     wallet = WalletService.get_wallet(request.user)
-    paginator = PageNumberPagination()
+    paginator = PaginationUniforme()
     page = paginator.paginate_queryset(
         wallet.transactions.select_related('commande'), request,
     )
@@ -424,7 +424,7 @@ def retrait_demander(request):
 @permission_classes([IsAuthenticated])
 def retraits_liste(request):
     retraits = WalletRetrait.objects.filter(wallet__user=request.user)
-    paginator = PageNumberPagination()
+    paginator = PaginationUniforme()
     page = paginator.paginate_queryset(retraits, request)
     return paginator.get_paginated_response(
         WalletRetraitSerializer(page, many=True).data,
@@ -575,7 +575,7 @@ def bons_achetes(request):
     bons = request.user.bons_cadeaux_achetes.exclude(
         statut=BonCadeau.Statut.ATTENTE_PAIEMENT,
     )
-    paginator = PageNumberPagination()
+    paginator = PaginationUniforme()
     page = paginator.paginate_queryset(bons, request)
     return paginator.get_paginated_response(
         BonCadeauSerializer(page, many=True).data,
@@ -596,7 +596,7 @@ def bons_recus(request):
             statut=BonCadeau.Statut.ACTIF,
         )
     bons = BonCadeau.objects.filter(filtre).select_related('achete_par')
-    paginator = PageNumberPagination()
+    paginator = PaginationUniforme()
     page = paginator.paginate_queryset(bons, request)
     return paginator.get_paginated_response(
         BonCadeauRecuSerializer(page, many=True).data,
