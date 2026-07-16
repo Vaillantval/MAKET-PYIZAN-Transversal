@@ -63,6 +63,24 @@
 - Support multilingue : Français, Kreyòl ayisyen, English, Español
 - Fuseau horaire : America/Port-au-Prince
 
+### Stock par lots — lot initial automatique
+Le stock se décrémente **par lots** (traçabilité FIFO, exigée par le point
+de vente physique — `docs/POS.md`). Pour éviter qu'un produit actif reste
+sans lot (source de faux « conflits de stock » à chaque vente POS quand
+l'admin oublie d'en créer un) :
+
+- **Implémenté** : à l'enregistrement d'un produit avec un stock > 0, un
+  **lot initial** est créé automatiquement (signal `apps/stock/signals.py`,
+  quantité = stock saisi, note explicite, `cree_par` = producteur).
+- **Proposition différée** (à activer si le besoin terrain se confirme) :
+  matérialiser aussi les **hausses manuelles** de `stock_disponible` par des
+  *lots d'ajustement* automatiques (écart entre stock saisi et somme des
+  lots). Points d'attention documentés : sortie de la boucle de
+  resynchronisation lot ↔ produit (no-op à l'équilibre), les **baisses**
+  restent un geste manuel sur les lots (impossible de deviner quel lot
+  physique perd des unités), verrou contre la double création concurrente,
+  et les `queryset.update()` en masse qui contournent les signaux.
+
 ---
 
 ## Stack technique
