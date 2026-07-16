@@ -99,7 +99,8 @@ resynchronisé.
 ## Catalogue et rapports
 
 - `GET /api/pos/catalogue/` — catalogue allégé pour cache local (Hive) :
-  produits actifs, prix détail/gros, lots disponibles (id, code-barres,
+  produits actifs, prix détail/gros, `photo_url` (URL absolue de l'image
+  principale, `null` sinon), lots disponibles (id, code-barres,
   quantité). **ETag** calculé sur le contenu (`Max(updated_at)`/`Max(id)`/
   count des produits actifs et lots disponibles) : toute modification de
   prix ou de stock produit un nouvel ETag ; renvoyer `If-None-Match` → 304

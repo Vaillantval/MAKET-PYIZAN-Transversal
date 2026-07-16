@@ -210,12 +210,16 @@ def catalogue(request):
         .order_by('nom')
     )
 
+    # v2 : ajout de photo_url — versionner l'empreinte force les terminaux
+    # qui détiennent un ancien ETag à recharger le nouveau schéma (sinon 304
+    # à vie tant qu'aucun produit ne change).
+    VERSION_CATALOGUE = 'v2'
     empreinte_produits = produits.aggregate(m=Max('updated_at'), n=Max('id'))
     empreinte_lots = Lot.objects.filter(
         statut=Lot.Statut.DISPONIBLE,
     ).aggregate(m=Max('updated_at'), n=Max('id'))
     etag = '"{}"'.format(hashlib.md5(
-        f"{empreinte_produits['m']}-{empreinte_produits['n']}-"
+        f"{VERSION_CATALOGUE}-{empreinte_produits['m']}-{empreinte_produits['n']}-"
         f"{empreinte_lots['m']}-{empreinte_lots['n']}-{produits.count()}".encode()
     ).hexdigest())
 
@@ -244,6 +248,8 @@ def catalogue(request):
             'prix_gros':        str(p.prix_gros) if p.prix_gros is not None else None,
             'unite_vente':      p.unite_vente,
             'stock_disponible': p.stock_disponible,
+            'photo_url':        (request.build_absolute_uri(p.image_principale.url)
+                                 if p.image_principale else None),
             'lots':             lots_par_produit.get(p.id, []),
         }
         for p in produits

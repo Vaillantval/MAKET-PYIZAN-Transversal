@@ -584,7 +584,10 @@ POST /api/pos/sync/        {ventes: [...]} — batch offline
 
 ### Catalogue et rapports
 ```
-GET /api/pos/catalogue/    → produits actifs, prix détail/gros, lots dispo
+GET /api/pos/catalogue/    → produits actifs : id, nom, categorie {id, nom},
+                             prix_unitaire, prix_gros|null, unite_vente,
+                             stock_disponible, photo_url|null (URL absolue),
+                             lots [{id, numero_lot, code_barres, quantite_actuelle}]
                              (ETag contenu : If-None-Match → 304 si inchangé)
 GET /api/pos/rapports/     ?session_id= | ?date=YYYY-MM-DD | ?device_id=
                              (opérateur : ses ventes ; superadmin : tout)
