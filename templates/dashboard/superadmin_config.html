@@ -476,14 +476,27 @@
       </div>
     </div>
 
-    <!-- Application Android APK -->
+    <!-- Applications mobiles (liens + APK) -->
     <div class="settings-card" id="apk-card">
       <div class="settings-header">
-        <i class="fab fa-android" style="color:#3ddc84"></i>
-        <h3>{% trans "Application Android" %}</h3>
-        <span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:400">{% trans "Fichier .apk uniquement" %}</span>
+        <i class="fas fa-mobile-alt" style="color:#3ddc84"></i>
+        <h3>{% trans "Applications mobiles" %}</h3>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:400">{% trans "Lien externe OU fichier .apk" %}</span>
       </div>
       <div class="settings-body">
+        <!-- Liens de téléchargement externes -->
+        <div class="field">
+          <label><i class="fab fa-android" style="color:#3ddc84"></i> {% trans "Lien de téléchargement Android (URL)" %}</label>
+          <input type="url" id="s-android-url" placeholder="https://github.com/…/releases/latest/download/maket-peyizan.apk">
+          <small style="color:var(--text-muted)">{% trans "Prioritaire sur le fichier téléversé ci-dessous. Astuce : un lien GitHub Releases en /latest/ pointe toujours vers la dernière version — plus rien à retoucher ici à chaque mise à jour de l'app." %}</small>
+        </div>
+        <div class="field">
+          <label><i class="fab fa-apple" style="color:var(--text-muted)"></i> {% trans "Lien iOS (App Store / TestFlight)" %}</label>
+          <input type="url" id="s-ios-url" placeholder="https://apps.apple.com/…">
+          <small style="color:var(--text-muted)">{% trans "Vide : le bouton iOS n'apparaît pas sur le site." %}</small>
+        </div>
+        <div style="border-top:1px dashed var(--border);margin:6px 0 16px"></div>
+
         <!-- État actuel -->
         <div id="apk-current" style="display:none;margin-bottom:16px;padding:12px 16px;background:var(--green-light);border-radius:8px;border:1px solid var(--green-mid);display:flex;align-items:center;gap:12px">
           <i class="fas fa-check-circle" style="color:var(--green-mid);font-size:18px;flex-shrink:0"></i>
@@ -669,6 +682,9 @@ async function loadSettings() {
   document.getElementById('s-parrainage-taux').value       = s.taux_bonus_parrainage||0;
   document.getElementById('s-parrainage-max').value        = s.parrainage_bonus_montant_max||0;
 
+  document.getElementById('s-android-url').value = s.android_apk_url||'';
+  document.getElementById('s-ios-url').value     = s.ios_app_url||'';
+
   if (s.logo)    { const p = document.getElementById('s-logo-preview');    p.src = s.logo;    p.style.display='block'; }
   if (s.favicon) { const p = document.getElementById('s-favicon-preview'); p.src = s.favicon; p.style.display='block'; }
 
@@ -840,6 +856,8 @@ async function saveSettings(e) {
     parrainage_enabled:   document.getElementById('s-parrainage-enabled').checked,
     taux_bonus_parrainage: document.getElementById('s-parrainage-taux').value || 0,
     parrainage_bonus_montant_max: document.getElementById('s-parrainage-max').value || 0,
+    android_apk_url:      document.getElementById('s-android-url').value.trim(),
+    ios_app_url:          document.getElementById('s-ios-url').value.trim(),
   };
 
   // Vérifier si des fichiers sont présents

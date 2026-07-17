@@ -207,7 +207,7 @@ class SiteSettings(models.Model):
         help_text=_('Compte NatCash de la plateforme où les clients déposent pour recharger leur wallet.'),
     )
 
-    # ── Application Android ─────────────────────────────────────
+    # ── Applications mobiles ────────────────────────────────────
     android_apk = models.FileField(
         upload_to='android/',
         null=True,
@@ -215,6 +215,26 @@ class SiteSettings(models.Model):
         verbose_name=_('Application Android (.apk)'),
         help_text=_('Fichier .apk de l\'application Android. Affiché comme bannière de téléchargement sur le site.'),
     )
+    android_apk_url = models.URLField(
+        blank=True, default='',
+        verbose_name=_('Lien de téléchargement Android (URL)'),
+        help_text=_('URL directe de l\'APK (ex. GitHub Releases : …/releases/latest/download/maket-peyizan.apk). '
+                    'Prioritaire sur le fichier téléversé — pointez sur /latest/ pour ne plus retoucher la config à chaque version.'),
+    )
+    ios_app_url = models.URLField(
+        blank=True, default='',
+        verbose_name=_('Lien iOS (App Store / TestFlight)'),
+        help_text=_('URL de l\'application iOS. Vide : le bouton iOS n\'apparaît pas sur le site.'),
+    )
+
+    @property
+    def lien_android(self):
+        """URL de téléchargement Android effective : lien externe prioritaire, sinon fichier téléversé."""
+        if self.android_apk_url:
+            return self.android_apk_url
+        if self.android_apk:
+            return self.android_apk.url
+        return ''
 
     updated_at = models.DateTimeField(auto_now=True)
 

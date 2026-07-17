@@ -103,6 +103,9 @@ def _config_data(s, request=None):
         # Maintenance
         'mode_maintenance':    s.mode_maintenance,
         'message_maintenance': s.message_maintenance,
+        # Applications mobiles
+        'android_apk_url':     s.android_apk_url,
+        'ios_app_url':         s.ios_app_url,
         # Portefeuille (wallet)
         'wallet_enabled':        s.wallet_enabled,
         'taux_commission':       str(s.taux_commission),
@@ -134,7 +137,7 @@ def site_config(request):
         'email_contact', 'telephone', 'whatsapp', 'adresse', 'horaires',
         'facebook_url', 'instagram_url', 'twitter_url', 'youtube_url',
         'copyright_texte', 'meta_description', 'google_analytics_id',
-        'message_maintenance',
+        'message_maintenance', 'android_apk_url', 'ios_app_url',
     ]
     for field in text_fields:
         if field in request.data:

@@ -82,8 +82,8 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             ),
             'description': 'Contrôle unique et global : active/désactive le portefeuille pour tous les acheteurs et producteurs à la fois.',
         }),
-        ('📱 Application Android', {
-            'fields': ('android_apk',),
+        ('📱 Applications mobiles', {
+            'fields': ('android_apk_url', 'android_apk', 'ios_app_url'),
             'classes': ('collapse',),
         }),
     ]
