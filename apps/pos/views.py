@@ -260,9 +260,9 @@ def catalogue(request):
 # ── GET /api/pos/rapports/ ──────────────────────────────────────
 
 @extend_schema(tags=['POS'], summary='Rapports de vente POS',
-               description='Filtres : ?session_id= ou ?date=YYYY-MM-DD ou '
-                           '?device_id=. Un opérateur ne voit que ses '
-                           'propres ventes, le superadmin voit tout.')
+               description='Filtres cumulables : ?session_id=, ?date=YYYY-MM-DD, '
+                           '?device_id=, ?operateur_id=. Un opérateur ne voit '
+                           'que ses propres ventes, le superadmin voit tout.')
 @api_view(['GET'])
 @permission_classes([IsPOSOperator])
 def rapports(request):
@@ -278,6 +278,7 @@ def rapports(request):
     session_id = request.query_params.get('session_id')
     date = request.query_params.get('date')
     device_id = request.query_params.get('device_id')
+    operateur_id = request.query_params.get('operateur_id')
 
     if session_id:
         if not session_id.isdigit():
@@ -296,5 +297,11 @@ def rapports(request):
         if not device_id.isdigit():
             return _erreur(_("device_id invalide."))
         ventes = ventes.filter(session__device_id=device_id)
+    if operateur_id:
+        if not operateur_id.isdigit():
+            return _erreur(_("operateur_id invalide."))
+        if not est_superadmin and int(operateur_id) != request.user.id:
+            return _erreur(_("Opérateur introuvable."), http_status=status.HTTP_404_NOT_FOUND)
+        ventes = ventes.filter(operateur_id=operateur_id)
 
     return Response({'success': True, 'data': POSService.rapport(ventes)})

@@ -222,6 +222,9 @@ def dashboard_superadmin(request):
 def dashboard_superadmin_wallet(request):
     return render(request, 'dashboard/superadmin_wallet.html')
 
+def dashboard_superadmin_pos(request):
+    return render(request, 'dashboard/superadmin_pos.html')
+
 def dashboard_superadmin_utilisateurs(request):
     return render(request, 'dashboard/superadmin_utilisateurs.html')
 

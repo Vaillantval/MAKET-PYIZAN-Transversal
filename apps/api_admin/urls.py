@@ -47,6 +47,14 @@ urlpatterns = [
     path('wallet/bons/<int:pk>/annuler/',     views.bon_annuler,         name='wallet_bon_annuler'),
     path('wallet/bons/<int:pk>/renvoyer-email/', views.bon_renvoyer_email, name='wallet_bon_renvoyer'),
 
+    # ── Point de vente (POS) ────────────────────────────────────
+    path('pos/stats/',                    views.pos_stats,              name='pos_stats'),
+    path('pos/sessions/',                 views.pos_sessions_list,      name='pos_sessions'),
+    path('pos/ecarts/',                   views.pos_ecarts_par_agent,   name='pos_ecarts'),
+    path('pos/conflits/',                 views.pos_conflits_list,      name='pos_conflits'),
+    path('pos/ventes/<int:pk>/lever-conflit/', views.pos_vente_lever_conflit, name='pos_lever_conflit'),
+    path('pos/ventes/<int:pk>/annuler/',  views.pos_vente_annuler,      name='pos_vente_annuler'),
+
     # ── Catalogue ───────────────────────────────────────────────
     path('catalogue/',                  views.catalogue_list,   name='catalogue_list'),
     path('catalogue/create/',           views.catalogue_create, name='catalogue_create'),

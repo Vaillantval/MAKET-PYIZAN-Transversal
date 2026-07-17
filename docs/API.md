@@ -491,6 +491,19 @@ PATCH /api/admin/collectes/participations/<id>/statut/
 DELETE /api/admin/collectes/participations/<id>/
 ```
 
+### Point de vente (supervision)
+```
+GET  /api/admin/pos/stats/       → sessions ouvertes, ventes/CA du jour,
+                                   conflits à arbitrer, terminaux, écart 30 j
+GET  /api/admin/pos/sessions/    ?date_debut=&date_fin=&statut=&operateur_id=
+                                   → shifts avec totaux ventes/cash et écart
+GET  /api/admin/pos/ecarts/      ?date_debut=&date_fin=
+                                   → écarts de caisse consolidés par agent
+GET  /api/admin/pos/conflits/    → ventes en conflit de stock à arbitrer
+POST /api/admin/pos/ventes/<id>/lever-conflit/
+POST /api/admin/pos/ventes/<id>/annuler/   → re-crédit stock + wallet
+```
+
 ### Configuration site
 ```
 GET /api/admin/config/site/
@@ -589,7 +602,7 @@ GET /api/pos/catalogue/    → produits actifs : id, nom, categorie {id, nom},
                              stock_disponible, photo_url|null (URL absolue),
                              lots [{id, numero_lot, code_barres, quantite_actuelle}]
                              (ETag contenu : If-None-Match → 304 si inchangé)
-GET /api/pos/rapports/     ?session_id= | ?date=YYYY-MM-DD | ?device_id=
+GET /api/pos/rapports/     ?session_id= | ?date=YYYY-MM-DD | ?device_id= | ?operateur_id=
                              (opérateur : ses ventes ; superadmin : tout)
      → {
        "nb_ventes": 12,                  ← ventes confirmées

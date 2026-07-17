@@ -43,3 +43,7 @@ from .wallet_views     import (
     retraits_list, retrait_payer, retrait_rejeter,
     bons_list, bon_annuler, bon_renvoyer_email,
 )
+from .pos_views        import (
+    pos_stats, pos_sessions_list, pos_ecarts_par_agent,
+    pos_conflits_list, pos_vente_lever_conflit, pos_vente_annuler,
+)

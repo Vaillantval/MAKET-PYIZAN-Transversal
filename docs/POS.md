@@ -105,13 +105,29 @@ resynchronisé.
   count des produits actifs et lots disponibles) : toute modification de
   prix ou de stock produit un nouvel ETag ; renvoyer `If-None-Match` → 304
   si inchangé.
-- `GET /api/pos/rapports/` — `?session_id=` ou `?date=YYYY-MM-DD` ou
-  `?device_id=`. Totaux, répartition par méthode, top 10 produits, nb
+- `GET /api/pos/rapports/` — `?session_id=`, `?date=YYYY-MM-DD`,
+  `?device_id=`, `?operateur_id=` (cumulables). Totaux, répartition par
+  méthode, top 10 produits, nb
   conflits de stock, plus la clé `ventes` : liste des 200 ventes les plus
   récentes du filtre (id, idempotency_key, numéro, statut, montants,
   méthode, conflit, vendue_le) pour la réconciliation du terminal mobile.
   Cloisonné : un opérateur ne voit que ses ventes (session d'un autre
   opérateur → 404), le superadmin voit tout.
+
+## Dashboard superadmin custom — `/dashboard/superadmin/pos/`
+
+Supervision quotidienne (endpoints `/api/admin/pos/…`, permission
+`IsSuperAdmin`) : cartes stats (sessions ouvertes, ventes/CA du jour,
+conflits à arbitrer, terminaux actifs, écart cumulé 30 j) et 3 onglets —
+
+- **Sessions (shifts)** : chaque session avec agent, terminal, fonds,
+  comptage, totaux ventes/cash et écart coloré ; filtres statut, période
+  et agent.
+- **Écarts par agent** : écarts de caisse consolidés par opérateur sur la
+  période (nb sessions, sessions avec écart, écart cumulé) — l'indicateur
+  anti-coulage : un agent qui « perd » un peu chaque jour se voit ici.
+- **Conflits de stock** : ventes à arbitrer avec actions « Lever le
+  conflit » et « Annuler la vente » (re-crédit stock + wallet).
 
 ## Admin Django
 

@@ -50,6 +50,10 @@
   <i class="fas fa-wallet"></i> {% trans "Wallet" %}
   <span class="nav-badge" id="sb-badge-wallet" style="display:none"></span>
 </a>
+<a href="/dashboard/superadmin/pos/" class="nav-item {% if active == 'pos' %}active{% endif %}">
+  <i class="fas fa-cash-register"></i> {% trans "Point de vente" %}
+  <span class="nav-badge" id="sb-badge-pos" style="display:none"></span>
+</a>
 
 <div class="nav-section-label">{% trans "Collectes Terrain" %}</div>
 <a href="/dashboard/superadmin/collectes/" class="nav-item {% if active == 'collectes' %}active{% endif %}">

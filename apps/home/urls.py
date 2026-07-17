@@ -31,6 +31,7 @@ urlpatterns = [
     path('dashboard/superadmin/commandes/',          views.dashboard_superadmin_commandes,         name='dashboard_superadmin_commandes'),
     path('dashboard/superadmin/paiements/',          views.dashboard_superadmin_paiements,         name='dashboard_superadmin_paiements'),
     path('dashboard/superadmin/wallet/',             views.dashboard_superadmin_wallet,            name='dashboard_superadmin_wallet'),
+    path('dashboard/superadmin/pos/',                views.dashboard_superadmin_pos,               name='dashboard_superadmin_pos'),
     path('dashboard/superadmin/catalogue/',          views.dashboard_superadmin_catalogue,         name='dashboard_superadmin_catalogue'),
     path('dashboard/superadmin/stocks/',             views.dashboard_superadmin_stocks,            name='dashboard_superadmin_stocks'),
     path('dashboard/superadmin/collectes/',          views.dashboard_superadmin_collectes,         name='dashboard_superadmin_collectes'),
