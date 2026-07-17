@@ -150,6 +150,11 @@
   <div class="kpi-card blue"><span class="kpi-label">{% trans "Paiements à vérifier" %}</span><span class="kpi-value" id="k-pay">—</span></div>
   <div class="kpi-card"><span class="kpi-label">{% trans "Revenus du mois" %}</span><span class="kpi-value" id="k-rev">—</span><span class="kpi-sub">{% trans "HTG" %}</span></div>
   <div class="kpi-card red"><span class="kpi-label">{% trans "Alertes stock" %}</span><span class="kpi-value" id="k-alertes">—</span></div>
+  <div class="kpi-card purple" id="k-pos-card" style="cursor:pointer" onclick="window.location.href='/dashboard/superadmin/pos/'">
+    <span class="kpi-label">{% trans "Ventes POS aujourd'hui" %}</span>
+    <span class="kpi-value" id="k-pos">—</span>
+    <span class="kpi-sub" id="k-pos-sub"></span>
+  </div>
 </div>
 
 <!-- Sections rapides -->
@@ -243,6 +248,23 @@ async function loadStats() {
       const bm = document.getElementById('sb-badge-msgs');
       if (bm && nonLus > 0) { bm.textContent = nonLus; bm.style.display = 'inline'; }
     });
+}
+
+async function loadPosStats() {
+  const r = await fetch('/api/admin/pos/stats/', { headers: H });
+  if (!r.ok) return;
+  const d = (await r.json()).data;
+  document.getElementById('k-pos').textContent = d.ventes_jour;
+  const morceaux = [`${fmt(d.ca_jour_htg)} HTG`];
+  if (d.sessions_ouvertes > 0)   morceaux.push(`${d.sessions_ouvertes} caisse(s) ouverte(s)`);
+  if (d.conflits_a_arbitrer > 0) morceaux.push(`⚠ ${d.conflits_a_arbitrer} conflit(s)`);
+  document.getElementById('k-pos-sub').textContent = morceaux.join(' · ');
+  if (d.conflits_a_arbitrer > 0) {
+    const carte = document.getElementById('k-pos-card');
+    carte.classList.remove('purple'); carte.classList.add('red');
+  }
+  const sb = document.getElementById('sb-badge-pos');
+  if (sb && d.conflits_a_arbitrer > 0) { sb.textContent = d.conflits_a_arbitrer; sb.style.display = 'inline'; }
 }
 
 async function loadCommandes() {
@@ -339,6 +361,7 @@ async function loadPaiements() {
 mpAuthCheck('superadmin').then(user => {
   if (!user || !user.is_superuser) return;
   loadStats();
+  loadPosStats();
   loadCommandes();
   loadProducteurs();
   loadAlertes();
