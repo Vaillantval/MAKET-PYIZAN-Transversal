@@ -28,6 +28,8 @@
   .kpi-card.red    { border-left-color: var(--red); }
   .kpi-card.blue   { border-left-color: var(--blue); }
   .kpi-card.purple { border-left-color: var(--purple); }
+  .kpi-card[data-href] { cursor: pointer; transition: transform .15s, box-shadow .15s; }
+  .kpi-card[data-href]:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.10); }
   .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
   .kpi-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
   .kpi-sub   { font-size: 12px; color: var(--text-muted); }
@@ -142,15 +144,15 @@
   </a>
 </div>
 
-<!-- KPIs -->
+<!-- KPIs — chaque carte est cliquable vers sa page de gestion -->
 <div class="kpi-grid" id="kpi-grid">
-  <div class="kpi-card"><span class="kpi-label">{% trans "Utilisateurs" %}</span><span class="kpi-value" id="k-users">—</span><span class="kpi-sub" id="k-users-sub"></span></div>
-  <div class="kpi-card orange"><span class="kpi-label">{% trans "Producteurs en attente" %}</span><span class="kpi-value" id="k-prod-attente">—</span><span class="kpi-sub" id="k-prod-actifs"></span></div>
-  <div class="kpi-card red"><span class="kpi-label">{% trans "Commandes en attente" %}</span><span class="kpi-value" id="k-cmds-attente">—</span><span class="kpi-sub" id="k-cmds-jour"></span></div>
-  <div class="kpi-card blue"><span class="kpi-label">{% trans "Paiements à vérifier" %}</span><span class="kpi-value" id="k-pay">—</span></div>
-  <div class="kpi-card"><span class="kpi-label">{% trans "Revenus du mois" %}</span><span class="kpi-value" id="k-rev">—</span><span class="kpi-sub">{% trans "HTG" %}</span></div>
-  <div class="kpi-card red"><span class="kpi-label">{% trans "Alertes stock" %}</span><span class="kpi-value" id="k-alertes">—</span></div>
-  <div class="kpi-card purple" id="k-pos-card" style="cursor:pointer" onclick="window.location.href='/dashboard/superadmin/pos/'">
+  <div class="kpi-card" data-href="/dashboard/superadmin/utilisateurs/"><span class="kpi-label">{% trans "Utilisateurs" %}</span><span class="kpi-value" id="k-users">—</span><span class="kpi-sub" id="k-users-sub"></span></div>
+  <div class="kpi-card orange" data-href="/dashboard/superadmin/producteurs/?statut=en_attente"><span class="kpi-label">{% trans "Producteurs en attente" %}</span><span class="kpi-value" id="k-prod-attente">—</span><span class="kpi-sub" id="k-prod-actifs"></span></div>
+  <div class="kpi-card red" data-href="/dashboard/superadmin/commandes/"><span class="kpi-label">{% trans "Commandes en attente" %}</span><span class="kpi-value" id="k-cmds-attente">—</span><span class="kpi-sub" id="k-cmds-jour"></span></div>
+  <div class="kpi-card blue" data-href="/dashboard/superadmin/paiements/"><span class="kpi-label">{% trans "Paiements à vérifier" %}</span><span class="kpi-value" id="k-pay">—</span></div>
+  <div class="kpi-card" data-href="/dashboard/superadmin/rapport/"><span class="kpi-label">{% trans "Revenus du mois" %}</span><span class="kpi-value" id="k-rev">—</span><span class="kpi-sub">{% trans "HTG" %}</span></div>
+  <div class="kpi-card red" data-href="/dashboard/superadmin/stocks/"><span class="kpi-label">{% trans "Alertes stock" %}</span><span class="kpi-value" id="k-alertes">—</span></div>
+  <div class="kpi-card purple" id="k-pos-card" data-href="/dashboard/superadmin/pos/">
     <span class="kpi-label">{% trans "Ventes POS aujourd'hui" %}</span>
     <span class="kpi-value" id="k-pos">—</span>
     <span class="kpi-sub" id="k-pos-sub"></span>
@@ -213,6 +215,11 @@ function fdate(iso) { return new Date(iso).toLocaleDateString('fr-FR', {day:'2-d
 
 // Date du jour dans la barre d'actions
 document.getElementById('today-label').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+// Cartes KPI cliquables vers leur page de gestion
+document.querySelectorAll('.kpi-card[data-href]').forEach(c => {
+  c.addEventListener('click', () => { window.location.href = c.dataset.href; });
+});
 
 async function loadStats() {
   const r = await fetch('/api/admin/stats/', { headers: H });
